@@ -43,17 +43,17 @@ Add to your `west.yml`:
 ```yaml
 manifest:
   remotes:
-    - name: afiqzudinhadi
-      url-base: https://github.com/afiqzudinhadi
+    - name: disarmyouwitha
+      url-base: https://github.com/disarmyouwitha
     - name: jthlim
       url-base: https://github.com/jthlim
   projects:
     - name: zmk-javelin-steno
-      remote: afiqzudinhadi
-      revision: main
+      remote: disarmyouwitha
+      revision: 995fa19
     - name: javelin-steno
       remote: jthlim
-      revision: main
+      revision: 22726675b2dcf3b8b6ba1e20898f25e324b2260a
       path: zmk-javelin-steno/javelin
 ```
 
@@ -61,14 +61,14 @@ Add to your `.conf`:
 
 ```ini
 CONFIG_ZMK_JAVELIN_STENO=y
-CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER=y
-CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING=y
-CONFIG_CPLUSPLUS=y
-CONFIG_LIB_CPLUSPLUS=y
+CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER=n
+CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING=n
+CONFIG_CPP=y
+CONFIG_REQUIRES_FULL_LIBCPP=y
 CONFIG_HEAP_MEM_POOL_SIZE=32768
 ```
 
-Set `CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER` and `CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING` to choose which dictionaries to include. Both can be enabled simultaneously.
+For this tested fixture build, leave both full-dictionary options disabled. The fixture is selected directly in CMake; restoring full dictionary selection is future work.
 
 Add to your `.keymap` (see [steno_keys.h](include/dt-bindings/zmk/javelin_steno.h) for all available key bindings):
 
