@@ -1,0 +1,85 @@
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+#include <behaviors/javelin_steno.dtsi>
+#include <behaviors/plover_hid.dtsi>
+#include <dt-bindings/zmk/hid-io/plover_hid.h>
+#include <dt-bindings/zmk/javelin_steno.h>
+
+#define MAIN 0
+#define SYM_NUM 1
+#define STENO 2
+#define PLOVER_HID 3
+
+/ {
+    chosen {
+        zmk,physical-layout = &foostan_corne_6col_layout;
+    };
+};
+
+&sk {
+    release-after-ms = <2000>;
+    quick-release;
+};
+
+/ {
+    behaviors {
+        ht: hold_tap {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "tap-preferred";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <125>;
+            require-prior-idle-ms = <125>;
+            bindings = <&kp>, <&kp>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        main_layer {
+            display-name = "MAIN";
+            // ht parameters: hold first, tap second. Editing shortcuts use Command.
+            bindings = <
+&ht ESC TAB  &ht LBKT Q   &ht RBKT W   &ht LBRC E   &ht RBRC R   &ht SQT T       &ht MINUS Y &ht AMPS U &ht STAR I     &ht LG(F) O   &ht LG(LS(N4)) P &kp DEL
+&kp LCTRL    &ht LG(A) A  &ht LG(S) S  &ht LPAR D   &ht RPAR F   &ht DQT G       &ht UNDER H &ht EXCL J &ht HASH K     &ht TILDE L   &ht RET SEMI     &kp RET
+&kp LSHIFT   &ht LG(Z) Z  &ht LG(X) X  &ht LG(C) C  &ht LG(V) V  &ht GRAVE B     &ht EQUAL N &ht AT M   &ht DLLR COMMA &ht CARET DOT &ht BSLH FSLH    &sk LSHIFT
+                                      &kp LCMD &mo SYM_NUM &kp BSPC          &kp SPACE &to PLOVER_HID &to STENO
+            >;
+        };
+
+        sym_num_layer {
+            display-name = "SYM+NUM";
+            // Voyager LED positions Q/W/R retain Zen Bluetooth controls.
+            // Profile indices 0/1 correspond to the first/second host slots.
+            bindings = <
+&kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP    &bt BT_CLR &none           &kp KP_PLUS &kp N7 &kp N8 &kp N9 &kp BSPC &kp BSPC
+&none          &none        &kp LEFT    &kp DOWN  &kp RIGHT  &none           &kp MINUS   &kp N4 &kp N5 &kp N6 &kp RET  &kp RET
+&kp LS(LEFT)   &none        &none       &kp SPACE &none      &none           &kp EQUAL   &kp N1 &kp N2 &kp N3 &kp DOT  &trans
+                                      &trans &trans &trans                 &none &kp N0 &none
+            >;
+        };
+
+        steno_layer {
+            display-name = "STENO";
+            // Onboard Javelin; physical steno positions preserved from the Zen keymap.
+            bindings = <
+&javsteno STENO_NUM12 &javsteno STENO_NUM1  &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5    &javsteno STENO_NUM6 &javsteno STENO_NUM7 &javsteno STENO_NUM8 &javsteno STENO_NUM9 &javsteno STENO_NUM10 &javsteno STENO_NUM11
+&none        &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR
+&none        &javsteno STENO_S2 &javsteno STENO_KL  &javsteno STENO_WL  &javsteno STENO_RL  &javsteno STENO_STAR2    &javsteno STENO_STAR4 &javsteno STENO_RR  &javsteno STENO_BR  &javsteno STENO_GR  &javsteno STENO_SR  &javsteno STENO_ZR
+                                      &to MAIN &javsteno STENO_A &javsteno STENO_O               &javsteno STENO_E &javsteno STENO_U &to PLOVER_HID
+            >;
+        };
+        plover_hid_layer {
+            display-name = "PLOVER HID";
+            // Voyager geometry; distinct Plover HID indices for every steno key.
+            bindings = <
+&plv PLV_NMC &plv PLV_NM  &plv PLV_NM2 &plv PLV_NM3 &plv PLV_NM4 &plv PLV_NM5    &plv PLV_NM6 &plv PLV_NM7 &plv PLV_NM8 &plv PLV_NM9 &plv PLV_NMA &plv PLV_NMB
+&none        &plv PLV_SL  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST     &plv PLV_ST3 &plv PLV_FR  &plv PLV_PR  &plv PLV_LR  &plv PLV_TR  &plv PLV_DR
+&none        &plv PLV_SL2 &plv PLV_KL  &plv PLV_WL  &plv PLV_RL  &plv PLV_ST2    &plv PLV_ST4 &plv PLV_RR  &plv PLV_BR  &plv PLV_GR  &plv PLV_SR  &plv PLV_ZR
+                                      &to MAIN &plv PLV_A &plv PLV_O               &plv PLV_E &plv PLV_U &to STENO
+            >;
+        };
+    };
+};

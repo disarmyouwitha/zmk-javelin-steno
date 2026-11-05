@@ -8,6 +8,14 @@ if(CONFIG_ZMK_JAVELIN_STENO)
 
     # Patch javelin source for Zephyr compatibility
     set(JAVELIN_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/javelin")
+    if(NOT EXISTS "${JAVELIN_SRC_DIR}/engine.h")
+      # When this repository is the build module, west checks the engine out
+      # beside Zephyr in the isolated workspace rather than inside this repo.
+      set(JAVELIN_SRC_DIR "${ZEPHYR_BASE}/../javelin-steno")
+    endif()
+    if(NOT EXISTS "${JAVELIN_SRC_DIR}/engine.h")
+      message(FATAL_ERROR "Pinned Javelin engine not found; see config/west.yml")
+    endif()
     if(EXISTS "${JAVELIN_SRC_DIR}/dictionary/user_dictionary.h")
       # Remove constexpr from StenoUserDictionaryData constructor
       # (reinterpret_cast not allowed in constexpr on GCC)
@@ -43,149 +51,149 @@ print(f'Stripped test blocks from {count} files')
 
     # Override dir MUST come before javelin/ so our unit_test.h is found first
     zephyr_include_directories(include/javelin_overrides)
-    zephyr_include_directories(javelin)
+    zephyr_include_directories(${JAVELIN_SRC_DIR})
     zephyr_include_directories(include)
 
     # Core engine sources
     set(JAVELIN_CORE_SRC
-      javelin/asset_manager.cc
-      javelin/base64.cc
-      javelin/bit_field.cc
-      javelin/bit.cc
-      javelin/button_script_manager.cc
-      javelin/button_script.cc
-      javelin/console_input_buffer.cc
-      javelin/console.cc
-      javelin/container/cyclic_queue.cc
-      javelin/container/list.cc
-      javelin/crc32.cc
-      javelin/date_time.cc
-      javelin/engine_add_translation_mode.cc
-      javelin/engine_binding.cc
-      javelin/engine_console_mode.cc
-      javelin/engine_normal_mode.cc
-      javelin/engine.cc
-      javelin/flash.cc
-      javelin/hash.cc
-      javelin/host_layout.cc
-      javelin/key_code.cc
-      javelin/key_press_parser.cc
-      javelin/mem.cc
-      javelin/orthography.cc
-      javelin/pattern_component.cc
-      javelin/pattern.cc
-      javelin/pool_allocate.cc
-      javelin/random.cc
-      javelin/script_byte_code.cc
-      javelin/script_storage.cc
-      javelin/script.cc
-      javelin/segment_builder.cc
-      javelin/segment.cc
-      javelin/start_console_command_detector.cc
-      javelin/state.cc
-      javelin/steno_key_code_buffer_functions.cc
-      javelin/steno_key_code_buffer.cc
-      javelin/steno_key_code_emitter.cc
-      javelin/steno_key_code.cc
-      javelin/steno_key_state.cc
-      javelin/str.cc
-      javelin/stroke_history.cc
-      javelin/stroke_list_parser.cc
-      javelin/stroke.cc
-      javelin/system.cc
-      javelin/timer_manager.cc
-      javelin/unicode_script.cc
-      javelin/unicode.cc
-      javelin/utf8_pointer.cc
-      javelin/word_list.cc
-      javelin/wpm_tracker.cc
-      javelin/writer.cc
+      ${JAVELIN_SRC_DIR}/asset_manager.cc
+      ${JAVELIN_SRC_DIR}/base64.cc
+      ${JAVELIN_SRC_DIR}/bit_field.cc
+      ${JAVELIN_SRC_DIR}/bit.cc
+      ${JAVELIN_SRC_DIR}/button_script_manager.cc
+      ${JAVELIN_SRC_DIR}/button_script.cc
+      ${JAVELIN_SRC_DIR}/console_input_buffer.cc
+      ${JAVELIN_SRC_DIR}/console.cc
+      ${JAVELIN_SRC_DIR}/container/cyclic_queue.cc
+      ${JAVELIN_SRC_DIR}/container/list.cc
+      ${JAVELIN_SRC_DIR}/crc32.cc
+      ${JAVELIN_SRC_DIR}/date_time.cc
+      ${JAVELIN_SRC_DIR}/engine_add_translation_mode.cc
+      ${JAVELIN_SRC_DIR}/engine_binding.cc
+      ${JAVELIN_SRC_DIR}/engine_console_mode.cc
+      ${JAVELIN_SRC_DIR}/engine_normal_mode.cc
+      ${JAVELIN_SRC_DIR}/engine.cc
+      ${JAVELIN_SRC_DIR}/flash.cc
+      ${JAVELIN_SRC_DIR}/hash.cc
+      ${JAVELIN_SRC_DIR}/host_layout.cc
+      ${JAVELIN_SRC_DIR}/key_code.cc
+      ${JAVELIN_SRC_DIR}/key_press_parser.cc
+      ${JAVELIN_SRC_DIR}/mem.cc
+      ${JAVELIN_SRC_DIR}/orthography.cc
+      ${JAVELIN_SRC_DIR}/pattern_component.cc
+      ${JAVELIN_SRC_DIR}/pattern.cc
+      ${JAVELIN_SRC_DIR}/pool_allocate.cc
+      ${JAVELIN_SRC_DIR}/random.cc
+      ${JAVELIN_SRC_DIR}/script_byte_code.cc
+      ${JAVELIN_SRC_DIR}/script_storage.cc
+      ${JAVELIN_SRC_DIR}/script.cc
+      ${JAVELIN_SRC_DIR}/segment_builder.cc
+      ${JAVELIN_SRC_DIR}/segment.cc
+      ${JAVELIN_SRC_DIR}/start_console_command_detector.cc
+      ${JAVELIN_SRC_DIR}/state.cc
+      ${JAVELIN_SRC_DIR}/steno_key_code_buffer_functions.cc
+      ${JAVELIN_SRC_DIR}/steno_key_code_buffer.cc
+      ${JAVELIN_SRC_DIR}/steno_key_code_emitter.cc
+      ${JAVELIN_SRC_DIR}/steno_key_code.cc
+      ${JAVELIN_SRC_DIR}/steno_key_state.cc
+      ${JAVELIN_SRC_DIR}/str.cc
+      ${JAVELIN_SRC_DIR}/stroke_history.cc
+      ${JAVELIN_SRC_DIR}/stroke_list_parser.cc
+      ${JAVELIN_SRC_DIR}/stroke.cc
+      ${JAVELIN_SRC_DIR}/system.cc
+      ${JAVELIN_SRC_DIR}/timer_manager.cc
+      ${JAVELIN_SRC_DIR}/unicode_script.cc
+      ${JAVELIN_SRC_DIR}/unicode.cc
+      ${JAVELIN_SRC_DIR}/utf8_pointer.cc
+      ${JAVELIN_SRC_DIR}/word_list.cc
+      ${JAVELIN_SRC_DIR}/wpm_tracker.cc
+      ${JAVELIN_SRC_DIR}/writer.cc
     )
 
     # Dictionary sources
     set(JAVELIN_DICT_SRC
-      javelin/dictionary/cache_dictionary.cc
-      javelin/dictionary/compact_map_dictionary.cc
-      javelin/dictionary/debug_dictionary.cc
-      javelin/dictionary/dictionary_definition.cc
-      javelin/dictionary/dictionary_list.cc
-      javelin/dictionary/dictionary.cc
-      javelin/dictionary/emily_symbols_dictionary.cc
-      javelin/dictionary/full_map_dictionary.cc
-      javelin/dictionary/invalid_dictionary.cc
-      javelin/dictionary/jeff_numbers_dictionary.cc
-      javelin/dictionary/jeff_phrasing_dictionary_data.cc
-      javelin/dictionary/jeff_phrasing_dictionary.cc
-      javelin/dictionary/jeff_show_stroke_dictionary.cc
-      javelin/dictionary/orthospelling_data.cc
-      javelin/dictionary/orthospelling_dictionary.cc
-      javelin/dictionary/reverse_auto_suffix_dictionary.cc
-      javelin/dictionary/reverse_map_dictionary.cc
-      javelin/dictionary/reverse_prefix_dictionary.cc
-      javelin/dictionary/reverse_suffix_dictionary.cc
-      javelin/dictionary/unicode_dictionary.cc
-      javelin/dictionary/user_dictionary.cc
-      javelin/dictionary/wrapped_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/cache_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/compact_map_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/debug_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/dictionary_definition.cc
+      ${JAVELIN_SRC_DIR}/dictionary/dictionary_list.cc
+      ${JAVELIN_SRC_DIR}/dictionary/dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/emily_symbols_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/full_map_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/invalid_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/jeff_numbers_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/jeff_phrasing_dictionary_data.cc
+      ${JAVELIN_SRC_DIR}/dictionary/jeff_phrasing_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/jeff_show_stroke_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/orthospelling_data.cc
+      ${JAVELIN_SRC_DIR}/dictionary/orthospelling_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/reverse_auto_suffix_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/reverse_map_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/reverse_prefix_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/reverse_suffix_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/unicode_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/user_dictionary.cc
+      ${JAVELIN_SRC_DIR}/dictionary/wrapped_dictionary.cc
     )
 
     # Processor sources
     set(JAVELIN_PROC_SRC
-      javelin/processor/all_up.cc
+      ${JAVELIN_SRC_DIR}/processor/all_up.cc
       # javelin/processor/fake_processor.cc  # test-only, uses RUN_TESTS APIs
-      javelin/processor/first_up.cc
-      javelin/processor/gemini.cc
-      javelin/processor/jeff_modifiers.cc
-      javelin/processor/paper_tape.cc
-      javelin/processor/passport.cc
-      javelin/processor/plover_hid.cc
-      javelin/processor/procat.cc
-      javelin/processor/processor_list.cc
-      javelin/processor/processor.cc
-      javelin/processor/repeat.cc
-      javelin/processor/tx_bolt.cc
+      ${JAVELIN_SRC_DIR}/processor/first_up.cc
+      ${JAVELIN_SRC_DIR}/processor/gemini.cc
+      ${JAVELIN_SRC_DIR}/processor/jeff_modifiers.cc
+      ${JAVELIN_SRC_DIR}/processor/paper_tape.cc
+      ${JAVELIN_SRC_DIR}/processor/passport.cc
+      ${JAVELIN_SRC_DIR}/processor/plover_hid.cc
+      ${JAVELIN_SRC_DIR}/processor/procat.cc
+      ${JAVELIN_SRC_DIR}/processor/processor_list.cc
+      ${JAVELIN_SRC_DIR}/processor/processor.cc
+      ${JAVELIN_SRC_DIR}/processor/repeat.cc
+      ${JAVELIN_SRC_DIR}/processor/tx_bolt.cc
     )
 
     # HAL sources (weak defaults — our shims override the critical ones)
     set(JAVELIN_HAL_SRC
-      javelin/hal/ble.cc
-      javelin/hal/bootloader.cc
-      javelin/hal/connection.cc
-      javelin/hal/display.cc
-      javelin/hal/gpio.cc
-      javelin/hal/infrared.cc
-      javelin/hal/midi.cc
-      javelin/hal/mouse.cc
-      javelin/hal/power.cc
-      javelin/hal/rgb.cc
-      javelin/hal/rtc.cc
-      javelin/hal/serial_port.cc
-      javelin/hal/sound.cc
-      javelin/hal/usb_status.cc
+      ${JAVELIN_SRC_DIR}/hal/ble.cc
+      ${JAVELIN_SRC_DIR}/hal/bootloader.cc
+      ${JAVELIN_SRC_DIR}/hal/connection.cc
+      ${JAVELIN_SRC_DIR}/hal/display.cc
+      ${JAVELIN_SRC_DIR}/hal/gpio.cc
+      ${JAVELIN_SRC_DIR}/hal/infrared.cc
+      ${JAVELIN_SRC_DIR}/hal/midi.cc
+      ${JAVELIN_SRC_DIR}/hal/mouse.cc
+      ${JAVELIN_SRC_DIR}/hal/power.cc
+      ${JAVELIN_SRC_DIR}/hal/rgb.cc
+      ${JAVELIN_SRC_DIR}/hal/rtc.cc
+      ${JAVELIN_SRC_DIR}/hal/serial_port.cc
+      ${JAVELIN_SRC_DIR}/hal/sound.cc
+      ${JAVELIN_SRC_DIR}/hal/usb_status.cc
     )
 
     # Font sources (needed by display/script subsystem)
     set(JAVELIN_FONT_SRC
-      javelin/font/monochrome/data/default.cc
-      javelin/font/monochrome/data/dos.cc
-      javelin/font/monochrome/data/huge_digits.cc
-      javelin/font/monochrome/data/large_digits.cc
-      javelin/font/monochrome/data/large.cc
-      javelin/font/monochrome/data/medium_digits.cc
-      javelin/font/monochrome/data/small_digits.cc
-      javelin/font/monochrome/font.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/default.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/dos.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/huge_digits.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/large_digits.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/large.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/medium_digits.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/data/small_digits.cc
+      ${JAVELIN_SRC_DIR}/font/monochrome/font.cc
     )
 
     # Split sources (ZMK handles split transport, but Javelin split types
     # are referenced by other code)
     set(JAVELIN_SPLIT_SRC
-      javelin/split/split_console.cc
-      javelin/split/split_key_state.cc
-      javelin/split/split_midi.cc
-      javelin/split/split_power_override.cc
-      javelin/split/split_serial_buffer.cc
-      javelin/split/split_usb_status.cc
-      javelin/split/split_version.cc
-      javelin/split/split.cc
+      ${JAVELIN_SRC_DIR}/split/split_console.cc
+      ${JAVELIN_SRC_DIR}/split/split_key_state.cc
+      ${JAVELIN_SRC_DIR}/split/split_midi.cc
+      ${JAVELIN_SRC_DIR}/split/split_power_override.cc
+      ${JAVELIN_SRC_DIR}/split/split_serial_buffer.cc
+      ${JAVELIN_SRC_DIR}/split/split_usb_status.cc
+      ${JAVELIN_SRC_DIR}/split/split_version.cc
+      ${JAVELIN_SRC_DIR}/split/split.cc
     )
 
     # Platform shims (our ZMK implementations)

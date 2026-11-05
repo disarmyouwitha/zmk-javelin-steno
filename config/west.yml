@@ -1,0 +1,22 @@
+manifest:
+  remotes:
+    - name: zmkfirmware
+      url-base: https://github.com/zmkfirmware
+    - name: jthlim
+      url-base: https://github.com/jthlim
+    - name: petercpark
+      url-base: https://github.com/petercpark
+  projects:
+    - name: zmk
+      remote: zmkfirmware
+      revision: 4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85
+      import: app/west.yml
+    - name: javelin-steno
+      remote: jthlim
+      revision: 22726675b2dcf3b8b6ba1e20898f25e324b2260a
+      path: javelin-steno
+    - name: zmk-hid-io-plover-hid
+      remote: petercpark
+      revision: d895457418590dddf628c5ae907b39deec7095ff
+  self:
+    path: config

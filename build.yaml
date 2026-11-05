@@ -1,0 +1,8 @@
+include:
+  - board: nice_nano//zmk
+    shield: corne_left
+    snippet: zmk-usb-logging
+    artifact-name: corne_javelin_plover_left
+  - board: nice_nano//zmk
+    shield: corne_right
+    artifact-name: corne_javelin_plover_right
