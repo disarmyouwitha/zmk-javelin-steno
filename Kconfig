@@ -3,8 +3,8 @@ menu "Javelin Steno Engine"
 config ZMK_JAVELIN_STENO
     bool "Enable Javelin steno engine"
     default n
-    select CPLUSPLUS
-    select LIB_CPLUSPLUS
+    select CPP
+    select REQUIRES_FULL_LIBCPP
 
 if ZMK_JAVELIN_STENO
 
