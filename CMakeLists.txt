@@ -1,5 +1,6 @@
 if(CONFIG_ZMK_JAVELIN_STENO)
 
+  zephyr_include_directories(include)
   target_sources(app PRIVATE src/behaviors/behavior_javelin_steno.c)
 
   # Only compile on central side of split keyboards (or non-split)

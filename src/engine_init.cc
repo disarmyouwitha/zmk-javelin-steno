@@ -1,6 +1,7 @@
 #include "zmk_javelin_steno/zmk_platform_shim.h"
 
 #include "console.h"
+#include "button_script_manager.h"
 #include "container/list.h"
 #include "dictionary/dictionary_definition.h"
 #include "dictionary/dictionary_list.h"
@@ -89,6 +90,10 @@ void zmk_javelin_steno_init(void) {
     return;
   }
   initialized = true;
+
+  // Construct the manager queried by the emitter even though ZMK handles keys.
+  alignas(4) static const uint8_t empty_button_script[64] = {0x4a, 0x53, 0x53, 0x34};
+  ButtonScriptManager::Initialize(empty_button_script);
 
   if (!load_dictionary_collection()) {
     LOG_WRN("Steno engine not started");
