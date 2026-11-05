@@ -16,38 +16,11 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     if(NOT EXISTS "${JAVELIN_SRC_DIR}/engine.h")
       message(FATAL_ERROR "Pinned Javelin engine not found; see config/west.yml")
     endif()
-    if(EXISTS "${JAVELIN_SRC_DIR}/dictionary/user_dictionary.h")
-      # Remove constexpr from StenoUserDictionaryData constructor
-      # (reinterpret_cast not allowed in constexpr on GCC)
-      execute_process(
-        COMMAND sed -i "s/constexpr StenoUserDictionaryData(const uint8_t/StenoUserDictionaryData(const uint8_t/"
-          "${JAVELIN_SRC_DIR}/dictionary/user_dictionary.h"
-      )
-      # Disable orthography cache (saves ~32KB RAM, avoids missing LockCache/UnlockCache)
-      execute_process(
-        COMMAND sed -i "s/#define USE_ORTHOGRAPHY_CACHE 1/#define USE_ORTHOGRAPHY_CACHE 0/"
-          "${JAVELIN_SRC_DIR}/orthography.h"
-      )
-      # Strip all test bodies from Javelin .cc files.
-      # TEST_BEGIN...TEST_END blocks contain code referencing
-      # RUN_TESTS-only APIs. Remove them entirely.
-      execute_process(
-        COMMAND python3 -c "
-import glob, re, os
-src = '${JAVELIN_SRC_DIR}'
-pattern = re.compile(r'(?:^|\\n)(TEST_BEGIN\\(.*?TEST_END)', re.DOTALL)
-count = 0
-for f in glob.glob(os.path.join(src, '**/*.cc'), recursive=True):
-    t = open(f).read()
-    t2 = pattern.sub('', t)
-    if t2 != t:
-        open(f, 'w').write(t2)
-        count += 1
-print(f'Stripped test blocks from {count} files')
-"
-      )
-      message(STATUS "Javelin steno: source patches applied")
-    endif()
+    execute_process(
+      COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_engine.py"
+              "${JAVELIN_SRC_DIR}"
+      COMMAND_ERROR_IS_FATAL ANY
+    )
 
     # Override dir MUST come before javelin/ so our unit_test.h is found first
     zephyr_include_directories(include/javelin_overrides)

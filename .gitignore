@@ -3,3 +3,4 @@ dicts_src/
 dicts/*.bin
 
 javelin/
+/build/
