@@ -9,14 +9,10 @@ Usage:
     python compile_dict.py main.json -o steno_dict.bin --base-addr 0
     python compile_dict.py main.json extra.json -o steno_dict.bin
 
-The --base-addr flag sets the XIP base address for pointer resolution.
-When embedded via .incbin in .rodata, set to 0 and the linker resolves
-the _javelin_dict_start symbol. Javelin dereferences pointers relative
-to the binary's load address.
-
-IMPORTANT: This compiler uses position-independent pointers (offsets
-from the start of the binary). The engine_init code adjusts pointers
-at load time if needed, or the binary is placed at a fixed address.
+For raw flash binaries, --base-addr must be the actual load address.
+For embedded firmware use --asm-output: it emits linker relocations for each
+native pointer. Plain .incbin does not relocate zero-based pointer values.
+This compiler targets the pinned June 2026 engine's 32-bit JSC4 structure ABI.
 """
 
 import argparse
@@ -30,14 +26,7 @@ from typing import Dict, List, Optional, Tuple
 
 # --- Stroke parsing ---
 
-STENO_KEYS = {
-    'S-': 0x00000001, 'T-': 0x00000002, 'K-': 0x00000004, 'P-': 0x00000008,
-    'W-': 0x00000010, 'H-': 0x00000020, 'R-': 0x00000040, 'A-': 0x00000080,
-    'O-': 0x00000100, '*':  0x00000200, '-E': 0x00000400, '-U': 0x00000800,
-    '-F': 0x00001000, '-R': 0x00002000, '-P': 0x00004000, '-B': 0x00008000,
-    '-L': 0x00010000, '-G': 0x00020000, '-T': 0x00040000, '-S': 0x00080000,
-    '-D': 0x00100000, '-Z': 0x00200000, '#':  0x00400000,
-}
+STENO_KEYS = {'#': 1, 'S-': 2, 'T-': 4, 'K-': 8, 'P-': 16, 'W-': 32, 'H-': 64, 'R-': 128, 'A-': 256, 'O-': 512, '*': 1024, '-E': 2048, '-U': 4096, '-F': 8192, '-R': 16384, '-P': 32768, '-B': 65536, '-L': 131072, '-G': 262144, '-T': 524288, '-S': 1048576, '-D': 2097152, '-Z': 4194304}
 
 IMPLICIT_HYPHEN = set('AOEU*')
 LEFT_BANK = 'STKPWHR'
@@ -177,15 +166,10 @@ class CompactMapBuilder:
                     masks[bit // 32] |= 1 << (bit % 32)
                     block_entries.append(slots[slot_idx])
 
-            # baseOffset: count of all entries in previous blocks,
-            # MINUS popcount of current block's masks (Javelin convention).
-            # From compact_map_dictionary.cc GetOffset():
-            #   result = PopCount(mask << (31 - bitIndex)) + baseOffset
-            #   + PopCount of masks[0..maskIndex-1]
-            # The builder sets baseOffset = running_total - PopCount(all masks in block)
+            # Engine GetOffset uses inclusive rank within this block.
+            # Subtract one so the first occupied slot has zero-based index.
             running_count = len(data_block) // entry_size
-            block_popcount = sum(popcount32(m) for m in masks)
-            base_offset = running_count - block_popcount
+            base_offset = running_count - 1
 
             for m in masks:
                 hash_blocks.extend(struct.pack('<I', m))
@@ -386,6 +370,7 @@ class DictionaryCollectionBuilder:
 
         buf = bytearray(total_size)
         base = self.base_addr
+        self.pointer_offsets = []
 
         def write_u8(off, v):
             buf[off] = v & 0xFF
@@ -397,6 +382,7 @@ class DictionaryCollectionBuilder:
             struct.pack_into('<I', buf, off, v & 0xFFFFFFFF)
 
         def write_ptr(off, v):
+            self.pointer_offsets.append(off)
             struct.pack_into('<I', buf, off, (base + v) & 0xFFFFFFFF)
 
         def write_bytes(off, data):
@@ -442,10 +428,10 @@ class DictionaryCollectionBuilder:
             write_u8(off + 3, 0)  # options
             write_ptr(off + 4, dict_name_offsets[di])  # name
             write_ptr(off + 4 + PTR, text_block_offset)  # textBlock
-            # strokes pointer: points to array[0], but Javelin indexes from [1]
-            # so we point to (array_start - STROKES_DEF_SIZE)
+            # The constructor copies from the FIRST stored definition, then
+            # subtracts one from its RAM cache pointer for length-based indexing.
             arr_start = strokes_def_offsets[di][0]
-            write_ptr(off + 4 + PTR + PTR, arr_start - STROKES_DEF_SIZE)
+            write_ptr(off + 4 + PTR + PTR, arr_start)
 
         # Dictionary names
         for di, (dict_name, _, _) in enumerate(dict_stroke_data):
@@ -487,6 +473,7 @@ def main():
                         help='Dictionary name (one per input, defaults to filename)')
     parser.add_argument('--base-addr', type=lambda x: int(x, 0), default=0,
                         help='XIP base address for pointer resolution (default: 0)')
+    parser.add_argument('--asm-output', help='Optional relocatable ARM assembly output')
     parser.add_argument('--max-entries', type=int, default=0,
                         help='Limit entries per dict (0 = no limit, for testing)')
     args = parser.parse_args()
@@ -507,6 +494,25 @@ def main():
 
     with open(args.output, 'wb') as f:
         f.write(result)
+
+    if args.asm_output:
+        if args.base_addr != 0:
+            parser.error('--asm-output requires --base-addr 0')
+        lines = ['.section .rodata.steno_dict,"a",%progbits', '.global _javelin_dict_start', '.global _javelin_dict_end', '.balign 4', '_javelin_dict_start:']
+        cursor = 0
+        for off in sorted(builder.pointer_offsets):
+            chunk = result[cursor:off]
+            for i in range(0, len(chunk), 16):
+                lines.append('.byte ' + ','.join(str(v) for v in chunk[i:i+16]))
+            target = struct.unpack_from('<I', result, off)[0]
+            lines.append(f'.long _javelin_dict_start + {target}')
+            cursor = off + 4
+        chunk = result[cursor:]
+        for i in range(0, len(chunk), 16):
+            lines.append('.byte ' + ','.join(str(v) for v in chunk[i:i+16]))
+        lines.append('_javelin_dict_end:')
+        with open(args.asm_output, 'w') as f:
+            f.write('\n'.join(lines) + '\n')
 
     print(f"Wrote {len(result)} bytes ({len(result)/1024:.1f} KB) to {args.output}", file=sys.stderr)
 

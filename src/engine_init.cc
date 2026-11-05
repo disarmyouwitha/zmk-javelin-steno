@@ -1,6 +1,7 @@
 #include "zmk_javelin_steno/zmk_platform_shim.h"
 
 #include "console.h"
+#include "button_script_manager.h"
 #include "container/list.h"
 #include "dictionary/dictionary_definition.h"
 #include "dictionary/dictionary_list.h"
@@ -18,6 +19,7 @@
 #include "stroke.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -26,15 +28,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 extern "C" const uint8_t _javelin_dict_start[];
 extern "C" const uint8_t _javelin_dict_end[];
 
-// User dictionary flash region.
-// Must be power-of-2 sized. 16KB = 2^14.
-// In production, this points to a dedicated flash partition.
-// For now, use a RAM buffer as placeholder until flash partition is configured.
-static uint8_t user_dict_mem[16384] __attribute__((aligned(4)));
-
 static JavelinStaticAllocate<StenoCompiledOrthography> compiledOrthography;
 static JavelinStaticAllocate<StenoDictionaryList> dictionaryList;
-static JavelinStaticAllocate<StenoUserDictionary> userDictionary;
 static JavelinStaticAllocate<StenoJeffModifiers> jeffModifiers;
 static JavelinStaticAllocate<StenoRepeat> stenoRepeat;
 static JavelinStaticAllocate<StenoAllUp> allUp;
@@ -57,42 +52,56 @@ static bool load_dictionary_collection() {
     return false;
   }
 
+  printk("[JAV] header and timestamp valid\n");
+
   // Load dictionaries from collection
   List<StenoDictionaryListEntry> entries;
+  printk("[JAV] creating native dictionary objects\n");
   collection->AddDictionariesToList(entries);
+  printk("[JAV] native dictionary objects created\n");
 
   if (entries.IsEmpty()) {
     LOG_ERR("Steno dict collection empty");
     return false;
   }
 
-  // Set up user dictionary (RAM-backed for now, flash-backed in future)
-  StenoUserDictionaryData userDictData(user_dict_mem, sizeof(user_dict_mem));
-  new (userDictionary) StenoUserDictionary(userDictData);
-
-  // Add user dict as highest priority (first in list)
-  entries.InsertAt(0, StenoDictionaryListEntry(&userDictionary.value, true));
-
   new (dictionaryList)
       StenoDictionaryList(static_cast<List<StenoDictionaryListEntry> &&>(entries));
 
+  // Exercise the ACTUAL engine constructor/cache/lookup path before translation.
+  const struct { uint32_t stroke; const char *text; } checks[] = {
+      {0x14, "if"}, {0x80000, "the"}, {0x80108, "cat"}, {0x2, "is"}};
+  for (const auto &check : checks) {
+    const StenoStroke stroke(check.stroke);
+    auto result = dictionaryList.value.Lookup(StenoDictionaryLookup(&stroke, 1));
+    if (!result.IsValid() || strcmp(result.GetText(), check.text) != 0) {
+      printk("[JAV] native lookup FAILED for 0x%x\n", check.stroke);
+      result.Destroy();
+      return false;
+    }
+    printk("[JAV] native lookup 0x%x -> %s\n", check.stroke, result.GetText());
+    result.Destroy();
+  }
+
   // Load orthography from collection if present, else empty
   const StenoOrthography *ortho = &StenoOrthography::emptyOrthography;
+  printk("[JAV] initializing orthography\n");
   new (compiledOrthography) StenoCompiledOrthography(*ortho);
 
-  // Construct engine with full dict stack + user dict
+  printk("[JAV] constructing engine\n");
+  // Construct engine with the read-only test dictionary
   new (StenoEngine::container) StenoEngine(
       dictionaryList.value,
       nullptr,
       compiledOrthography.value,
       StenoStroke(StrokeMask::STAR),  // undo stroke = *
-      &userDictionary.value);
+      nullptr);
 
   // Register console commands
   StenoEngine::container.value.AddConsoleCommands(Console::instance);
   Flash::AddConsoleCommands(Console::instance);
 
-  LOG_INF("Steno engine: %d dicts + user dict", collection->dictionaryCount);
+  LOG_INF("Steno engine: %d read-only test dicts", collection->dictionaryCount);
   return true;
 }
 
@@ -103,9 +112,11 @@ void zmk_javelin_steno_init(void) {
     return;
   }
   initialized = true;
+  printk("[JAV] lazy init start; thread=%s\n", k_thread_name_get(k_current_get()));
 
-  // Initialize user dict memory to erased state (0xFF)
-  memset(user_dict_mem, 0xFF, sizeof(user_dict_mem));
+  // Construct the manager queried by the emitter even though ZMK handles keys.
+  alignas(4) static const uint8_t empty_button_script[64] = {0x4a, 0x53, 0x53, 0x34};
+  ButtonScriptManager::Initialize(empty_button_script);
 
   if (!load_dictionary_collection()) {
     LOG_WRN("Steno engine not started");
@@ -120,6 +131,7 @@ void zmk_javelin_steno_init(void) {
   static StenoProcessor processorInstance(stenoRepeat.value);
   processor = &processorInstance;
 
+  printk("[JAV] processor pipeline ready\n");
   LOG_INF("Steno processor pipeline ready");
 }
 
@@ -127,7 +139,9 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
   if (!processor) {
     return;
   }
+  printk("[JAV] key %d %s\n", steno_key_index, is_press ? "down" : "up");
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
+  printk("[JAV] key processed\n");
 }
 
 } // extern "C"

@@ -4,7 +4,18 @@ ZMK module that integrates the [Javelin steno engine](https://github.com/jthlim/
 
 ## Status
 
-Dropped — my hardware (nice_nano_v2, 1MB flash) can't fit any dictionary. Build passes on boards with sufficient flash but has not been hardware tested. Contributions welcome.
+**Four-entry internal-flash test confirmed on hardware, November 4, 2026.** A 42-key Corne with nice!nano v2 controllers translated `TP / -T / KAT / S / -T / KAT` to **if the cat is the cat**, with no host Plover and no external flash. Test configuration and results: https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/corne-javelin-test/CORNE-JAVELIN-TEST.md
+
+This branch deliberately builds a 142-byte, read-only fixture from `dicts/cat-test.json`, embedded as relocatable ARM assembly in `dicts/cat-test.S`. It does not currently select/download full dictionaries through the original dictionary Kconfig options. Regenerate the fixture with:
+
+```sh
+python3 tools/dict_compiler/compile_dict.py dicts/cat-test.json -o /tmp/cat-test.bin --asm-output dicts/cat-test.S
+python3 tools/dict_compiler/test_tiny_dict.py
+```
+
+Pin the engine to `22726675b2dcf3b8b6ba1e20898f25e324b2260a`; the JSC4 structure layout is version-dependent. The bridge fixes stroke bit masks, compact-table rank offsets, native pointer relocation, the stroke-table first-entry pointer, Zephyr 4 C++ settings, peripheral behavior registration, and safe lazy engine initialization. Diagnostics verify all four entries through the native engine before translation. Persistent user-dictionary writes remain unimplemented and the RAM placeholder is excluded from this read-only test.
+
+The upstream project was dropped without hardware testing. The result above establishes this small test only; full dictionaries and external QSPI integration remain future work. The requirements below are the upstream author's historical build figures, not measurements of this fixture.
 
 ## Flash Requirements
 
@@ -32,17 +43,17 @@ Add to your `west.yml`:
 ```yaml
 manifest:
   remotes:
-    - name: afiqzudinhadi
-      url-base: https://github.com/afiqzudinhadi
+    - name: disarmyouwitha
+      url-base: https://github.com/disarmyouwitha
     - name: jthlim
       url-base: https://github.com/jthlim
   projects:
     - name: zmk-javelin-steno
-      remote: afiqzudinhadi
-      revision: main
+      remote: disarmyouwitha
+      revision: 995fa19
     - name: javelin-steno
       remote: jthlim
-      revision: main
+      revision: 22726675b2dcf3b8b6ba1e20898f25e324b2260a
       path: zmk-javelin-steno/javelin
 ```
 
@@ -50,14 +61,14 @@ Add to your `.conf`:
 
 ```ini
 CONFIG_ZMK_JAVELIN_STENO=y
-CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER=y
-CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING=y
-CONFIG_CPLUSPLUS=y
-CONFIG_LIB_CPLUSPLUS=y
+CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER=n
+CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING=n
+CONFIG_CPP=y
+CONFIG_REQUIRES_FULL_LIBCPP=y
 CONFIG_HEAP_MEM_POOL_SIZE=32768
 ```
 
-Set `CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER` and `CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING` to choose which dictionaries to include. Both can be enabled simultaneously.
+For this tested fixture build, leave both full-dictionary options disabled. The fixture is selected directly in CMake; restoring full dictionary selection is future work.
 
 Add to your `.keymap` (see [steno_keys.h](include/dt-bindings/zmk/javelin_steno.h) for all available key bindings):
 
