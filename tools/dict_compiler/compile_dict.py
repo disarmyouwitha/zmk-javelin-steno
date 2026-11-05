@@ -9,14 +9,10 @@ Usage:
     python compile_dict.py main.json -o steno_dict.bin --base-addr 0
     python compile_dict.py main.json extra.json -o steno_dict.bin
 
-The --base-addr flag sets the XIP base address for pointer resolution.
-When embedded via .incbin in .rodata, set to 0 and the linker resolves
-the _javelin_dict_start symbol. Javelin dereferences pointers relative
-to the binary's load address.
-
-IMPORTANT: This compiler uses position-independent pointers (offsets
-from the start of the binary). The engine_init code adjusts pointers
-at load time if needed, or the binary is placed at a fixed address.
+For raw flash binaries, --base-addr must be the actual load address.
+For embedded firmware use --asm-output: it emits linker relocations for each
+native pointer. Plain .incbin does not relocate zero-based pointer values.
+This compiler targets the pinned June 2026 engine's 32-bit JSC4 structure ABI.
 """
 
 import argparse
@@ -170,14 +166,9 @@ class CompactMapBuilder:
                     masks[bit // 32] |= 1 << (bit % 32)
                     block_entries.append(slots[slot_idx])
 
-            # baseOffset: count of all entries in previous blocks,
-            # MINUS popcount of current block's masks (Javelin convention).
-            # From compact_map_dictionary.cc GetOffset():
-            #   result = PopCount(mask << (31 - bitIndex)) + baseOffset
-            #   + PopCount of masks[0..maskIndex-1]
-            # The builder sets baseOffset = running_total - PopCount(all masks in block)
+            # Engine GetOffset uses inclusive rank within this block.
+            # Subtract one so the first occupied slot has zero-based index.
             running_count = len(data_block) // entry_size
-            block_popcount = sum(popcount32(m) for m in masks)
             base_offset = running_count - 1
 
             for m in masks:
