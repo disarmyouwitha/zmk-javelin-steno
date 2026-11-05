@@ -11,7 +11,7 @@ _javelin_dict_start:
 .byte 1,1,0,0
 .long _javelin_dict_start + 56
 .long _javelin_dict_start + 124
-.long _javelin_dict_start + 56
+.long _javelin_dict_start + 68
 .byte 99,97,116,45,116,101,115,116,0,0,0,0,127,0,0,0
 .long _javelin_dict_start + 80
 .long _javelin_dict_start + 104

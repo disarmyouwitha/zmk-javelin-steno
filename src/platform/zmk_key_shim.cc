@@ -2,6 +2,7 @@
 #include "key_code.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 
 extern "C" int zmk_javelin_emit_keycode(uint16_t usage_page, uint32_t keycode, bool pressed);
 
@@ -21,7 +22,8 @@ static void emit_keycode(KeyCode key, bool pressed) {
     keycode = v;
   }
 
-  zmk_javelin_emit_keycode(usage_page, keycode, pressed);
+  const int rc = zmk_javelin_emit_keycode(usage_page, keycode, pressed);
+  printk("[JAV] HID %x:%x %s rc=%d\n", usage_page, keycode, pressed ? "down" : "up", rc);
 }
 
 bool Key::historyEnabled = false;

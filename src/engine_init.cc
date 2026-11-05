@@ -19,6 +19,7 @@
 #include "stroke.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -51,9 +52,13 @@ static bool load_dictionary_collection() {
     return false;
   }
 
+  printk("[JAV] header and timestamp valid\n");
+
   // Load dictionaries from collection
   List<StenoDictionaryListEntry> entries;
+  printk("[JAV] creating native dictionary objects\n");
   collection->AddDictionariesToList(entries);
+  printk("[JAV] native dictionary objects created\n");
 
   if (entries.IsEmpty()) {
     LOG_ERR("Steno dict collection empty");
@@ -63,11 +68,28 @@ static bool load_dictionary_collection() {
   new (dictionaryList)
       StenoDictionaryList(static_cast<List<StenoDictionaryListEntry> &&>(entries));
 
+  // Exercise the ACTUAL engine constructor/cache/lookup path before translation.
+  const struct { uint32_t stroke; const char *text; } checks[] = {
+      {0x14, "if"}, {0x80000, "the"}, {0x80108, "cat"}, {0x2, "is"}};
+  for (const auto &check : checks) {
+    const StenoStroke stroke(check.stroke);
+    auto result = dictionaryList.value.Lookup(&stroke, 1);
+    if (!result.IsValid() || strcmp(result.GetText(), check.text) != 0) {
+      printk("[JAV] native lookup FAILED for 0x%x\n", check.stroke);
+      result.Destroy();
+      return false;
+    }
+    printk("[JAV] native lookup 0x%x -> %s\n", check.stroke, result.GetText());
+    result.Destroy();
+  }
+
   // Load orthography from collection if present, else empty
   const StenoOrthography *ortho = &StenoOrthography::emptyOrthography;
+  printk("[JAV] initializing orthography\n");
   new (compiledOrthography) StenoCompiledOrthography(*ortho);
 
-  // Construct engine with full dict stack + user dict
+  printk("[JAV] constructing engine\n");
+  // Construct engine with the read-only test dictionary
   new (StenoEngine::container) StenoEngine(
       dictionaryList.value,
       nullptr,
@@ -90,6 +112,7 @@ void zmk_javelin_steno_init(void) {
     return;
   }
   initialized = true;
+  printk("[JAV] lazy init start; thread=%s\n", k_thread_name_get(k_current_get()));
 
   // Construct the manager queried by the emitter even though ZMK handles keys.
   alignas(4) static const uint8_t empty_button_script[64] = {0x4a, 0x53, 0x53, 0x34};
@@ -108,6 +131,7 @@ void zmk_javelin_steno_init(void) {
   static StenoProcessor processorInstance(stenoRepeat.value);
   processor = &processorInstance;
 
+  printk("[JAV] processor pipeline ready\n");
   LOG_INF("Steno processor pipeline ready");
 }
 
@@ -115,7 +139,9 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
   if (!processor) {
     return;
   }
+  printk("[JAV] key %d %s\n", steno_key_index, is_press ? "down" : "up");
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
+  printk("[JAV] key processed\n");
 }
 
 } // extern "C"

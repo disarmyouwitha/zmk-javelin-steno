@@ -7,9 +7,12 @@ def lookup(blob,stroke):
  definition=u32(blob,36);maximum=blob[definition+1];text=u32(blob,definition+8);arr=u32(blob,definition+12)
  words=c.parse_outline(stroke);n=len(words)
  if n>maximum:return None
- sd=arr+12*n;mask=u32(blob,sd)
+ sd=arr+12*(n-1)
+ assert 0<=sd and sd+12<=len(blob), "stroke-table outside dictionary"
+ mask=u32(blob,sd)
  if mask==0:return None
  data=u32(blob,sd+4);blocks=u32(blob,sd+8)
+ assert data<=blocks and blocks+20<=len(blob), 'invalid stroke-table pointers'
  index=zlib.crc32(b''.join(struct.pack('<I',v) for v in words))&mask
  for _ in range(mask+1):
   block=blocks+20*(index//128);bit=index%128;mi=bit//32;bi=bit%32;word=u32(blob,block+4*mi)
@@ -32,6 +35,15 @@ assert u32(b,0)==0x3443534a
 assert u32(b,32)==u32(b,u32(b,12)+u32(b,8))
 for stroke,value in raw.items():assert lookup(b,stroke)==value
 assert lookup(b,'TKPW') is None
+# The original bug points one entry before the first stored definition. The
+# engine's CreateStrokeCache already subtracts one AFTER copying; reject this.
+broken=bytearray(b);definition=u32(broken,36);struct.pack_into('<I',broken,definition+12,u32(broken,definition+12)-12)
+try:
+ lookup(broken,'TP')
+except (AssertionError, IndexError, struct.error):
+ pass
+else:
+ raise AssertionError('regression: malformed first-entry pointer was accepted')
 seq=['TP','-T','KAT','S','-T','KAT'];output=' '.join(lookup(b,s) for s in seq);assert output=='if the cat is the cat'
 # Exercise collisions and block base offsets beyond the four-word fixture.
 ks=['S','T','K','P','W','H','R'];large={''.join(k for i,k in enumerate(ks) if bits&(1<<i)):'word'+str(bits) for bits in range(1,128)}

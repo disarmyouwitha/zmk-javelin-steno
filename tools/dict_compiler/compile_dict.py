@@ -428,10 +428,10 @@ class DictionaryCollectionBuilder:
             write_u8(off + 3, 0)  # options
             write_ptr(off + 4, dict_name_offsets[di])  # name
             write_ptr(off + 4 + PTR, text_block_offset)  # textBlock
-            # strokes pointer: points to array[0], but Javelin indexes from [1]
-            # so we point to (array_start - STROKES_DEF_SIZE)
+            # The constructor copies from the FIRST stored definition, then
+            # subtracts one from its RAM cache pointer for length-based indexing.
             arr_start = strokes_def_offsets[di][0]
-            write_ptr(off + 4 + PTR + PTR, arr_start - STROKES_DEF_SIZE)
+            write_ptr(off + 4 + PTR + PTR, arr_start)
 
         # Dictionary names
         for di, (dict_name, _, _) in enumerate(dict_stroke_data):
