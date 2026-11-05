@@ -73,7 +73,7 @@ static bool load_dictionary_collection() {
       {0x14, "if"}, {0x80000, "the"}, {0x80108, "cat"}, {0x2, "is"}};
   for (const auto &check : checks) {
     const StenoStroke stroke(check.stroke);
-    auto result = dictionaryList.value.Lookup(&stroke, 1);
+    auto result = dictionaryList.value.Lookup(StenoDictionaryLookup(&stroke, 1));
     if (!result.IsValid() || strcmp(result.GetText(), check.text) != 0) {
       printk("[JAV] native lookup FAILED for 0x%x\n", check.stroke);
       result.Destroy();
