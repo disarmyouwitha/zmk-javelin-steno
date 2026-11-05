@@ -1,6 +1,6 @@
 # Corne: Javelin plus Plover HID
 
-All test configuration, workflow and source changes live in this repository. The Zen repository is a read-only reference; it is not the build workspace or PR target.
+All test configuration and source changes live in this repository. No CI workflow is included. The Zen repository is a read-only reference; it is not the build workspace or PR target.
 
 ## Modes
 
@@ -16,7 +16,16 @@ Plover HID mode forwards raw steno key state to the host; it does not also invok
 
 ## Build and hardware
 
-The root build.yaml and config/west.yml build standard 42-key Corne halves for nice!nano v2 using the pinned ZMK, engine, and Plover HID dependency. The reusable workflow detects this repository's zephyr/module.yml and builds it as ZMK_EXTRA_MODULES in an isolated workspace. The CMake file accepts either a nested engine checkout or the adjacent pinned west checkout.
+`config/west.yml` pins ZMK, the Javelin engine, and the Plover HID dependency. Build locally with west, CMake, Ninja and the Zephyr SDK installed. From a separate west workspace, initialize from a copy of this repository's config directory, update dependencies, then build with this repository supplied as `ZMK_EXTRA_MODULES`:
+
+```sh
+# Set these to the absolute module repo and west workspace paths.
+# The workspace must already be initialized and updated from config/west.yml.
+west build -s zmk/app -d build/corne-left -b nice_nano//zmk -S zmk-usb-logging -- -DSHIELD=corne_left -DZMK_CONFIG="$JAVELIN_REPO/config" -DZMK_EXTRA_MODULES="$JAVELIN_REPO"
+west build -s zmk/app -d build/corne-right -b nice_nano//zmk -- -DSHIELD=corne_right -DZMK_CONFIG="$JAVELIN_REPO/config" -DZMK_EXTRA_MODULES="$JAVELIN_REPO"
+```
+
+The CMake file accepts either a nested engine checkout or the adjacent pinned west checkout. Local toolchain setup and a combined-mode build remain pending; west, Ninja and the Zephyr SDK were not present when these instructions were prepared.
 
 The left/central USB build has two HID interfaces: normal keyboard HID_0 and Plover HID_1. It also includes USB serial diagnostics. This test reuses the same upstream Plover HID module revision as the Zen. Host Plover still needs a compatible Plover HID machine/plugin. USB Plover HID is the first validation target; Bluetooth Plover HID behavior is not established by this test.
 

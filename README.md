@@ -1,6 +1,6 @@
 ## Combined Corne test build
 
-This repository now contains its own `config/`, `build.yaml`, and GitHub Actions workflow. No changes to the separate Zen config repository are needed. See [Corne Plover HID test instructions](docs/CORNE-PLOVER-HID-TEST.md).
+This repository contains its own `config/` and local build instructions. No CI workflow is included. No changes to the separate Zen config repository are needed. See [Corne Plover HID test instructions](docs/CORNE-PLOVER-HID-TEST.md).
 
 From Main, the right thumb cluster is **Space / Plover HID / Javelin Steno** (inner to outer). Plover HID uses the host Plover engine; Javelin uses the onboard tiny dictionary. The thumb left of A exits either steno mode to Main. Combined-mode hardware validation is pending.
 
