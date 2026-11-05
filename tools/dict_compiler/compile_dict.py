@@ -30,14 +30,7 @@ from typing import Dict, List, Optional, Tuple
 
 # --- Stroke parsing ---
 
-STENO_KEYS = {
-    'S-': 0x00000001, 'T-': 0x00000002, 'K-': 0x00000004, 'P-': 0x00000008,
-    'W-': 0x00000010, 'H-': 0x00000020, 'R-': 0x00000040, 'A-': 0x00000080,
-    'O-': 0x00000100, '*':  0x00000200, '-E': 0x00000400, '-U': 0x00000800,
-    '-F': 0x00001000, '-R': 0x00002000, '-P': 0x00004000, '-B': 0x00008000,
-    '-L': 0x00010000, '-G': 0x00020000, '-T': 0x00040000, '-S': 0x00080000,
-    '-D': 0x00100000, '-Z': 0x00200000, '#':  0x00400000,
-}
+STENO_KEYS = {'#': 1, 'S-': 2, 'T-': 4, 'K-': 8, 'P-': 16, 'W-': 32, 'H-': 64, 'R-': 128, 'A-': 256, 'O-': 512, '*': 1024, '-E': 2048, '-U': 4096, '-F': 8192, '-R': 16384, '-P': 32768, '-B': 65536, '-L': 131072, '-G': 262144, '-T': 524288, '-S': 1048576, '-D': 2097152, '-Z': 4194304}
 
 IMPLICIT_HYPHEN = set('AOEU*')
 LEFT_BANK = 'STKPWHR'
@@ -185,7 +178,7 @@ class CompactMapBuilder:
             # The builder sets baseOffset = running_total - PopCount(all masks in block)
             running_count = len(data_block) // entry_size
             block_popcount = sum(popcount32(m) for m in masks)
-            base_offset = running_count - block_popcount
+            base_offset = running_count - 1
 
             for m in masks:
                 hash_blocks.extend(struct.pack('<I', m))
@@ -386,6 +379,7 @@ class DictionaryCollectionBuilder:
 
         buf = bytearray(total_size)
         base = self.base_addr
+        self.pointer_offsets = []
 
         def write_u8(off, v):
             buf[off] = v & 0xFF
@@ -397,6 +391,7 @@ class DictionaryCollectionBuilder:
             struct.pack_into('<I', buf, off, v & 0xFFFFFFFF)
 
         def write_ptr(off, v):
+            self.pointer_offsets.append(off)
             struct.pack_into('<I', buf, off, (base + v) & 0xFFFFFFFF)
 
         def write_bytes(off, data):
@@ -487,6 +482,7 @@ def main():
                         help='Dictionary name (one per input, defaults to filename)')
     parser.add_argument('--base-addr', type=lambda x: int(x, 0), default=0,
                         help='XIP base address for pointer resolution (default: 0)')
+    parser.add_argument('--asm-output', help='Optional relocatable ARM assembly output')
     parser.add_argument('--max-entries', type=int, default=0,
                         help='Limit entries per dict (0 = no limit, for testing)')
     args = parser.parse_args()
@@ -507,6 +503,25 @@ def main():
 
     with open(args.output, 'wb') as f:
         f.write(result)
+
+    if args.asm_output:
+        if args.base_addr != 0:
+            parser.error('--asm-output requires --base-addr 0')
+        lines = ['.section .rodata.steno_dict,"a",%progbits', '.global _javelin_dict_start', '.global _javelin_dict_end', '.balign 4', '_javelin_dict_start:']
+        cursor = 0
+        for off in sorted(builder.pointer_offsets):
+            chunk = result[cursor:off]
+            for i in range(0, len(chunk), 16):
+                lines.append('.byte ' + ','.join(str(v) for v in chunk[i:i+16]))
+            target = struct.unpack_from('<I', result, off)[0]
+            lines.append(f'.long _javelin_dict_start + {target}')
+            cursor = off + 4
+        chunk = result[cursor:]
+        for i in range(0, len(chunk), 16):
+            lines.append('.byte ' + ','.join(str(v) for v in chunk[i:i+16]))
+        lines.append('_javelin_dict_end:')
+        with open(args.asm_output, 'w') as f:
+            f.write('\n'.join(lines) + '\n')
 
     print(f"Wrote {len(result)} bytes ({len(result)/1024:.1f} KB) to {args.output}", file=sys.stderr)
 

@@ -1,5 +1,7 @@
 if(CONFIG_ZMK_JAVELIN_STENO)
 
+  target_sources(app PRIVATE src/behaviors/behavior_javelin_steno.c)
+
   # Only compile on central side of split keyboards (or non-split)
   if((NOT CONFIG_ZMK_SPLIT) OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
 
@@ -245,112 +247,9 @@ print(f'Stripped test blocks from {count} files')
     # Test suppression handled by include/javelin_overrides/unit_test.h
     # which shadows Javelin's unit_test.h via include path ordering.
 
-    target_sources(app PRIVATE
-      ${ZMK_BEHAVIOR_SRC}
-    )
 
-    # --- Dictionary binary embedding ---
-    # Plover and Lapwing are additive — both can be enabled.
-    # All enabled dicts get compiled into one binary. Javelin's
-    # StenoDictionaryList stacks them (first in list = highest priority).
-    # User dict (add_translation) is always on top at runtime.
-    #
-    # Priority: 1) JAVELIN_DICT_BIN cmake var (skip auto-download)
-    #           2) pre-compiled dicts/steno_dict.bin
-    #           3) auto-download enabled dicts + compile
-    #           4) null placeholder (engine won't start)
-
-    set(DICT_DIR "${CMAKE_CURRENT_LIST_DIR}/dicts")
-    set(DICT_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/dicts_src")
-    set(COMPILER "${CMAKE_CURRENT_LIST_DIR}/tools/dict_compiler/compile_dict.py")
-    set(DICT_BIN "${DICT_DIR}/steno_dict.bin")
-
-    # Collect all enabled dicts (additive)
-    set(DICT_URLS "")
-    set(DICT_NAMES "")
-
-    if(CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER)
-      list(APPEND DICT_URLS
-        "https://raw.githubusercontent.com/openstenoproject/plover/main/plover/assets/main.json")
-      list(APPEND DICT_NAMES "plover-main")
-    endif()
-
-    if(CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING)
-      list(APPEND DICT_URLS
-        "https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/main/plover_lapwing/dictionaries/lapwing-base.json"
-        "https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/main/plover_lapwing/dictionaries/lapwing-commands.json"
-        "https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/main/plover_lapwing/dictionaries/lapwing-numbers.json")
-      list(APPEND DICT_NAMES "lapwing-base" "lapwing-commands" "lapwing-numbers")
-    endif()
-
-    if(DEFINED JAVELIN_DICT_BIN)
-      set(DICT_BIN_PATH "${JAVELIN_DICT_BIN}")
-    elseif(EXISTS "${DICT_BIN}")
-      set(DICT_BIN_PATH "${DICT_BIN}")
-    elseif(DICT_URLS)
-      # Auto-download + compile all enabled dicts
-      file(MAKE_DIRECTORY "${DICT_SRC_DIR}")
-      set(DICT_JSONS "")
-      set(DICT_COMPILE_ARGS "")
-      list(LENGTH DICT_URLS DICT_COUNT)
-      math(EXPR DICT_LAST "${DICT_COUNT} - 1")
-
-      foreach(IDX RANGE ${DICT_LAST})
-        list(GET DICT_URLS ${IDX} URL)
-        list(GET DICT_NAMES ${IDX} NAME)
-        set(JSON_PATH "${DICT_SRC_DIR}/${NAME}.json")
-
-        if(NOT EXISTS "${JSON_PATH}")
-          message(STATUS "Javelin steno: downloading ${NAME}...")
-          file(DOWNLOAD "${URL}" "${JSON_PATH}" STATUS DL_STATUS TIMEOUT 30)
-          list(GET DL_STATUS 0 DL_RC)
-          if(NOT DL_RC EQUAL 0)
-            message(WARNING "Javelin steno: download failed for ${NAME}")
-            file(REMOVE "${JSON_PATH}")
-          endif()
-        else()
-          message(STATUS "Javelin steno: using cached ${NAME}")
-        endif()
-
-        if(EXISTS "${JSON_PATH}")
-          list(APPEND DICT_JSONS "${JSON_PATH}")
-          list(APPEND DICT_COMPILE_ARGS "-n" "${NAME}")
-        endif()
-      endforeach()
-
-      if(DICT_JSONS AND EXISTS "${COMPILER}")
-        message(STATUS "Javelin steno: compiling ${DICT_COUNT} dict(s)...")
-        execute_process(
-          COMMAND python3 "${COMPILER}" ${DICT_JSONS}
-            ${DICT_COMPILE_ARGS} -o "${DICT_BIN}"
-          RESULT_VARIABLE COMPILE_RC
-          ERROR_VARIABLE COMPILE_ERR
-        )
-        if(COMPILE_RC EQUAL 0)
-          set(DICT_BIN_PATH "${DICT_BIN}")
-          message(STATUS "Javelin steno: dictionary compiled")
-        else()
-          message(WARNING "Javelin steno: compile failed: ${COMPILE_ERR}")
-          set(DICT_BIN_PATH "")
-        endif()
-      else()
-        set(DICT_BIN_PATH "")
-      endif()
-    else()
-      set(DICT_BIN_PATH "")
-    endif()
-
-    if(NOT "${DICT_BIN_PATH}" STREQUAL "")
-      set_source_files_properties(src/dict_embed.S
-        TARGET_DIRECTORY app
-        PROPERTIES COMPILE_DEFINITIONS "JAVELIN_DICT_BIN_PATH=\"${DICT_BIN_PATH}\""
-      )
-      message(STATUS "Javelin steno: embedding dictionary from ${DICT_BIN_PATH}")
-    else()
-      message(WARNING "Javelin steno: no dictionary — engine will not start")
-    endif()
-
-    target_sources(app PRIVATE src/dict_embed.S)
+    # The test fixture uses link-time relocations for native Javelin pointers.
+    target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dicts/cat-test.S)
 
   endif() # central role check
 

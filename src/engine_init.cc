@@ -26,15 +26,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 extern "C" const uint8_t _javelin_dict_start[];
 extern "C" const uint8_t _javelin_dict_end[];
 
-// User dictionary flash region.
-// Must be power-of-2 sized. 16KB = 2^14.
-// In production, this points to a dedicated flash partition.
-// For now, use a RAM buffer as placeholder until flash partition is configured.
-static uint8_t user_dict_mem[16384] __attribute__((aligned(4)));
-
 static JavelinStaticAllocate<StenoCompiledOrthography> compiledOrthography;
 static JavelinStaticAllocate<StenoDictionaryList> dictionaryList;
-static JavelinStaticAllocate<StenoUserDictionary> userDictionary;
 static JavelinStaticAllocate<StenoJeffModifiers> jeffModifiers;
 static JavelinStaticAllocate<StenoRepeat> stenoRepeat;
 static JavelinStaticAllocate<StenoAllUp> allUp;
@@ -66,13 +59,6 @@ static bool load_dictionary_collection() {
     return false;
   }
 
-  // Set up user dictionary (RAM-backed for now, flash-backed in future)
-  StenoUserDictionaryData userDictData(user_dict_mem, sizeof(user_dict_mem));
-  new (userDictionary) StenoUserDictionary(userDictData);
-
-  // Add user dict as highest priority (first in list)
-  entries.InsertAt(0, StenoDictionaryListEntry(&userDictionary.value, true));
-
   new (dictionaryList)
       StenoDictionaryList(static_cast<List<StenoDictionaryListEntry> &&>(entries));
 
@@ -86,13 +72,13 @@ static bool load_dictionary_collection() {
       nullptr,
       compiledOrthography.value,
       StenoStroke(StrokeMask::STAR),  // undo stroke = *
-      &userDictionary.value);
+      nullptr);
 
   // Register console commands
   StenoEngine::container.value.AddConsoleCommands(Console::instance);
   Flash::AddConsoleCommands(Console::instance);
 
-  LOG_INF("Steno engine: %d dicts + user dict", collection->dictionaryCount);
+  LOG_INF("Steno engine: %d read-only test dicts", collection->dictionaryCount);
   return true;
 }
 
@@ -103,9 +89,6 @@ void zmk_javelin_steno_init(void) {
     return;
   }
   initialized = true;
-
-  // Initialize user dict memory to erased state (0xFF)
-  memset(user_dict_mem, 0xFF, sizeof(user_dict_mem));
 
   if (!load_dictionary_collection()) {
     LOG_WRN("Steno engine not started");

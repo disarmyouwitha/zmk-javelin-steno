@@ -6,10 +6,20 @@
 
 #include <drivers/behavior.h>
 #include <zmk/behavior.h>
+#include <zmk/events/keycode_state_changed.h>
 
 #include "zmk_javelin_steno/zmk_platform_shim.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+
+#if defined(CONFIG_ZMK_SPLIT) && !defined(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+// Bindings are forwarded to the central; peripherals do not link the engine.
+void zmk_javelin_steno_init(void) {}
+void zmk_javelin_steno_process_key(int key, bool pressed) {
+    (void)key;
+    (void)pressed;
+}
+#endif
 
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
@@ -41,3 +51,11 @@ static const struct behavior_driver_api behavior_javelin_steno_driver_api = {
                             &behavior_javelin_steno_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(JAVSTENO_INST)
+
+int zmk_javelin_emit_keycode(uint16_t usage_page, uint32_t keycode, bool pressed) {
+    return raise_zmk_keycode_state_changed((struct zmk_keycode_state_changed){
+        .usage_page = usage_page, .keycode = keycode,
+        .implicit_modifiers = 0, .explicit_modifiers = 0,
+        .state = pressed, .timestamp = k_uptime_get(),
+    });
+}
