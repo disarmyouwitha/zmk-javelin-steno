@@ -23,6 +23,7 @@ void zmk_javelin_steno_process_key(int key, bool pressed) {
 
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
+    zmk_javelin_steno_init();
     zmk_javelin_steno_process_key((int)binding->param1, true);
     return ZMK_BEHAVIOR_OPAQUE;
 }
@@ -34,7 +35,7 @@ static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
 }
 
 static int behavior_javelin_steno_init(const struct device *dev) {
-    zmk_javelin_steno_init();
+    // Lazy initialization on first press, after C++ global constructors.
     return 0;
 }
 
