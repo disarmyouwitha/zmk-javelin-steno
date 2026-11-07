@@ -1,0 +1,30 @@
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/matrix_transform.h>
+
+/ {
+    chosen {
+        zmk,kscan = &bench_kscan;
+        zmk,matrix-transform = &bench_transform;
+    };
+
+    bench_kscan: bench_kscan {
+        compatible = "zmk,kscan-mock";
+        columns = <1>;
+        rows = <1>;
+        events = <>;
+    };
+
+    bench_transform: bench_transform {
+        compatible = "zmk,matrix-transform";
+        columns = <1>;
+        rows = <1>;
+        map = <RC(0, 0)>;
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+        bench_layer {
+            bindings = <&none>;
+        };
+    };
+};

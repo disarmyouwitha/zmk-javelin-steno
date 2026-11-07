@@ -6,6 +6,8 @@ From Main, the right thumb cluster is **Space / Plover HID / Javelin Steno** (in
 
 # zmk-javelin-steno
 
+The [Zen R4 external flash diagnostics](tools/zen-r4-qspi/) contain the breadboard quad SPI, memory-mapped dictionary, and simulated ZMK keyboard report tests.
+
 ZMK module that integrates the [Javelin steno engine](https://github.com/jthlim/javelin-steno) for on-board stenography on ZMK keyboards.
 
 ## Status
