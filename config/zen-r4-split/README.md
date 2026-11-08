@@ -30,3 +30,5 @@ Check ordinary typing on both halves, then test `TP / -T / KAT / S / -T / KAT` i
 ## Pairing an Ultralight previously used in another split
 
 On the tested pair, the left central scanned without finding the right half until the right controller's old Bluetooth settings were cleared. Build the standard `settings_reset` shield for nice!nano v2 and flash it to the Ultralight. When it boots as SETTINGS RESET, return the right half to bootloader mode and flash the split-right image again. Keep the left central powered so it can discover and pair with the right half. The central log confirmed the encrypted connection and its subscription to right-half key positions.
+
+The builder confirmed normal typing over the split, onboard Javelin output of “cat” from a physical `KAT` chord spanning both halves, and receipt of the same chord in host Plover HID. The left also verified and loaded the existing Lapwing image after reboot.
