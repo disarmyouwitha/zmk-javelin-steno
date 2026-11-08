@@ -27,6 +27,17 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     zephyr_include_directories(${JAVELIN_SRC_DIR})
     zephyr_include_directories(include)
 
+    # Keep behavioral compatibility patches private to this build.
+    set(JAVELIN_SEGMENT_BUILDER_SRC "${CMAKE_CURRENT_BINARY_DIR}/compat/segment_builder.cc")
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/compat")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+      "${JAVELIN_SRC_DIR}/segment_builder.cc"
+      "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_segment_builder.py")
+    execute_process(
+      COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_segment_builder.py"
+        "${JAVELIN_SRC_DIR}/segment_builder.cc" "${JAVELIN_SEGMENT_BUILDER_SRC}"
+      COMMAND_ERROR_IS_FATAL ANY)
+
     set(JAVELIN_COMPACT_MAP_SRC "${JAVELIN_SRC_DIR}/dictionary/compact_map_dictionary.cc")
     if(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
       if(NOT EXISTS "${ZMK_JAVELIN_LAPWING_IMAGE}")
@@ -102,7 +113,7 @@ if(CONFIG_ZMK_JAVELIN_STENO)
       ${JAVELIN_SRC_DIR}/script_byte_code.cc
       ${JAVELIN_SRC_DIR}/script_storage.cc
       ${JAVELIN_SRC_DIR}/script.cc
-      ${JAVELIN_SRC_DIR}/segment_builder.cc
+      ${JAVELIN_SEGMENT_BUILDER_SRC}
       ${JAVELIN_SRC_DIR}/segment.cc
       ${JAVELIN_SRC_DIR}/start_console_command_detector.cc
       ${JAVELIN_SRC_DIR}/state.cc

@@ -84,3 +84,15 @@ After the editor firmware was flashed and rebooted, the builder reconfirmed norm
 The dual-base firmware built at 472,520 bytes of application flash and 227,368 bytes of RAM. Host verification checked all 114,885 Lapwing outlines and all 147,424 Plover outlines against their mapped binaries. On the assembled left half, provisioning passed preflight, program/readback, and both base CRC/native lookup checks. HID checks verified initial Lapwing selection, Plover selection (`STKERT` → “dessert” and `12K` → “12:00”), Lapwing priority when both bases are enabled (`STKERT` → “desert”), toggling, rejection of unknown dictionary names, and unchanged personal dictionary contents.
 
 A controller reset with Plover selected reloaded Plover as enabled and Lapwing as disabled. `STKERT` still resolved to “dessert” after reboot. The test then restored and saved Lapwing enabled with Plover disabled, and `STKERT` returned “desert” again.
+
+## Lapwing repeat command
+
+The firmware recognizes the bare `=repeat_last_translation` macro used by Lapwing's number-bar-only (`#`) outline. It repeats the complete preceding translation, including multi-stroke and multi-word definitions, while retaining formatting commands. Repeated presses repeat the translation again, and undo removes a repeat. With no previous translation it produces no text. The dictionary entry itself remains unchanged, so dictionary-inspection tools still display the macro string.
+
+The build patches a private copy of the pinned segment builder. It leaves the shared engine checkout and external base images unchanged. The behavior follows the [Plover Last Translation macro](https://github.com/nsmarkop/plover_last_translation/blob/master/plover_last_translation/macro.py). This implements the bare macro used by Lapwing, rather than the plugin's optional count arguments.
+
+Native engine tests capture keyboard events and cover empty history, single-stroke words, multi-stroke words, multi-word translations, consecutive repeats and undo, suffixes, glued fingerspelling, punctuation, and a 40-repeat sequence. The same tests reproduce literal command output with the original engine. Run them with:
+
+```sh
+python3 tools/tests/run_repeat_translation.py "$ws/javelin-steno"
+```
