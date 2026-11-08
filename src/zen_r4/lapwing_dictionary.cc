@@ -10,7 +10,24 @@
 
 static constexpr uintptr_t image_start = DT_REG_ADDR_BY_NAME(DT_NODELABEL(qspi), qspi_mm);
 static constexpr uintptr_t image_end = image_start + LAPWING_BYTES;
-static StenoCompactMapDictionary *dictionary;
+static StenoDictionary *dictionary;
+
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+class ReadOnlyLapwing final : public StenoDictionary {
+public:
+  explicit ReadOnlyLapwing(StenoCompactMapDictionary &map)
+      : StenoDictionary(map.GetMaximumOutlineLength()), map(map) {}
+
+  StenoDictionaryLookupResult Lookup(const StenoDictionaryLookup &lookup) const override {
+    return map.Lookup(lookup);
+  }
+
+  const char *GetName() const override { return map.GetName(); }
+
+private:
+  StenoCompactMapDictionary &map;
+};
+#endif
 
 StenoDictionary *lapwing_dictionary() {
   return lapwing_mapped_address() ? dictionary : nullptr;
@@ -51,8 +68,8 @@ extern "C" bool lapwing_verify_native_dictionary(uintptr_t address) {
                  definition.maximumOutlineLength * sizeof(stroke_table[0]));
   definition.strokes = stroke_table;
   definition.name = "Lapwing Base";
-  dictionary = new (definition) StenoCompactMapDictionary(definition);
-  if (!dictionary) {
+  auto *map = new (definition) StenoCompactMapDictionary(definition);
+  if (!map) {
     return false;
   }
 
@@ -66,7 +83,7 @@ extern "C" bool lapwing_verify_native_dictionary(uintptr_t address) {
       {{StenoStroke("HE"), StenoStroke("HROE")}, 2, "hello"},
   };
   for (const auto &check : checks) {
-    auto result = dictionary->Lookup(StenoDictionaryLookup(check.strokes, check.length));
+    auto result = map->Lookup(StenoDictionaryLookup(check.strokes, check.length));
     const bool matches = result.IsValid() && strcmp(result.GetText(), check.translation) == 0;
     result.Destroy();
     if (!matches) {
@@ -74,6 +91,12 @@ extern "C" bool lapwing_verify_native_dictionary(uintptr_t address) {
       return false;
     }
   }
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  static ReadOnlyLapwing read_only(*map);
+  dictionary = &read_only;
+#else
+  dictionary = map;
+#endif
   printk("Lapwing native lookups passed, including a two-stroke outline\n");
   return true;
 }

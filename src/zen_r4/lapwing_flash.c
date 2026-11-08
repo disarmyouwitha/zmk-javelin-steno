@@ -102,7 +102,7 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
         return false;
     }
 
-    // No peripheral register access after entering mapped-read mode.
+    // The personal-dictionary store serializes its QSPI operations with mapped lookups.
     atomic_set(&mapped_ready, 1);
     return true;
 }

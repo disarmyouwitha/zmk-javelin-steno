@@ -21,6 +21,9 @@
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
 #include "lapwing_dictionary.h"
 #endif
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+#include "user_dictionary_store.h"
+#endif
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
@@ -41,8 +44,24 @@ static StenoProcessor *processor = nullptr;
 
 static bool initialized = false;
 
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+K_MUTEX_DEFINE(javelin_engine_mutex);
+
+class JavelinEngineLock {
+public:
+  JavelinEngineLock() { k_mutex_lock(&javelin_engine_mutex, K_FOREVER); }
+  ~JavelinEngineLock() { k_mutex_unlock(&javelin_engine_mutex); }
+};
+#endif
+
 static bool load_dictionary_collection() {
   List<StenoDictionaryListEntry> entries;
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  auto *personal = zen_user_dictionary_open();
+  if (personal) {
+    entries.Add(StenoDictionaryListEntry(personal, true));
+  }
+#endif
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
   entries.Add(StenoDictionaryListEntry(lapwing_dictionary(), true));
 #else
@@ -108,8 +127,15 @@ static bool load_dictionary_collection() {
       nullptr);
 
   // Register console commands
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  if (personal) {
+    zen_user_dictionary_register(Console::instance, dictionaryList.value);
+  }
+#endif
   StenoEngine::container.value.AddConsoleCommands(Console::instance);
+#ifndef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
   Flash::AddConsoleCommands(Console::instance);
+#endif
 
   LOG_INF("Steno engine initialized");
   return true;
@@ -118,6 +144,9 @@ static bool load_dictionary_collection() {
 extern "C" {
 
 void zmk_javelin_steno_init(void) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  const JavelinEngineLock lock;
+#endif
   if (initialized) {
     return;
   }
@@ -152,6 +181,9 @@ void zmk_javelin_steno_init(void) {
 }
 
 void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  const JavelinEngineLock lock;
+#endif
   if (!processor) {
     return;
   }
@@ -161,3 +193,13 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
 }
 
 } // extern "C"
+
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+void zen_javelin_console_line(const char *line, size_t size, IWriter &writer) {
+  const JavelinEngineLock lock;
+  zmk_javelin_steno_init();
+  ConsoleWriter::Push(&writer);
+  Console::instance.HandleInput(line, size, ConnectionId::SERIAL_CONSOLE);
+  ConsoleWriter::Pop();
+}
+#endif

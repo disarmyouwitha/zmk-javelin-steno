@@ -7,3 +7,10 @@
 &uart0 { status = "disabled"; };
 &spi1 { status = "disabled"; };
 &i2c0 { status = "disabled"; };
+
+&zephyr_udc0 {
+    javelin_cdc: javelin_cdc {
+        compatible = "zephyr,cdc-acm-uart";
+        label = "Javelin Dictionary";
+    };
+};

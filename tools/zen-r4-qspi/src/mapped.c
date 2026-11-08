@@ -10,21 +10,6 @@
 
 static uint32_t dma_page[2][PAGE_WORDS];
 
-bool reactivate_after_xip(void)
-{
-	/* nRF52840 anomaly 215. Use only task/event registers until READY. */
-	nrf_qspi_event_clear(NRF_QSPI, NRF_QSPI_EVENT_READY);
-	nrf_qspi_task_trigger(NRF_QSPI, NRF_QSPI_TASK_ACTIVATE);
-	for (unsigned int i = 0; i < 1000; i++) {
-		if (nrf_qspi_event_check(NRF_QSPI, NRF_QSPI_EVENT_READY)) {
-			nrf_qspi_event_clear(NRF_QSPI, NRF_QSPI_EVENT_READY);
-			return true;
-		}
-		k_busy_wait(10);
-	}
-	return false;
-}
-
 void run_mapped_probe(struct mapped_result *result, uint32_t first_address)
 {
 	const uint32_t addresses[] = {first_address, result->second_address};

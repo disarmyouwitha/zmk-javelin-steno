@@ -16,6 +16,21 @@
 static uint8_t single_data[QUAD_SAMPLE_SIZE] __aligned(4);
 static uint8_t quad_data[QUAD_SAMPLE_SIZE] __aligned(4);
 
+bool reactivate_after_xip(void)
+{
+	/* nRF52840 anomaly 215. Use only task/event registers until READY. */
+	nrf_qspi_event_clear(NRF_QSPI, NRF_QSPI_EVENT_READY);
+	nrf_qspi_task_trigger(NRF_QSPI, NRF_QSPI_TASK_ACTIVATE);
+	for (unsigned int i = 0; i < 1000; i++) {
+		if (nrf_qspi_event_check(NRF_QSPI, NRF_QSPI_EVENT_READY)) {
+			nrf_qspi_event_clear(NRF_QSPI, NRF_QSPI_EVENT_READY);
+			return true;
+		}
+		k_busy_wait(10);
+	}
+	return false;
+}
+
 static nrfx_err_t status_command(uint8_t opcode, const uint8_t *tx, uint8_t *rx)
 {
 	const nrf_qspi_cinstr_conf_t command = {

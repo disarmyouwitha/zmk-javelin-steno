@@ -263,6 +263,9 @@ if(CONFIG_ZMK_JAVELIN_STENO)
       zephyr_library_include_directories(
         "${JAVELIN_SRC_DIR}/dictionary" "${QSPI_SRC}" "${LAPWING_SRC}")
       zephyr_library_compile_definitions(LAPWING_BYTES=${LAPWING_BYTES})
+      if(CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY)
+        zephyr_library_sources("${LAPWING_SRC}/user_dictionary_store.cc" "${LAPWING_SRC}/javelin_web_serial.cc")
+      endif()
     else()
       # The test fixture uses link-time relocations for native Javelin pointers.
       target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dicts/cat-test.S)

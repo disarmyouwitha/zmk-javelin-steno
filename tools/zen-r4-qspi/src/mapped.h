@@ -12,6 +12,5 @@ struct mapped_result {
 };
 
 void run_mapped_probe(struct mapped_result *result, uint32_t first_address);
-bool reactivate_after_xip(void);
 
 #endif
