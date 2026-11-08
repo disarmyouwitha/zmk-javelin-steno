@@ -23,7 +23,7 @@ config ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
     select CRC
 
 config ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-    bool "Edit the personal dictionary over Javelin Web Serial"
+    bool "Edit the personal dictionary over Javelin WebHID"
     depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
 
 endif # ZMK_JAVELIN_STENO
