@@ -1,4 +1,5 @@
 #include "console.h"
+#include "javelin_hid_transport.h"
 
 #include <string.h>
 #include <zephyr/device.h>
@@ -12,12 +13,14 @@ extern "C" bool zmk_usb_is_hid_ready(void);
 void zen_javelin_console_line(const char *line, size_t size, IWriter &writer);
 
 namespace {
-constexpr size_t REPORT_BYTES = 63;
+constexpr size_t REPORT_BYTES = JAVELIN_HID_REPORT_BYTES;
 const device *hid;
 K_SEM_DEFINE(transmit_ready, 1, 1);
 
 struct Report {
     uint8_t bytes[REPORT_BYTES];
+    bool bluetooth = false;
+    uint32_t session = 0;
 };
 K_MSGQ_DEFINE(received_reports, sizeof(Report), 40, 4);
 alignas(4) Report transmit_report;
@@ -69,7 +72,26 @@ int initialize_hid() {
 
 class HidWriter final : public IWriter {
 public:
+    explicit HidWriter(const Report &report)
+        : bluetooth(report.bluetooth), session(report.session) {}
+
     void Write(const char *text, size_t size) override {
+        if (bluetooth) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BLE_HID
+            while (size && !failed) {
+                uint8_t packet[REPORT_BYTES]{};
+                const size_t count = MIN(size, REPORT_BYTES);
+                memcpy(packet, text, count);
+                if (zen_javelin_ble_send(packet, sizeof(packet), session) != 0) {
+                    failed = true;
+                    return;
+                }
+                text += count;
+                size -= count;
+            }
+#endif
+            return;
+        }
         while (size && hid && zmk_usb_is_hid_ready()) {
             if (k_sem_take(&transmit_ready, K_SECONDS(2)) != 0) {
                 return;
@@ -87,6 +109,10 @@ public:
             size -= count;
         }
     }
+private:
+    bool bluetooth;
+    uint32_t session;
+    bool failed = false;
 };
 
 bool is_command(const char *line, const char *name) {
@@ -141,6 +167,8 @@ struct CommandBuffer {
     size_t used = 0;
     bool too_long = false;
     int64_t last_packet = 0;
+    bool bluetooth = false;
+    uint32_t session = 0;
     char line[Console::BUFFER_SIZE];
 };
 CommandBuffer buffers[4];
@@ -153,21 +181,33 @@ void reset_buffer(CommandBuffer &buffer) {
 }
 
 void hid_worker(void *, void *, void *) {
-    HidWriter writer;
     Report report;
 
     for (;;) {
         if (!zmk_usb_is_hid_ready()) {
-            for (auto &buffer : buffers) {
+            k_sem_give(&transmit_ready);
+        }
+        for (auto &buffer : buffers) {
+            if (!buffer.bluetooth && !zmk_usb_is_hid_ready()) {
                 reset_buffer(buffer);
             }
-            k_sem_give(&transmit_ready);
-            k_msleep(100);
-            continue;
         }
         if (k_msgq_get(&received_reports, &report, K_MSEC(100)) != 0) {
             continue;
         }
+        if (report.bluetooth) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BLE_HID
+            if (!zen_javelin_ble_session_valid(report.session)) {
+                continue;
+            }
+#else
+            continue;
+#endif
+        } else if (!zmk_usb_is_hid_ready()) {
+            k_sem_give(&transmit_ready);
+            continue;
+        }
+        HidWriter writer(report);
 
         const auto *bytes = report.bytes;
         size_t length = sizeof(report.bytes);
@@ -182,7 +222,8 @@ void hid_worker(void *, void *, void *) {
 
         CommandBuffer *target = nullptr;
         for (auto &buffer : buffers) {
-            if (buffer.channel == channel) {
+            if (buffer.channel == channel && buffer.bluetooth == report.bluetooth &&
+                buffer.session == report.session) {
                 target = &buffer;
                 break;
             }
@@ -198,9 +239,12 @@ void hid_worker(void *, void *, void *) {
             writer.Write(busy, sizeof(busy) - 1);
             continue;
         }
-        if (target->channel != channel || k_uptime_get() - target->last_packet > 5000) {
+        if (target->channel != channel || target->bluetooth != report.bluetooth ||
+            target->session != report.session || k_uptime_get() - target->last_packet > 5000) {
             reset_buffer(*target);
             target->channel = channel;
+            target->bluetooth = report.bluetooth;
+            target->session = report.session;
         }
         target->last_packet = k_uptime_get();
 
@@ -239,6 +283,19 @@ void hid_worker(void *, void *, void *) {
     }
 }
 } // namespace
+
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BLE_HID
+extern "C" int zen_javelin_ble_receive(const void *data, size_t size, uint32_t session) {
+    if (!size || size > REPORT_BYTES) {
+        return -EINVAL;
+    }
+    Report report{};
+    report.bluetooth = true;
+    report.session = session;
+    memcpy(report.bytes, data, size);
+    return k_msgq_put(&received_reports, &report, K_NO_WAIT);
+}
+#endif
 
 SYS_INIT(initialize_hid, APPLICATION, CONFIG_APPLICATION_INIT_PRIORITY);
 K_THREAD_DEFINE(javelin_web_hid, 4096, hid_worker, nullptr, nullptr, nullptr, 6, 0, 200);
