@@ -1,13 +1,8 @@
-#include <zephyr/dt-bindings/gpio/gpio.h>
-#include <zephyr/dt-bindings/pinctrl/nrf-pinctrl.h>
+#include "qspi.overlay"
 
 / {
 	chosen {
 		zephyr,console = &probe_cdc;
-	};
-
-	zephyr,user {
-		flash-power-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
 	};
 };
 
@@ -15,28 +10,4 @@
 	probe_cdc: probe_cdc {
 		compatible = "zephyr,cdc-acm-uart";
 	};
-};
-
-&pinctrl {
-	qspi_probe_default: qspi_probe_default {
-		bus {
-			psels = <NRF_PSEL(QSPI_CSN, 0, 17)>,
-				<NRF_PSEL(QSPI_SCK, 0, 22)>,
-				<NRF_PSEL(QSPI_IO0, 0, 24)>,
-				<NRF_PSEL(QSPI_IO1, 1, 0)>;
-			nordic,drive-mode = <NRF_DRIVE_H0H1>;
-		};
-		wp_hold {
-			psels = <NRF_PSEL(QSPI_IO2, 0, 11)>,
-				<NRF_PSEL(QSPI_IO3, 0, 20)>;
-			bias-pull-up;
-			nordic,drive-mode = <NRF_DRIVE_H0H1>;
-		};
-	};
-};
-
-&qspi {
-	status = "okay";
-	pinctrl-0 = <&qspi_probe_default>;
-	pinctrl-names = "default";
 };

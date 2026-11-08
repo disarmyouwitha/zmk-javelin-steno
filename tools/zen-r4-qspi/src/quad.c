@@ -60,6 +60,17 @@ static nrfx_err_t set_volatile_sr2(uint8_t value)
 	return status == value ? NRFX_SUCCESS : NRFX_ERROR_INTERNAL;
 }
 
+nrfx_err_t w25q128_enable_volatile_quad(void)
+{
+	uint8_t status;
+	nrfx_err_t rc = status_command(0x35, NULL, &status);
+
+	if (rc != NRFX_SUCCESS || (status & QUAD_ENABLE)) {
+		return rc;
+	}
+	return set_volatile_sr2(status | QUAD_ENABLE);
+}
+
 static nrfx_err_t read_sample(nrfx_qspi_config_t *config, nrf_qspi_readoc_t mode,
 			      uint32_t address, uint8_t *data)
 {

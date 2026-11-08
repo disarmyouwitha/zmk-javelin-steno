@@ -27,6 +27,8 @@ struct quad_result {
 
 #define QUAD_SAMPLE_SIZE 256
 
+nrfx_err_t w25q128_enable_volatile_quad(void);
+
 void run_quad_probe(nrfx_qspi_config_t *config, struct quad_result *result,
 		    uint32_t start, uint32_t length);
 

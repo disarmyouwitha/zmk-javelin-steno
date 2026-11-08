@@ -16,6 +16,12 @@ config ZMK_JAVELIN_STENO_DICT_LAPWING
     bool "Include Lapwing dictionary (modern, recommended for new learners)"
     default n
 
+config ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+    bool "Use the Zen R4's external QSPI Lapwing dictionary"
+    depends on SOC_NRF52840 && ZMK_USB_LOGGING
+    select NRFX_QSPI
+    select CRC
+
 endif # ZMK_JAVELIN_STENO
 
 endmenu

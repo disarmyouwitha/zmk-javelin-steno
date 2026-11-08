@@ -27,6 +27,34 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     zephyr_include_directories(${JAVELIN_SRC_DIR})
     zephyr_include_directories(include)
 
+    set(JAVELIN_COMPACT_MAP_SRC "${JAVELIN_SRC_DIR}/dictionary/compact_map_dictionary.cc")
+    if(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+      if(NOT EXISTS "${ZMK_JAVELIN_LAPWING_IMAGE}")
+        message(FATAL_ERROR "Set ZMK_JAVELIN_LAPWING_IMAGE to the mapped Lapwing JSC4 image")
+      endif()
+      set(QSPI_SRC "${CMAKE_CURRENT_LIST_DIR}/tools/zen-r4-qspi/src")
+      set(LAPWING_SRC "${CMAKE_CURRENT_LIST_DIR}/src/zen_r4")
+      file(SIZE "${ZMK_JAVELIN_LAPWING_IMAGE}" LAPWING_BYTES)
+      execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} -c
+          "import pathlib,sys,zlib; print(hex(zlib.crc32(pathlib.Path(sys.argv[1]).read_bytes())))"
+          "${ZMK_JAVELIN_LAPWING_IMAGE}"
+        OUTPUT_VARIABLE LAPWING_CRC OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND_ERROR_IS_FATAL ANY)
+      set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+        "${ZMK_JAVELIN_LAPWING_IMAGE}" "${QSPI_SRC}/prepare_xip_reader.py")
+      set(PATCHED_COMPACT_MAP "${CMAKE_CURRENT_BINARY_DIR}/lapwing/compact_map_dictionary.cc")
+      configure_file("${JAVELIN_COMPACT_MAP_SRC}" "${PATCHED_COMPACT_MAP}" COPYONLY)
+      execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} "${QSPI_SRC}/prepare_xip_reader.py"
+          "${PATCHED_COMPACT_MAP}" --copy-lookup-text
+        COMMAND_ERROR_IS_FATAL ANY)
+      set(JAVELIN_COMPACT_MAP_SRC "${PATCHED_COMPACT_MAP}")
+      target_sources(app PRIVATE "${LAPWING_SRC}/lapwing_flash.c" "${QSPI_SRC}/quad.c")
+      target_include_directories(app PRIVATE "${QSPI_SRC}")
+      target_compile_definitions(app PRIVATE LAPWING_BYTES=${LAPWING_BYTES} LAPWING_CRC=${LAPWING_CRC})
+    endif()
+
     # Core engine sources
     set(JAVELIN_CORE_SRC
       ${JAVELIN_SRC_DIR}/asset_manager.cc
@@ -86,7 +114,7 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     # Dictionary sources
     set(JAVELIN_DICT_SRC
       ${JAVELIN_SRC_DIR}/dictionary/cache_dictionary.cc
-      ${JAVELIN_SRC_DIR}/dictionary/compact_map_dictionary.cc
+      ${JAVELIN_COMPACT_MAP_SRC}
       ${JAVELIN_SRC_DIR}/dictionary/debug_dictionary.cc
       ${JAVELIN_SRC_DIR}/dictionary/dictionary_definition.cc
       ${JAVELIN_SRC_DIR}/dictionary/dictionary_list.cc
@@ -230,8 +258,15 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     # which shadows Javelin's unit_test.h via include path ordering.
 
 
-    # The test fixture uses link-time relocations for native Javelin pointers.
-    target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dicts/cat-test.S)
+    if(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+      zephyr_library_sources("${LAPWING_SRC}/lapwing_dictionary.cc")
+      zephyr_library_include_directories(
+        "${JAVELIN_SRC_DIR}/dictionary" "${QSPI_SRC}" "${LAPWING_SRC}")
+      zephyr_library_compile_definitions(LAPWING_BYTES=${LAPWING_BYTES})
+    else()
+      # The test fixture uses link-time relocations for native Javelin pointers.
+      target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/dicts/cat-test.S)
+    endif()
 
   endif() # central role check
 

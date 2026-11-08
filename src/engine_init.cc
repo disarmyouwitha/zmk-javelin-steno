@@ -18,6 +18,10 @@
 #include "static_allocate.h"
 #include "stroke.h"
 
+#ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+#include "lapwing_dictionary.h"
+#endif
+
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
@@ -38,6 +42,10 @@ static StenoProcessor *processor = nullptr;
 static bool initialized = false;
 
 static bool load_dictionary_collection() {
+  List<StenoDictionaryListEntry> entries;
+#ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+  entries.Add(StenoDictionaryListEntry(lapwing_dictionary(), true));
+#else
   const auto *collection =
       reinterpret_cast<const StenoDictionaryCollection *>(_javelin_dict_start);
 
@@ -55,10 +63,10 @@ static bool load_dictionary_collection() {
   printk("[JAV] header and timestamp valid\n");
 
   // Load dictionaries from collection
-  List<StenoDictionaryListEntry> entries;
   printk("[JAV] creating native dictionary objects\n");
   collection->AddDictionariesToList(entries);
   printk("[JAV] native dictionary objects created\n");
+#endif
 
   if (entries.IsEmpty()) {
     LOG_ERR("Steno dict collection empty");
@@ -68,6 +76,7 @@ static bool load_dictionary_collection() {
   new (dictionaryList)
       StenoDictionaryList(static_cast<List<StenoDictionaryListEntry> &&>(entries));
 
+#ifndef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
   // Exercise the ACTUAL engine constructor/cache/lookup path before translation.
   const struct { uint32_t stroke; const char *text; } checks[] = {
       {0x14, "if"}, {0x80000, "the"}, {0x80108, "cat"}, {0x2, "is"}};
@@ -82,6 +91,7 @@ static bool load_dictionary_collection() {
     printk("[JAV] native lookup 0x%x -> %s\n", check.stroke, result.GetText());
     result.Destroy();
   }
+#endif
 
   // Load orthography from collection if present, else empty
   const StenoOrthography *ortho = &StenoOrthography::emptyOrthography;
@@ -101,7 +111,7 @@ static bool load_dictionary_collection() {
   StenoEngine::container.value.AddConsoleCommands(Console::instance);
   Flash::AddConsoleCommands(Console::instance);
 
-  LOG_INF("Steno engine: %d read-only test dicts", collection->dictionaryCount);
+  LOG_INF("Steno engine initialized");
   return true;
 }
 
@@ -111,6 +121,12 @@ void zmk_javelin_steno_init(void) {
   if (initialized) {
     return;
   }
+#ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+  if (!lapwing_dictionary()) {
+    LOG_WRN("External Lapwing dictionary is unavailable");
+    return;
+  }
+#endif
   initialized = true;
   printk("[JAV] lazy init start; thread=%s\n", k_thread_name_get(k_current_get()));
 

@@ -6,6 +6,7 @@ import sys
 
 path = Path(sys.argv[1])
 source = path.read_text()
+copy_lookup_text = "--copy-lookup-text" in sys.argv[2:]
 changes = (
     ('#include "compact_map_dictionary.h"', '#include "compact_map_dictionary.h"\n#include "xip_load.h"'),
     ('masks[bitIndex / 32] &', 'xip_load_word(&masks[bitIndex / 32]) &'),
@@ -15,6 +16,13 @@ changes = (
     ('PopCount(block.masks[i])', 'PopCount(xip_load_word(&block.masks[i]))'),
     ('textBlock + entry->textOffset.ToUint32());', 'textBlock + xip_load_u24(&entry->textOffset));'),
 )
+if copy_lookup_text:
+    changes += (
+        ('#include "xip_load.h"', '#include "xip_load.h"\n#include "lapwing_dictionary.h"'),
+        ('StenoDictionaryLookupResult::CreateStaticString(\n'
+         '                                textBlock + xip_load_u24(&entry->textOffset))',
+         'lapwing_copy_lookup_text(textBlock + xip_load_u24(&entry->textOffset))'),
+    )
 for old, new in changes:
     if source.count(old) != 1:
         raise SystemExit(f"Unexpected pinned compact dictionary source near {old!r}")
