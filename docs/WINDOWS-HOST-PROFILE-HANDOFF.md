@@ -12,7 +12,7 @@ The firmware should press left Alt, tap keypad **0 2 3 1**, and release Alt befo
 
 ## Code and verification
 
-- Repository: `disarmyouwitha/zmk-javelin-steno`. The Mac checkout is on local branch `zen-r4/host-output-profiles`. Firmware commit `879e6e5` adds the feature and `a7ab6f8` records the power-cycle check. GitHub `main` is at the prior revision `4a1f387` as of this handoff. The feature commits are local, so the Windows session should not assume they are in a fresh clone. The board already has the feature build.
+- Repository: `disarmyouwitha/zmk-javelin-steno`. Check out `main` to get the host profile code and this handoff. Firmware commit `879e6e5` adds the feature and `a7ab6f8` records the power-cycle check. The board already has the feature build.
 - `src/platform/windows_us_layout.cc` maps common Windows-1252 characters to leading-zero Alt+numpad sequences. `src/platform/zmk_key_shim.cc` suppresses the zero-key sentinel after Javelin releases Alt. `src/engine_init.cc` selects the layout and persists it as `javelin/host_profile` in ZMK settings.
 - Chrome successfully switched both profiles over HID. The Windows selection survived a USB power cycle. Native emitter tests verified `Alt+0231` for **ç**, `Alt+0233` for **é**, and Alt release between consecutive accents. Those tests did not exercise the USB report path on Windows.
 - The website message about updating host layouts refers to uploading layout definitions. Selecting a built-in profile already works. Keep debugging focused on Windows text output.

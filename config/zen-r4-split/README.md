@@ -114,4 +114,4 @@ Try `SA / SRA` in a blank editor for “ça va.” Each profile covers a limited
 
 This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac profile and, together with the browser dictionary option, the Windows profile picker. Builds with that option disabled use Javelin's plain U.S. output.
 
-Hardware verification covered switching profiles in Chrome over HID and retaining Windows U.S. across a USB power cycle. Engine output tests checked the keypad sequences for ç and é and verified that Alt releases between characters. Typing those sequences on a Windows host still needs verification.
+Hardware verification covered switching profiles in Chrome over HID and retaining Windows U.S. across a USB power cycle. The Mac passed accented typing, repeat, undo, and subsequent ordinary typing. Engine tests checked the Windows keypad sequences for ç and é and verified that Alt releases between characters. The user reported incorrect output on a Windows host. The [Windows test handoff](../../docs/WINDOWS-HOST-PROFILE-HANDOFF.md) tracks reproduction and diagnosis.
