@@ -113,3 +113,5 @@ With Javelin Steno Tools connected over HID, open **Host Layout** and select the
 Try `SA / SRA` in a blank editor for “ça va.” Each profile covers a limited set of characters. Windows may interpret the Alt sequences differently if Num Lock is off, the host uses another code page, or the app intercepts the keystrokes. The picker selects firmware-supplied profiles. The page's layout update section refers to uploading new definitions and can still show that uploads are unavailable.
 
 This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac profile and, together with the browser dictionary option, the Windows profile picker. Builds with that option disabled use Javelin's plain U.S. output.
+
+Hardware verification covered switching profiles in Chrome over HID and retaining Windows U.S. across a USB power cycle. Engine output tests checked the keypad sequences for ç and é and verified that Alt releases between characters. Typing those sequences on a Windows host still needs verification.
