@@ -2,7 +2,7 @@
 
 Branch: `zen-r4/bluetooth-battery-test`, starting from `main` at `c2ba6d4`.
 
-## What is implemented
+## What was implemented at the time
 
 | Feature | Firmware status | Battery-only hardware test |
 | --- | --- | --- |
@@ -12,10 +12,8 @@ Branch: `zen-r4/bluetooth-battery-test`, starting from `main` at `c2ba6d4`.
 | Plover HID to computer | Module implements BLE HID over GATT reports and endpoint routing | Passed on Mac; user confirmed strokes received by Plover |
 | Javelin browser dictionary tools | Custom console is currently registered only as USB `HID_2` | Wireless transport not implemented |
 
-The browser tools have a separate “Select Bluetooth device...” option. Supporting
-that requires checking its expected GATT protocol and implementing a compatible
-firmware console transport. Existing Plover HID over GATT does not carry editor
-commands. No hosted website change has been established as necessary.
+The [wireless editor follow-up](JAVELIN-BLUETOOTH-HID.md) added a dedicated editor
+interface that works with the existing **Connect via HID** option.
 
 ## Pair and test
 

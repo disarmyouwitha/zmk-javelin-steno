@@ -9,7 +9,7 @@ This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javeli
 | Normal typing | ZMK sends ordinary keyboard reports over USB or Bluetooth. |
 | Onboard Javelin | The keyboard translates steno using the dictionaries in external flash and sends text over USB or Bluetooth. Host Plover can be closed. |
 | Plover HID | The keyboard sends raw steno strokes to Plover on the computer over USB or Bluetooth. Plover uses its own dictionaries. |
-| Javelin browser HID | Over USB, Javelin Steno Tools can edit and export the onboard personal dictionary, switch base dictionaries, and select a host output profile. Wireless browser editing is not implemented. |
+| Javelin browser HID | Over USB or Bluetooth, Javelin Steno Tools can edit and export the onboard personal dictionary, switch active dictionaries, and select a host output profile. Wireless connection was verified in Chrome on macOS. |
 
 From normal typing, the right thumbs are **Space**, **onboard Javelin**, and **Plover HID**, left to right. The middle left thumb holds **SYM+NUM**. In either steno mode, the outer left thumb returns to typing.
 
@@ -17,7 +17,7 @@ Both halves passed normal typing, cross-half Javelin chords, and host Plover HID
 
 ## Bluetooth to the computer
 
-The battery-powered left half passed normal typing, Plover HID strokes, and onboard Javelin output including **ça va ça va** over Bluetooth on macOS. These tests used the existing firmware paths; no Bluetooth source changes were needed. Explicit repeat/undo and a full power-cycle/reconnect test over the host Bluetooth connection remain to be checked. Windows Bluetooth has not yet been verified.
+The battery-powered left half passed normal typing, Plover HID strokes, and onboard Javelin output including **ça va ça va** over Bluetooth on macOS. The same Bluetooth connection also supports the Javelin browser editor. Explicit repeat/undo and a full power-cycle/reconnect test over the host Bluetooth connection remain to be checked. Windows Bluetooth has not yet been verified.
 
 From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for host profile 0 or **W** for profile 1. Pair **Zen R4 Split** in the computer's Bluetooth settings. Disconnect USB to test Bluetooth output, since ZMK normally prefers USB when it is connected. The tested Mac pairing is saved to profile 0.
 
@@ -39,14 +39,16 @@ Lapwing is active by default. Enable **Plover Base** and disable **Lapwing Base*
 
 ## Edit dictionaries in the browser
 
-1. Connect the left half over USB and open [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools) in Chrome.
-2. Choose **Connect via HID** and select **Zen R4 Split**.
-3. Open **Active Dictionaries** to change the active bases, or **Dictionary Management → View** to add, replace, remove, or export personal entries.
+1. For wireless editing, pair **Zen R4 Split** in the Mac's Bluetooth settings and unplug the left half's USB cable. You can also connect the left half over USB for wired editing.
+2. Open the existing [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools) in Chrome. Choose **Connect via HID** for either connection and select **Zen R4 Split**.
+3. Open **Active Dictionaries** to change the enabled dictionaries, or **Dictionary Management → View** to add, replace, remove, or export personal entries.
 4. Open **Host Layout** to select **Mac U.S.** or **Windows U.S. (plain text)**. The keyboard saves the selection. The Windows profile sends plain Latin letters for accented letters, such as c for ç and e for é, using the usual U.S. layout.
 
 Mac accent output passed on hardware. The Windows profile uses ordinary ASCII keystrokes for consistent text entry across applications.
 
-Javelin's browser HID interface is separate from Plover HID and currently requires USB. Plover HID also has a Bluetooth transport; it does not carry browser editor commands. Personal edits are saved to external flash. The base images are read-only from the browser and are provisioned over the diagnostics serial port.
+Personal edits are saved to external flash. The browser can enable or disable either base dictionary. The diagnostics serial port provisions the base images themselves. With every dictionary disabled, onboard Javelin types literal outlines such as `KAT`.
+
+The existing website loaded **Active Dictionaries** with USB unplugged. A separate Bluetooth HID check verified adding, replacing, reading back, and removing a temporary personal entry. See the [wireless editor test notes](docs/JAVELIN-BLUETOOTH-HID.md).
 
 ## Build and wiring
 
