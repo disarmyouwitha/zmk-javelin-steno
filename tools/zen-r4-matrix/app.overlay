@@ -1,0 +1,51 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	chosen {
+		zephyr,console = &matrix_cdc;
+	};
+
+	left_matrix: left-matrix {
+		compatible = "gpio-kbd-matrix";
+		row-gpios = <&pro_micro 8 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>,
+			    <&pro_micro 9 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>,
+			    <&pro_micro 21 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>,
+			    <&pro_micro 20 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		col-gpios = <&pro_micro 19 GPIO_ACTIVE_HIGH>,
+			    <&pro_micro 18 GPIO_ACTIVE_HIGH>,
+			    <&pro_micro 15 GPIO_ACTIVE_HIGH>,
+			    <&pro_micro 14 GPIO_ACTIVE_HIGH>,
+			    <&pro_micro 0 GPIO_ACTIVE_HIGH>,
+			    <&pro_micro 1 GPIO_ACTIVE_HIGH>;
+
+		/* R3 has thumb switches only at C3, C4 and C5. */
+		actual-key-mask = <0x7 0x7 0x7 0xf 0xf 0xf>;
+		no-ghostkey-check;
+		idle-mode = "scan";
+		poll-timeout-ms = <0>;
+	};
+};
+
+&zephyr_udc0 {
+	matrix_cdc: matrix_cdc {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+/* D0/D1 and the stock SPI pins belong to the matrix. */
+&uart0 {
+	status = "disabled";
+};
+
+&spi1 {
+	status = "disabled";
+};
+
+/* I2C shares the external flash wiring. Leave that bus idle. */
+&i2c0 {
+	status = "disabled";
+};
+
+&qspi {
+	status = "disabled";
+};

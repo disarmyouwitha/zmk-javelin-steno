@@ -1,3 +1,7 @@
+## Zen R4 handwired left half
+
+The assembled 21-key left half has been tested over USB in normal typing, host Plover HID, and onboard Javelin modes. Javelin reads the full Lapwing base dictionary from the W25Q128 QSPI flash. The [handwired left-half guide](config/zen-r4-left/README.md) includes the wiring diagram, build and provisioning steps, and the [tested keymap](config/zen-r4-left/nice_nano.keymap).
+
 ## Combined Corne test build
 
 This repository contains its own `config/` and local build instructions. No CI workflow is included. No changes to the separate Zen config repository are needed. See [Corne Plover HID test instructions](docs/CORNE-PLOVER-HID-TEST.md).
@@ -14,7 +18,7 @@ ZMK module that integrates the [Javelin steno engine](https://github.com/jthlim/
 
 **Four-entry internal-flash test confirmed on hardware, November 4, 2026.** A 42-key Corne with nice!nano v2 controllers translated `TP / -T / KAT / S / -T / KAT` to **if the cat is the cat**, with no host Plover and no external flash. Test configuration and results: https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/corne-javelin-test/CORNE-JAVELIN-TEST.md
 
-This branch deliberately builds a 142-byte, read-only fixture from `dicts/cat-test.json`, embedded as relocatable ARM assembly in `dicts/cat-test.S`. It does not currently select/download full dictionaries through the original dictionary Kconfig options. Regenerate the fixture with:
+The Corne target builds a 142-byte, read-only fixture from `dicts/cat-test.json`, embedded as relocatable ARM assembly in `dicts/cat-test.S`. Regenerate the fixture with:
 
 ```sh
 python3 tools/dict_compiler/compile_dict.py dicts/cat-test.json -o /tmp/cat-test.bin --asm-output dicts/cat-test.S
@@ -23,7 +27,7 @@ python3 tools/dict_compiler/test_tiny_dict.py
 
 Pin the engine to `22726675b2dcf3b8b6ba1e20898f25e324b2260a`; the JSC4 structure layout is version-dependent. The bridge fixes stroke bit masks, compact-table rank offsets, native pointer relocation, the stroke-table first-entry pointer, Zephyr 4 C++ settings, peripheral behavior registration, and safe lazy engine initialization. Diagnostics verify all four entries through the native engine before translation. Persistent user-dictionary writes remain unimplemented and the RAM placeholder is excluded from this read-only test.
 
-The upstream project was dropped without hardware testing. The result above establishes this small test only; full dictionaries and external QSPI integration remain future work. The requirements below are the upstream author's historical build figures, not measurements of this fixture.
+The requirements below are the upstream author's historical build figures. See the handwired left-half guide for the measured external Lapwing image size.
 
 ## Flash Requirements
 

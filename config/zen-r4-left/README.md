@@ -1,6 +1,10 @@
-# Zen R4 handwired left-half Lapwing test
+# Zen R4 handwired left half
 
 This USB target uses the verified 21-switch left matrix and the breadboard QSPI pin map. It keeps normal ZMK typing, onboard Javelin and host Plover HID as separate modes. The right half and split transport are outside this test.
+
+## Tested keymap
+
+The [ZMK keymap](nice_nano.keymap) includes the matrix wiring, the layout and all four layers.
 
 | Left thumb position | MAIN | Javelin or Plover HID |
 | --- | --- | --- |
@@ -16,6 +20,12 @@ Both steno layers use the same left-bank positions as the combined Corne configu
 | R1 | -T | S | T | P | H | Star |
 | R2 | E | S | K | W | R | Star |
 | R3 |  |  |  | MAIN | A | O |
+
+## Wiring diagram
+
+![Zen R4 left-half matrix, nice!nano v2 edge pins, and W25Q128 wiring](zen_r4_left_wiring_diagram.png)
+
+The diagram was drawn before bring-up. The assembled left half has since passed [standalone matrix testing](../../tools/zen-r4-matrix/README.md) and the firmware tests below.
 
 ## Build and provision
 
@@ -52,6 +62,8 @@ The uploader checks for conflicting existing bits before programming, verifies e
 
 In a text editor with Plover closed, enter Javelin with the outer thumb. Chord `TP / -T / KAT / S / -T / KAT` to type “if the cat is the cat.” For `KAT`, use R2C2, the middle thumb and R1C0. Test `HE / HROE` for “hello” from a two-stroke entry. Both strokes use R2C0 for E. Return to typing with the outer thumb. Enter Plover HID with the middle thumb and check the raw strokes in host Plover.
 
-## Bench results on the handwired half
+## Hardware results
 
-The left half booted as Zen R4 Left with keyboard and Plover HID USB interfaces. The full image passed per-chunk flash readback and a CRC check over all 1,700,488 memory-mapped bytes. Native Javelin lookups returned `if`, `cat`, and `hello` from `TP`, `KAT`, and `HE/HROE`. Physical chord tests and translation through host Plover are pending.
+The left half booted as Zen R4 Left with keyboard and Plover HID USB interfaces. The full image passed per-chunk flash readback and a CRC check over all 1,700,488 memory-mapped bytes. Native Javelin lookups returned `if`, `cat`, and `hello` from `TP`, `KAT`, and `HE/HROE`.
+
+The builder confirmed ordinary typing, host Plover HID steno, and onboard Javelin steno on the assembled left half.
