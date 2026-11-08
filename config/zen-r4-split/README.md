@@ -45,4 +45,6 @@ The first browser firmware passed its Javelin Web Serial handshake, personal dic
 
 The HID transport passed the native Javelin handshake, commands spanning multiple reports, dictionary exports, and two interleaved console channels. The official tools in Chrome connected through **Connect via HID** and saved a translation through the browser. That entry survived a firmware flash and reboot, and deleting it restored Lapwing's translation. This build exposes three HID interfaces and one diagnostics serial interface.
 
+The builder confirmed all three keyboard modes on the final HID firmware, including normal typing, host Plover HID, and onboard Javelin across both halves. The physical steno test produced “the cat is the cat if the cat is the cat!”
+
 After the editor firmware was flashed and rebooted, the builder reconfirmed normal typing, onboard Javelin, and host Plover HID on both halves.
