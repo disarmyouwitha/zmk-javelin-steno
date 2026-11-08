@@ -1,8 +1,11 @@
 # Javelin editor over Bluetooth HID
 
 Branch: `zen-r4/javelin-bluetooth-hid`. Firmware builds and native transport tests
-pass. Browser discovery and dictionary editing over actual Bluetooth hardware
-are not yet verified.
+pass. On the flashed left half, macOS exposed the editor collection over both
+USB and Bluetooth. A native HID client completed the Javelin handshake and read
+the dictionary list on both transports. Over Bluetooth it also added, replaced,
+read back, and removed a temporary personal entry. Chrome's picker and the
+hosted editor still need an end-to-end check with USB unplugged.
 
 ## Compatibility requirement
 
