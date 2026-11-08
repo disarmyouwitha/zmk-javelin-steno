@@ -9,6 +9,10 @@
 #include "engine.h"
 #include "flash.h"
 #include "orthography.h"
+#include "english_orthography.h"
+#ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+#include "platform/macos_us_layout.h"
+#endif
 #include "processor/all_up.h"
 #include "processor/first_up.h"
 #include "processor/jeff_modifiers.h"
@@ -196,10 +200,11 @@ static bool load_dictionary_collection() {
   }
 #endif
 
-  // Load orthography from collection if present, else empty
-  const StenoOrthography *ortho = &StenoOrthography::emptyOrthography;
   printk("[JAV] initializing orthography\n");
-  new (compiledOrthography) StenoCompiledOrthography(*ortho);
+  new (compiledOrthography) StenoCompiledOrthography(english_orthography);
+#ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+  zmk_javelin_use_macos_us_layout();
+#endif
 
   printk("[JAV] constructing engine\n");
   // Construct engine with the read-only test dictionary

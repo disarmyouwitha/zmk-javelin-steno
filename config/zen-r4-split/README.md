@@ -96,3 +96,9 @@ Native engine tests capture keyboard events and cover empty history, single-stro
 ```sh
 python3 tools/tests/run_repeat_translation.py "$ws/javelin-steno"
 ```
+
+## Onboard spelling and macOS character output
+
+Javelin applies common English spelling rules to separate suffix strokes. For example, `PWAOEUBG / -G` produces “biking.” A matching dictionary outline takes precedence over these rules.
+
+This split profile enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT`. With the Mac's **U.S.** or **ABC** input source selected, onboard Javelin can send accents and symbols available through Option and dead keys. For example, `SA / SRA` produces “ça va.” Characters outside those input sources' key sequences are unsupported. Disable this option when building for another host layout.

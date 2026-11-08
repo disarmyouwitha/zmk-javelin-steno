@@ -261,6 +261,9 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     # Build everything as a Zephyr library for C++23.
     zephyr_library_named(javelin_steno)
     zephyr_library_sources(${JAVELIN_LIB_SRC} ${ZMK_BRIDGE_SRC})
+    if(CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT)
+      zephyr_library_sources(src/platform/macos_us_layout.cc)
+    endif()
     # ZMK app headers aren't inherited by libraries — add manually
     zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
     zephyr_library_compile_options(

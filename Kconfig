@@ -26,6 +26,12 @@ config ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
     bool "Edit the personal dictionary over Javelin WebHID"
     depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
 
+config ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+    bool "Use macOS U.S./ABC accent and symbol keys in onboard Javelin"
+    help
+      Enable when the host uses the macOS U.S. or ABC input source.
+      ASCII keys continue to use Javelin's US layout.
+
 endif # ZMK_JAVELIN_STENO
 
 endmenu
