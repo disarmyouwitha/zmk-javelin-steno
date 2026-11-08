@@ -15,6 +15,10 @@
 #define CORNE_LEFT_MAIN_THUMBS &kp LCMD &mo SYM_NUM &kp BSPC
 #endif
 
+#ifndef CORNE_RIGHT_MAIN_THUMBS
+#define CORNE_RIGHT_MAIN_THUMBS &kp SPACE &to PLOVER_HID &to STENO
+#endif
+
 #ifndef CORNE_LEFT_SYMBOL_ROW_0
 // Voyager LED positions Q/W/R select or clear host Bluetooth profiles.
 #define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP &bt BT_CLR &none
@@ -58,7 +62,7 @@
 &ht ESC TAB  &ht LBKT Q   &ht RBKT W   &ht LBRC E   &ht RBRC R   &ht SQT T       &ht MINUS Y &ht AMPS U &ht STAR I     &ht LG(F) O   &ht LG(LS(N4)) P &kp DEL
 &kp LCTRL    &ht LG(A) A  &ht LG(S) S  &ht LPAR D   &ht RPAR F   &ht DQT G       &ht UNDER H &ht EXCL J &ht HASH K     &ht TILDE L   &ht RET SEMI     &kp RET
 &kp LSHIFT   &ht LG(Z) Z  &ht LG(X) X  &ht LG(C) C  &ht LG(V) V  &ht GRAVE B     &ht EQUAL N &ht AT M   &ht DLLR COMMA &ht CARET DOT &ht BSLH FSLH    &sk LSHIFT
-                                      CORNE_LEFT_MAIN_THUMBS                &kp SPACE &to PLOVER_HID &to STENO
+                                      CORNE_LEFT_MAIN_THUMBS                CORNE_RIGHT_MAIN_THUMBS
             >;
         };
 

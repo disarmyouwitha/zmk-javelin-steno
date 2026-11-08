@@ -1,5 +1,5 @@
-#define CORNE_LEFT_MAIN_THUMBS &to STENO &to PLOVER_HID &lt SYM_NUM BSPC
-#define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &kp N1 &kp N2 &kp UP &kp N3 &kp N4
-#define CORNE_LEFT_SYMBOL_ROW_1 &none &none &kp LEFT &kp DOWN &kp RIGHT &kp RET
+// Match the Corne-ish Zen Voyager controls. The outer right thumb also
+// switches between Plover HID and onboard Javelin from either steno layer.
+#define CORNE_RIGHT_MAIN_THUMBS &kp SPACE &kp SPACE &to PLOVER_HID
 
 #include "../corne.keymap"
