@@ -12,7 +12,9 @@ Disabling every dictionary exposed an empty-history bug in the pinned engine.
 With a maximum outline length of zero, the first steno stroke could ask for the
 last entry of an empty history. The firmware builds a private engine copy with
 an explicit empty-history check. A native regression covers raw steno output
-and undo with all dictionaries disabled.
+and undo with all dictionaries disabled. After flashing the fix, the editor
+reported all three dictionaries still disabled. With USB unplugged, a `KAT`
+chord in onboard Javelin mode produced the literal outline `KAT` on the Mac.
 
 ## Compatibility requirement
 
