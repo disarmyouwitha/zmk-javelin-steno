@@ -11,6 +11,19 @@
 #define STENO 2
 #define PLOVER_HID 3
 
+#ifndef CORNE_LEFT_MAIN_THUMBS
+#define CORNE_LEFT_MAIN_THUMBS &kp LCMD &mo SYM_NUM &kp BSPC
+#endif
+
+#ifndef CORNE_LEFT_SYMBOL_ROW_0
+// Voyager LED positions Q/W/R select or clear host Bluetooth profiles.
+#define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP &bt BT_CLR &none
+#endif
+
+#ifndef CORNE_LEFT_SYMBOL_ROW_1
+#define CORNE_LEFT_SYMBOL_ROW_1 &none &none &kp LEFT &kp DOWN &kp RIGHT &none
+#endif
+
 / {
     chosen {
         zmk,physical-layout = &foostan_corne_6col_layout;
@@ -45,17 +58,15 @@
 &ht ESC TAB  &ht LBKT Q   &ht RBKT W   &ht LBRC E   &ht RBRC R   &ht SQT T       &ht MINUS Y &ht AMPS U &ht STAR I     &ht LG(F) O   &ht LG(LS(N4)) P &kp DEL
 &kp LCTRL    &ht LG(A) A  &ht LG(S) S  &ht LPAR D   &ht RPAR F   &ht DQT G       &ht UNDER H &ht EXCL J &ht HASH K     &ht TILDE L   &ht RET SEMI     &kp RET
 &kp LSHIFT   &ht LG(Z) Z  &ht LG(X) X  &ht LG(C) C  &ht LG(V) V  &ht GRAVE B     &ht EQUAL N &ht AT M   &ht DLLR COMMA &ht CARET DOT &ht BSLH FSLH    &sk LSHIFT
-                                      &kp LCMD &mo SYM_NUM &kp BSPC          &kp SPACE &to PLOVER_HID &to STENO
+                                      CORNE_LEFT_MAIN_THUMBS                &kp SPACE &to PLOVER_HID &to STENO
             >;
         };
 
         sym_num_layer {
             display-name = "SYM+NUM";
-            // Voyager LED positions Q/W/R retain Zen Bluetooth controls.
-            // Profile indices 0/1 correspond to the first/second host slots.
             bindings = <
-&kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP    &bt BT_CLR &none           &kp KP_PLUS &kp N7 &kp N8 &kp N9 &kp BSPC &kp BSPC
-&none          &none        &kp LEFT    &kp DOWN  &kp RIGHT  &none           &kp MINUS   &kp N4 &kp N5 &kp N6 &kp RET  &kp RET
+CORNE_LEFT_SYMBOL_ROW_0                                                        &kp KP_PLUS &kp N7 &kp N8 &kp N9 &kp BSPC &kp BSPC
+CORNE_LEFT_SYMBOL_ROW_1                                                        &kp MINUS   &kp N4 &kp N5 &kp N6 &kp RET  &kp RET
 &kp LS(LEFT)   &none        &none       &kp SPACE &none      &none           &kp EQUAL   &kp N1 &kp N2 &kp N3 &kp DOT  &trans
                                       &trans &trans &trans                 &none &kp N0 &none
             >;

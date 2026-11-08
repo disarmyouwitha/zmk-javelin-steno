@@ -1,0 +1,9 @@
+#include "../../tools/zen-r4-qspi/qspi.overlay"
+
+&kscan0 {
+#include "../zen-r4-left/left-matrix.dtsi"
+};
+
+&uart0 { status = "disabled"; };
+&spi1 { status = "disabled"; };
+&i2c0 { status = "disabled"; };

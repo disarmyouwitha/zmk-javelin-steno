@@ -1,0 +1,5 @@
+#define CORNE_LEFT_MAIN_THUMBS &to STENO &to PLOVER_HID &lt SYM_NUM BSPC
+#define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &kp N1 &kp N2 &kp UP &kp N3 &kp N4
+#define CORNE_LEFT_SYMBOL_ROW_1 &none &none &kp LEFT &kp DOWN &kp RIGHT &kp RET
+
+#include "../corne.keymap"
