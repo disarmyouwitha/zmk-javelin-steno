@@ -7,9 +7,9 @@ Branch: `zen-r4/bluetooth-battery-test`, starting from `main` at `c2ba6d4`.
 | Feature | Firmware status | Battery-only hardware test |
 | --- | --- | --- |
 | Right half to left half | Existing ZMK Bluetooth split connection | Previously passed; repeat with left on battery |
-| Normal typing to computer | ZMK BLE keyboard output enabled | Pending |
-| Onboard Javelin to computer | Translation uses ZMK keycode events and its selected output | Pending |
-| Plover HID to computer | Module implements BLE HID over GATT reports and endpoint routing | Pending; host/Plover device discovery also needs verification |
+| Normal typing to computer | ZMK BLE keyboard output enabled | Passed on Mac, user confirmed 2026-11-08 |
+| Onboard Javelin to computer | Translation uses ZMK keycode events and its selected output | Passed on Mac, including accented output: “ça va ça va” |
+| Plover HID to computer | Module implements BLE HID over GATT reports and endpoint routing | Passed on Mac; user confirmed strokes received by Plover |
 | Javelin browser dictionary tools | Custom console is currently registered only as USB `HID_2` | Wireless transport not implemented |
 
 The browser tools have a separate “Select Bluetooth device...” option. Supporting
@@ -27,7 +27,10 @@ request with SMP status `0x03` / ZMK security error 4. Profile 0 still contained
 host bond. Selecting profile 0 and clearing its bond resolved the failure.
 The new pairing completed with SMP status `0x00`, encrypted security level 2,
 and the Mac then listed the connected keyboard as **Zen R4 Split**. The Mac's
-address was saved to profile 0. Battery-only typing and steno tests remain pending.
+address was saved to profile 0. The user subsequently confirmed normal typing,
+Plover HID strokes, and onboard Javelin translation over Bluetooth, including
+“ça va ça va”. A full power-cycle/reconnect check and explicit repeat/undo checks
+over Bluetooth remain unconfirmed.
 
 Pairing diagnosis used a temporary build option,
 `-DCONFIG_BT_SMP_LOG_LEVEL_DBG=y`. Do not retain that option in normal builds or
