@@ -1,100 +1,50 @@
-## Zen R4 handwired left half
+# ZMK + Javelin Steno
 
-The assembled 21-key left half has been tested over USB in normal typing, host Plover HID, and onboard Javelin modes. Javelin reads the full Lapwing base dictionary from the W25Q128 QSPI flash. The [handwired left-half guide](config/zen-r4-left/README.md) includes the wiring diagram, build and provisioning steps, and the [tested keymap](config/zen-r4-left/nice_nano.keymap).
+This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javelin-steno) on the keyboard. The tested full-dictionary build pairs a handwired Zen R4 left half with a Corne Ultralight right half. Both use nice!nano v2 controllers. The right half sends key positions to the left over Bluetooth, and the left connects to the computer over USB.
 
-## Combined Corne test build
+## What works on the tested split
 
-This repository contains its own `config/` and local build instructions. No CI workflow is included. No changes to the separate Zen config repository are needed. See [Corne Plover HID test instructions](docs/CORNE-PLOVER-HID-TEST.md).
+| Mode | What happens |
+| --- | --- |
+| Normal typing | ZMK sends ordinary keyboard reports to the host. |
+| Onboard Javelin | The keyboard translates steno using the dictionaries in external flash. Host Plover can be closed. |
+| Plover HID | The keyboard sends raw steno strokes to Plover on the computer. Plover uses its own dictionaries. |
+| Javelin browser HID | Javelin Steno Tools can view, edit, and export the onboard personal dictionary and switch the active base dictionaries. |
 
-From Main, the right thumb cluster is **Space / Plover HID / Javelin Steno** (inner to outer). Plover HID uses the host Plover engine; Javelin uses the onboard tiny dictionary. The thumb left of A exits either steno mode to Main. Combined-mode hardware validation is pending.
+From normal typing, the right thumbs are **Space**, **onboard Javelin**, and **Plover HID**, left to right. The middle left thumb holds **SYM+NUM**. In either steno mode, the outer left thumb returns to typing.
 
-# zmk-javelin-steno
+Both halves passed normal typing, cross-half Javelin chords, and host Plover HID, including split reconnection after a full reboot. Browser edits and base selection were also verified across a reboot. Onboard tests covered repeating a translation with the number bar, undoing the repeat with star, spelling **hoping** from `HOEP / -G`, and typing **ça va** on a Mac. Spelling and repeat run on the keyboard. The accent output uses macOS U.S./ABC keystrokes.
 
-The [Zen R4 external flash diagnostics](tools/zen-r4-qspi/) contain the breadboard quad SPI, memory-mapped dictionary, and simulated ZMK keyboard report tests.
+## External QSPI flash
 
-ZMK module that integrates the [Javelin steno engine](https://github.com/jthlim/javelin-steno) for on-board stenography on ZMK keyboards.
+This project implements the W25Q128 flash integration on the left half, including QSPI setup and quad reads, serial provisioning with readback, and memory-mapped dictionary lookup from Javelin. The firmware checks each base image's CRC and verifies native lookups before enabling onboard translation. This puts both full base dictionaries in the 16 MiB external chip while the firmware fits in the nice!nano's internal flash.
 
-## Status
+| External flash contents | Outlines | Size |
+| --- | ---: | ---: |
+| Lapwing Base | 114,885 | 1,700,488 bytes |
+| Plover Base | 147,424 | 2,178,864 bytes |
+| Personal dictionary | Varies | 16 KiB of entry data, backed by two CRC-checked snapshots |
 
-**Four-entry internal-flash test confirmed on hardware, November 4, 2026.** A 42-key Corne with nice!nano v2 controllers translated `TP / -T / KAT / S / -T / KAT` to **if the cat is the cat**, with no host Plover and no external flash. Test configuration and results: https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/corne-javelin-test/CORNE-JAVELIN-TEST.md
+Lapwing is active by default. Enable **Plover Base** and disable **Lapwing Base** in the browser to use Plover's base for onboard translation. The keyboard remembers the selection. When enabled, personal entries take priority over both bases. If both bases are active, Lapwing wins on overlapping outlines.
 
-The Corne target builds a 142-byte, read-only fixture from `dicts/cat-test.json`, embedded as relocatable ARM assembly in `dicts/cat-test.S`. Regenerate the fixture with:
+## Edit dictionaries in the browser
 
-```sh
-python3 tools/dict_compiler/compile_dict.py dicts/cat-test.json -o /tmp/cat-test.bin --asm-output dicts/cat-test.S
-python3 tools/dict_compiler/test_tiny_dict.py
-```
+1. Connect the left half over USB and open [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools) in Chrome.
+2. Choose **Connect via HID** and select **Zen R4 Split**.
+3. Open **Active Dictionaries** to change the active bases, or **Dictionary Management → View** to add, replace, remove, or export personal entries.
 
-Pin the engine to `22726675b2dcf3b8b6ba1e20898f25e324b2260a`; the JSC4 structure layout is version-dependent. The bridge fixes stroke bit masks, compact-table rank offsets, native pointer relocation, the stroke-table first-entry pointer, Zephyr 4 C++ settings, peripheral behavior registration, and safe lazy engine initialization. Diagnostics verify all four entries through the native engine before translation. Persistent user-dictionary writes remain unimplemented and the RAM placeholder is excluded from this read-only test.
+Javelin's browser HID interface and Plover HID are separate USB interfaces. Personal edits are saved to external flash. The base images are read-only from the browser and are provisioned over the diagnostics serial port.
 
-The requirements below are the upstream author's historical build figures. See the handwired left-half guide for the measured external Lapwing image size.
+## Build and wiring
 
-## Flash Requirements
+- [Tested Zen R4 / Corne Ultralight split](config/zen-r4-split/README.md) has the build, flash, provisioning, pairing, and verification steps. [Split keymap](config/zen-r4-split/corne.keymap)
+- [Standalone handwired left half](config/zen-r4-left/README.md) covers the 21-switch matrix, pin assignments, and Lapwing-only bring-up. [Wiring diagram](config/zen-r4-left/zen_r4_left_wiring_diagram.png)
+- [QSPI diagnostics](tools/zen-r4-qspi/README.md) covers JEDEC detection, quad reads, flash readback, and the memory-mapped lookup bench.
 
-Total flash usage (firmware + engine + dict) on a corne split (central half):
+Use the [pinned west manifest](config/west.yml). The JSC4 dictionary format depends on the pinned engine's native structure layout.
 
-| Dictionary | Total flash |
-|------------|------------|
-| Plover + Lapwing | 3.78 MB |
-| Plover only | 2.53 MB |
-| Lapwing only | 2.08 MB |
-| No dict (engine only) | 534 KB |
-
-## Making It Work on 1MB Flash
-
-If you want to use this on boards with limited flash (nice_nano_v2, etc.), some options:
-
-- **Optimize dictionary format** — Javelin uses JSC4 hash maps (~2-3MB compiled). A trie/DAWG-based format could reduce this significantly.
-- **Reduce dictionary size** — Trim to most common entries. ~120K entries fits ~458KB, ~100K entries fits ~384KB.
-- **Add external QSPI flash** — Boards with external flash (W25Q128, etc.) can store the full dictionary. The engine already supports XIP reads via `XipPointer`.
-
-## Setup
-
-Add to your `west.yml`:
-
-```yaml
-manifest:
-  remotes:
-    - name: disarmyouwitha
-      url-base: https://github.com/disarmyouwitha
-    - name: jthlim
-      url-base: https://github.com/jthlim
-  projects:
-    - name: zmk-javelin-steno
-      remote: disarmyouwitha
-      revision: 995fa19
-    - name: javelin-steno
-      remote: jthlim
-      revision: 22726675b2dcf3b8b6ba1e20898f25e324b2260a
-      path: zmk-javelin-steno/javelin
-```
-
-Add to your `.conf`:
-
-```ini
-CONFIG_ZMK_JAVELIN_STENO=y
-CONFIG_ZMK_JAVELIN_STENO_DICT_PLOVER=n
-CONFIG_ZMK_JAVELIN_STENO_DICT_LAPWING=n
-CONFIG_CPP=y
-CONFIG_REQUIRES_FULL_LIBCPP=y
-CONFIG_HEAP_MEM_POOL_SIZE=32768
-```
-
-For this tested fixture build, leave both full-dictionary options disabled. The fixture is selected directly in CMake; restoring full dictionary selection is future work.
-
-Add to your `.keymap` (see [steno_keys.h](include/dt-bindings/zmk/javelin_steno.h) for all available key bindings):
-
-```dts
-#include <dt-bindings/zmk/javelin_steno.h>
-#include <behaviors/javelin_steno.dtsi>
-
-steno_layer {
-    bindings = <
-        &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL ...
-    >;
-};
-```
+The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate target that runs a four-entry Javelin fixture from internal flash. The [`&javsteno` key bindings](include/dt-bindings/zmk/javelin_steno.h) apply to both builds.
 
 ## License
 
-This module is a bridge layer. The Javelin steno engine itself is licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
+The Javelin steno engine is licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
