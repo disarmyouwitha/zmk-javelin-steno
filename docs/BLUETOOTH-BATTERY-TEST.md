@@ -19,6 +19,22 @@ commands. No hosted website change has been established as necessary.
 
 ## Pair and test
 
+### Observed Mac pairing issue (2026-11-08)
+
+The keyboard initially appeared as `SETTINGS RESET` in macOS discovery. Clearing
+profile 1 alone did not fix pairing: the keyboard rejected the Mac's pairing
+request with SMP status `0x03` / ZMK security error 4. Profile 0 still contained a
+host bond. Selecting profile 0 and clearing its bond resolved the failure.
+The new pairing completed with SMP status `0x00`, encrypted security level 2,
+and the Mac then listed the connected keyboard as **Zen R4 Split**. The Mac's
+address was saved to profile 0. Battery-only typing and steno tests remain pending.
+
+Pairing diagnosis used a temporary build option,
+`-DCONFIG_BT_SMP_LOG_LEVEL_DBG=y`. Do not retain that option in normal builds or
+publish its raw logs: Zephyr's detailed SMP logging can include security keys.
+
+### Test sequence
+
 1. Keep both halves powered. Disconnect the left half's USB data cable so the test
    exercises Bluetooth output. ZMK normally prefers USB while it is available.
 2. From typing mode, hold the middle left thumb (SYM+NUM) and tap Q to select
