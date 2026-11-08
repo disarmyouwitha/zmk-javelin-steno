@@ -2,9 +2,9 @@
 
 The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
-The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) for MAIN and SYM+NUM. In MAIN, the left thumbs are Command, hold for SYM+NUM, and Backspace. The right thumbs are Space, Space, and Plover HID. Both lists are in physical left-to-right order.
+The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for SYM+NUM, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
 
-Tap the outer right thumb from MAIN to enter Plover HID. Tap it again to enter onboard Javelin, and tap it from Javelin to return to Plover HID. The outer left thumb returns to MAIN from either steno mode. The right half supplies the right-bank steno keys.
+In either steno mode, the middle right thumb chords U, the outer right thumb switches steno modes, and the outer left thumb returns to MAIN.
 
 ## Build
 
