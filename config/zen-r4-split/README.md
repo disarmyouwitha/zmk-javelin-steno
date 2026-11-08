@@ -31,6 +31,8 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 The dual-base build lists **user_dictionary**, **Lapwing Base**, and **Plover Base** in the existing Javelin browser tools' **Active Dictionaries** controls. On a keyboard without a saved selection, the personal dictionary and Lapwing are enabled and Plover is disabled. Browser enable, disable, and toggle commands save the selection in ZMK's settings before acknowledging success. The selection survives reboot and application UF2 updates. A settings reset clears it, along with other ZMK settings.
 
+Dictionary selections are stored on the keyboard and shared across connected computers. The HID console supports the dictionary-status events used to refresh the browser checkboxes. Individual checkboxes and All Dictionaries were verified in Chrome, including a fresh reconnect.
+
 To use Plover's onboard base, enable **Plover Base** and disable **Lapwing Base**. To return to Lapwing, enable **Lapwing Base** and disable **Plover Base**. Personal entries have highest priority when enabled. If both bases are enabled, Lapwing takes priority for overlapping outlines, followed by Plover. These switches affect onboard Javelin. Host Plover HID still sends raw strokes to Plover on the computer.
 
 The existing website supplies these controls. Firmware support handles listing, selection, and persistence. Both bases remain read-only through the browser, and the personal dictionary remains editable.

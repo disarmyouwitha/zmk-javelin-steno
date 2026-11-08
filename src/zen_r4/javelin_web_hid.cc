@@ -121,6 +121,13 @@ void dispatch(char *line, size_t size, HidWriter &writer) {
         zen_javelin_console_line(line, size, writer);
         return;
     }
+    // The Active Dictionaries page updates its checkboxes from status events
+    // after an enable/disable reply. Allow its subscription over this HID link.
+    if (strcmp(command, "enable_events dictionary_status\n") == 0 ||
+        strcmp(command, "disable_events dictionary_status\n") == 0) {
+        zen_javelin_console_line(line, size, writer);
+        return;
+    }
 
     if (channel) {
         writer.Write(line, 4);
