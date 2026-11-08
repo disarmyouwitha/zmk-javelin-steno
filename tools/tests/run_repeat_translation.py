@@ -1,7 +1,7 @@
 """Run repeat-command regressions against the actual pinned Javelin engine.
 
 Requires a native C++20 compiler. Stages a private engine copy and applies the
-same preparation and segment-builder patch as the firmware build.
+same compatibility patches as the firmware build.
 """
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -25,14 +25,20 @@ def main():
                     ignore=shutil.ignore_patterns(".git", "__pycache__"))
     subprocess.run([sys.executable, str(repo / "tools/build/prepare_engine.py"), str(engine)],
                    check=True)
-    patched = output / "segment_builder.cc"
-    subprocess.run([sys.executable, str(repo / "tools/build/prepare_segment_builder.py"),
-                    str(engine / "segment_builder.cc"), str(patched)], check=True)
+    patches = {
+        "segment_builder.cc": "prepare_segment_builder.py",
+        "engine_normal_mode.cc": "prepare_engine_normal_mode.py",
+    }
     objects_dir = output / "obj"
     objects_dir.mkdir(exist_ok=True)
     sources = list(engine.rglob("*.cc"))
-    sources.remove(engine / "segment_builder.cc")
-    sources += [patched, repo / "tools/tests/repeat_translation.cc"]
+    for filename, script in patches.items():
+        original, patched = engine / filename, output / filename
+        subprocess.run([sys.executable, str(repo / "tools/build" / script),
+                        str(original), str(patched)], check=True)
+        sources.remove(original)
+        sources.append(patched)
+    sources.append(repo / "tools/tests/repeat_translation.cc")
 
     def compile_source(source):
         name = "_".join(source.relative_to(engine).parts) if source.is_relative_to(engine) else source.name

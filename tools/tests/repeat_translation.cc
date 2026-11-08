@@ -1,9 +1,11 @@
 #include "engine.h"
 #include "button_script_manager.h"
 #include "dictionary/dictionary.h"
+#include "dictionary/dictionary_list.h"
 #include "key.h"
 #include <cstdio>
 #include <cstdlib>
+#include <new>
 #include <string>
 #include <vector>
 
@@ -50,8 +52,31 @@ void check(const char *name,std::vector<const char*> sequence,const char *expect
  if(actual!=expected){fprintf(stderr,"FAIL %s: expected [%s], got [%s]\n",name,expected,actual.c_str());exit(1);}
  printf("PASS %s: [%s]\n",name,actual.c_str());
 }
+void check_disabled_dictionaries() {
+  Fixture fixture;
+  List<StenoDictionaryListEntry> entries;
+  entries.Add(StenoDictionaryListEntry(&fixture, false));
+  StenoDictionaryList dictionary(static_cast<List<StenoDictionaryListEntry> &&>(entries));
+  StenoCompiledOrthography orthography(StenoOrthography::emptyOrthography);
+  // Match the zero-initialized engine storage on the keyboard.
+  alignas(StenoEngine) static unsigned char storage[sizeof(StenoEngine)]{};
+  auto &engine = *new (storage) StenoEngine(dictionary, nullptr, orthography);
+  Key::history.clear();
+  engine.Process(StenoStroke("KAT"));
+  engine.Process(StenoStroke("TP"));
+  engine.Process(StenoStroke("*"));
+  if (output() != "KAT") {
+    fprintf(stderr, "FAIL disabled dictionaries: expected [KAT], got [%s]\n",
+            output().c_str());
+    exit(1);
+  }
+  puts("PASS disabled dictionaries: raw strokes and undo");
+  engine.~StenoEngine();
+}
+
 int main(){
  alignas(4) static const uint8_t script[64]={0x4a,0x53,0x53,0x34};ButtonScriptManager::Initialize(script);
+ check_disabled_dictionaries();
  check("empty history",{"#"},"");
  check("single stroke",{"KAT","#"},"cat cat");
  check("repeat twice and undo",{"KAT","#","#","*"},"cat cat");

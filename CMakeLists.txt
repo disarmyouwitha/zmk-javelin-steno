@@ -38,6 +38,15 @@ if(CONFIG_ZMK_JAVELIN_STENO)
         "${JAVELIN_SRC_DIR}/segment_builder.cc" "${JAVELIN_SEGMENT_BUILDER_SRC}"
       COMMAND_ERROR_IS_FATAL ANY)
 
+    set(JAVELIN_NORMAL_MODE_SRC "${CMAKE_CURRENT_BINARY_DIR}/compat/engine_normal_mode.cc")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+      "${JAVELIN_SRC_DIR}/engine_normal_mode.cc"
+      "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_engine_normal_mode.py")
+    execute_process(
+      COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_engine_normal_mode.py"
+        "${JAVELIN_SRC_DIR}/engine_normal_mode.cc" "${JAVELIN_NORMAL_MODE_SRC}"
+      COMMAND_ERROR_IS_FATAL ANY)
+
     set(JAVELIN_COMPACT_MAP_SRC "${JAVELIN_SRC_DIR}/dictionary/compact_map_dictionary.cc")
     if(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
       if(NOT EXISTS "${ZMK_JAVELIN_LAPWING_IMAGE}")
@@ -97,7 +106,7 @@ if(CONFIG_ZMK_JAVELIN_STENO)
       ${JAVELIN_SRC_DIR}/engine_add_translation_mode.cc
       ${JAVELIN_SRC_DIR}/engine_binding.cc
       ${JAVELIN_SRC_DIR}/engine_console_mode.cc
-      ${JAVELIN_SRC_DIR}/engine_normal_mode.cc
+      ${JAVELIN_NORMAL_MODE_SRC}
       ${JAVELIN_SRC_DIR}/engine.cc
       ${JAVELIN_SRC_DIR}/flash.cc
       ${JAVELIN_SRC_DIR}/hash.cc

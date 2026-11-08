@@ -4,8 +4,15 @@ Branch: `zen-r4/javelin-bluetooth-hid`. Firmware builds and native transport tes
 pass. On the flashed left half, macOS exposed the editor collection over both
 USB and Bluetooth. A native HID client completed the Javelin handshake and read
 the dictionary list on both transports. Over Bluetooth it also added, replaced,
-read back, and removed a temporary personal entry. Chrome's picker and the
-hosted editor still need an end-to-end check with USB unplugged.
+read back, and removed a temporary personal entry. With USB unplugged, the
+existing site connected through **Connect via HID** and loaded **Active
+Dictionaries**.
+
+Disabling every dictionary exposed an empty-history bug in the pinned engine.
+With a maximum outline length of zero, the first steno stroke could ask for the
+last entry of an empty history. The firmware builds a private engine copy with
+an explicit empty-history check. A native regression covers raw steno output
+and undo with all dictionaries disabled.
 
 ## Compatibility requirement
 
