@@ -54,6 +54,6 @@ SYM+NUM + R clears the selected host profile's Bluetooth bond. Use it only if
 repairing a failed host pairing; remove the corresponding computer-side pairing
 before pairing again. It is not needed for a normal first test.
 
-Firmware behavior is unchanged on this branch. Battery life and flash power
-management are separate follow-up work: the current left configuration disables
-sleep and keeps the external dictionary flash powered.
+This trial used a build with deep sleep disabled and the flash powered
+continuously. The [deep sleep follow-up](../README.md#deep-sleep-on-battery)
+added flash rail shutdown and verified keypress wake on the left half.

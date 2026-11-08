@@ -23,7 +23,11 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 **SYM+NUM + R** clears the selected host profile's pairing. During bring-up, the Mac initially showed the keyboard as **SETTINGS RESET**, and pairing failed until an old bond in profile 0 was cleared. It then paired successfully and appeared as **Zen R4 Split**. Clearing a different empty profile did not resolve that stale bond. See the [Bluetooth test notes](docs/BLUETOOTH-BATTERY-TEST.md) for the observed sequence and remaining checks.
 
-Battery operation is working, but battery life has not been measured. The current left configuration disables sleep and keeps the external dictionary flash powered.
+## Deep sleep on battery
+
+The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor.
+
+Press a key on the left half to wake it. Startup restores flash power and verifies the base dictionaries before onboard Javelin and the editor can use them. On hardware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
 ## External QSPI flash
 
