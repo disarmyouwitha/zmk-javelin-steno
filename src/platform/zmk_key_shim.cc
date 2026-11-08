@@ -11,6 +11,9 @@ static constexpr uint16_t HID_USAGE_PAGE_CONSUMER = 0x0C;
 
 static void emit_keycode(KeyCode key, bool pressed) {
   uint32_t v = key.value;
+  if (v == 0) {
+    return;
+  }
   uint16_t usage_page;
   uint32_t keycode;
 

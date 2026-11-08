@@ -99,8 +99,17 @@ Native engine tests capture keyboard events and cover empty history, single-stro
 python3 tools/tests/run_repeat_translation.py "$ws/javelin-steno"
 ```
 
-## Onboard spelling and macOS character output
+## Onboard spelling and host output profiles
 
 Javelin applies common English spelling rules to separate suffix strokes. For example, `PWAOEUBG / -G` produces “biking.” A matching dictionary outline takes precedence over these rules.
 
-This split profile enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT`. With the Mac's **U.S.** or **ABC** input source selected, onboard Javelin can send accents and symbols available through Option and dead keys. For example, `SA / SRA` produces “ça va.” Characters outside those input sources' key sequences are unsupported. Disable this option when building for another host layout.
+With Javelin Steno Tools connected over HID, open **Host Layout** and select the profile for the connected computer. The left half saves it in ZMK settings and reloads it after reboot. The setting affects onboard Javelin text output.
+
+| Profile | Host setup | Character output |
+| --- | --- | --- |
+| Mac U.S./ABC (default) | Use the U.S. or ABC input source. | Option and dead-key sequences, such as Option+C for ç. |
+| Windows U.S. (Alt codes) | Keep the standard U.S. input layout and turn Num Lock on. | Windows-1252 characters through built-in Alt+numpad codes, such as Alt+0231 for ç. |
+
+Try `SA / SRA` in a blank editor for “ça va.” Each profile covers a limited set of characters. Windows may interpret the Alt sequences differently if Num Lock is off, the host uses another code page, or the app intercepts the keystrokes. The picker selects firmware-supplied profiles. The page's layout update section refers to uploading new definitions and can still show that uploads are unavailable.
+
+This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac profile and, together with the browser dictionary option, the Windows profile picker. Builds with that option disabled use Javelin's plain U.S. output.

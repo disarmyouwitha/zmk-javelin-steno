@@ -11,7 +11,11 @@
 #include "orthography.h"
 #include "english_orthography.h"
 #ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+#include "host_layout.h"
 #include "platform/macos_us_layout.h"
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+#include "platform/windows_us_layout.h"
+#endif
 #endif
 #include "processor/all_up.h"
 #include "processor/first_up.h"
@@ -65,8 +69,60 @@ public:
 // and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
 static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
 
-static int dictionary_settings_set(const char *name, size_t length,
-                                   settings_read_cb read, void *argument) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+static constexpr const char *host_profiles[] = {"Mac U.S./ABC", "Windows U.S. (Alt codes)"};
+static uint8_t host_profile = 0;
+
+static void apply_host_profile() {
+  HostLayouts::SetActiveLayout(host_profile == 0 ? zmk_javelin_macos_us_layout()
+                                                : zmk_javelin_windows_us_layout());
+}
+
+static void get_host_parameter(void *, const char *line) {
+  const char *name = strchr(line, ' ');
+  if (name && strcmp(name + 1, "available_host_layouts") == 0) {
+    Console::Printf("[\"%s\",\"%s\"]\n\n", host_profiles[0], host_profiles[1]);
+  } else if (name && strcmp(name + 1, "host_layout") == 0) {
+    Console::Printf("%s\n\n", host_profiles[host_profile]);
+  } else {
+    Console::Printf("ERR Unknown parameter\n\n");
+  }
+}
+
+static void set_host_profile(void *, const char *line) {
+  const char *name = strchr(line, ' ');
+  for (uint8_t profile = 0; name && profile < ARRAY_SIZE(host_profiles); ++profile) {
+    if (strcmp(name + 1, host_profiles[profile]) != 0) {
+      continue;
+    }
+    if (profile != host_profile) {
+      if (settings_save_one("javelin/host_profile", &profile, sizeof(profile)) != 0) {
+        Console::Printf("ERR Unable to save host layout\n\n");
+        return;
+      }
+      host_profile = profile;
+      apply_host_profile();
+    }
+    Console::SendOk();
+    return;
+  }
+  Console::Printf("ERR Unknown host layout\n\n");
+}
+#endif
+
+static int javelin_settings_set(const char *name, size_t length,
+                                settings_read_cb read, void *argument) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+  if (strcmp(name, "host_profile") == 0) {
+    uint8_t profile;
+    if (length != sizeof(profile) || read(argument, &profile, sizeof(profile)) != sizeof(profile) ||
+        profile >= ARRAY_SIZE(host_profiles)) {
+      return -EINVAL;
+    }
+    host_profile = profile;
+    return 0;
+  }
+#endif
   if (strcmp(name, "dictionaries") != 0) {
     return -ENOENT;
   }
@@ -79,7 +135,7 @@ static int dictionary_settings_set(const char *name, size_t length,
   return 0;
 }
 
-SETTINGS_STATIC_HANDLER_DEFINE(javelin, "javelin", nullptr, dictionary_settings_set,
+SETTINGS_STATIC_HANDLER_DEFINE(javelin, "javelin", nullptr, javelin_settings_set,
                                nullptr, nullptr);
 
 static void select_dictionary(void *, const char *line) {
@@ -203,7 +259,11 @@ static bool load_dictionary_collection() {
   printk("[JAV] initializing orthography\n");
   new (compiledOrthography) StenoCompiledOrthography(english_orthography);
 #ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
-  zmk_javelin_use_macos_us_layout();
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  apply_host_profile();
+#else
+  HostLayouts::SetActiveLayout(zmk_javelin_macos_us_layout());
+#endif
 #endif
 
   printk("[JAV] constructing engine\n");
@@ -217,6 +277,12 @@ static bool load_dictionary_collection() {
 
   // Register console commands
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+#ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
+  Console::instance.RegisterCommand("get_parameter", "Read host layout parameters",
+                                    get_host_parameter, nullptr);
+  Console::instance.RegisterCommand("set_host_layout", "Set and save the host layout",
+                                    set_host_profile, nullptr);
+#endif
   Console::instance.RegisterCommand("enable_dictionary", "Enable and save selection",
                                     select_dictionary, nullptr);
   Console::instance.RegisterCommand("disable_dictionary", "Disable and save selection",

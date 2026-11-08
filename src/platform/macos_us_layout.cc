@@ -156,7 +156,7 @@ struct MacHostLayout {
 static_assert(offsetof(MacHostLayout, entries) == sizeof(HostLayout));
 } // namespace
 
-void zmk_javelin_use_macos_us_layout() {
+const HostLayout &zmk_javelin_macos_us_layout() {
     static const MacHostLayout layout;
-    HostLayouts::SetActiveLayout(layout.header);
+    return layout.header;
 }

@@ -9,11 +9,11 @@ This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javeli
 | Normal typing | ZMK sends ordinary keyboard reports to the host. |
 | Onboard Javelin | The keyboard translates steno using the dictionaries in external flash. Host Plover can be closed. |
 | Plover HID | The keyboard sends raw steno strokes to Plover on the computer. Plover uses its own dictionaries. |
-| Javelin browser HID | Javelin Steno Tools can view, edit, and export the onboard personal dictionary and switch the active base dictionaries. |
+| Javelin browser HID | Javelin Steno Tools can edit and export the onboard personal dictionary, switch base dictionaries, and select a host output profile. |
 
 From normal typing, the right thumbs are **Space**, **onboard Javelin**, and **Plover HID**, left to right. The middle left thumb holds **SYM+NUM**. In either steno mode, the outer left thumb returns to typing.
 
-Both halves passed normal typing, cross-half Javelin chords, and host Plover HID, including split reconnection after a full reboot. Browser edits and base selection were also verified across a reboot. Onboard tests covered repeating a translation with the number bar, undoing the repeat with star, spelling **hoping** from `HOEP / -G`, and typing **ça va** on a Mac. Spelling and repeat run on the keyboard. The accent output uses macOS U.S./ABC keystrokes.
+Both halves passed normal typing, cross-half Javelin chords, and host Plover HID, including split reconnection after a full reboot. Browser edits and base selection were also verified across a reboot. Onboard tests covered repeating a translation with the number bar, undoing the repeat with star, spelling **hoping** from `HOEP / -G`, and typing **ça va** on a Mac. Spelling and repeat run on the keyboard.
 
 ## External QSPI flash
 
@@ -32,6 +32,7 @@ Lapwing is active by default. Enable **Plover Base** and disable **Lapwing Base*
 1. Connect the left half over USB and open [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools) in Chrome.
 2. Choose **Connect via HID** and select **Zen R4 Split**.
 3. Open **Active Dictionaries** to change the active bases, or **Dictionary Management → View** to add, replace, remove, or export personal entries.
+4. Open **Host Layout** to select **Mac U.S./ABC** or **Windows U.S. (Alt codes)**. The keyboard saves the selection. Windows keeps its usual U.S. layout and needs Num Lock on for Alt-code accents.
 
 Javelin's browser HID interface and Plover HID are separate USB interfaces. Personal edits are saved to external flash. The base images are read-only from the browser and are provisioned over the diagnostics serial port.
 
