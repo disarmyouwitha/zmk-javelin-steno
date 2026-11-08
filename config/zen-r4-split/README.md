@@ -110,10 +110,12 @@ With Javelin Steno Tools connected over HID, open **Host Layout** and select the
 | Profile | Host setup | Character output |
 | --- | --- | --- |
 | Mac U.S./ABC (default) | Use the U.S. or ABC input source. | Option and dead-key sequences, such as Option+C for ç. |
-| Windows U.S. (Alt codes) | Keep the standard U.S. input layout and turn Num Lock on. | Windows-1252 characters through built-in Alt+numpad codes, such as Alt+0231 for ç. |
+| Windows U.S. (plain text) | Use the standard U.S. input layout. | Plain Latin letters for accents, such as c for ç and e for é. Common curly quotes and dashes become ASCII punctuation. |
 
-Try `SA / SRA` in a blank editor for “ça va.” Each profile covers a limited set of characters. Windows may interpret the Alt sequences differently if Num Lock is off, the host uses another code page, or the app intercepts the keystrokes. The picker selects firmware-supplied profiles. The page's layout update section refers to uploading new definitions and can still show that uploads are unavailable.
+Try `SA / SRA` in a blank editor. Mac produces “ça va” and Windows plain text produces “ca va.” The Windows profile sends ordinary ASCII keys and has no Num Lock dependency. Latin-1 characters without a one-character ASCII mapping use a question mark. Each mapped character emits one character to keep undo counts aligned. The picker selects firmware-supplied profiles. The page's layout update section refers to uploading new definitions and can still show that uploads are unavailable.
 
 This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac profile and, together with the browser dictionary option, the Windows profile picker. Builds with that option disabled use Javelin's plain U.S. output.
 
 Hardware verification covered switching profiles in Chrome over HID and retaining Windows U.S. across a USB power cycle. The Mac passed accented typing, repeat, undo, and subsequent ordinary typing. Engine tests checked the Windows keypad sequences for ç and é and verified that Alt releases between characters. The user reported incorrect output on a Windows host. The [Windows test handoff](../../docs/WINDOWS-HOST-PROFILE-HANDOFF.md) tracks reproduction and diagnosis.
+
+The Windows plain-text engine regression checks covered accented phrases, consecutive translations, repeat, undo, capitalization, and punctuation. Every checked output used ordinary keys without Alt, keypad, or Num Lock events. Physical Windows validation of this build remains pending.

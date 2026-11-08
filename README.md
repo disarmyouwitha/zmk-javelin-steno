@@ -32,9 +32,9 @@ Lapwing is active by default. Enable **Plover Base** and disable **Lapwing Base*
 1. Connect the left half over USB and open [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools) in Chrome.
 2. Choose **Connect via HID** and select **Zen R4 Split**.
 3. Open **Active Dictionaries** to change the active bases, or **Dictionary Management → View** to add, replace, remove, or export personal entries.
-4. Open **Host Layout** to select **Mac U.S./ABC** or **Windows U.S. (Alt codes)**. The keyboard saves the selection. Windows keeps its usual U.S. layout and needs Num Lock on for Alt-code accents.
+4. Open **Host Layout** to select **Mac U.S./ABC** or **Windows U.S. (plain text)**. The keyboard saves the selection. The Windows profile sends plain Latin letters for accented letters, such as c for ç and e for é, using the usual U.S. layout.
 
-Mac accent output passed on hardware. The Windows profile can be selected and saved, but its accent output needs further debugging. See the [Windows test handoff](docs/WINDOWS-HOST-PROFILE-HANDOFF.md).
+Mac accent output passed on hardware. The Windows profile uses ordinary ASCII keystrokes for consistent text entry across applications.
 
 Javelin's browser HID interface and Plover HID are separate USB interfaces. Personal edits are saved to external flash. The base images are read-only from the browser and are provisioned over the diagnostics serial port.
 
