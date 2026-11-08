@@ -34,58 +34,27 @@ RIGHT_BANK = 'FRPBLGTSDZ'
 VOWELS = 'AOEU'
 
 
+# Match the pinned engine's EXTENDED_ENGLISH_STROKE_PARSER order, including
+# numeric aliases. Digits assert the number bar and their physical key together.
+STROKE_PARSER = [('#', 1), ('^', 0x800000), ('+', 0x1000000),
+                ('1', 3), ('S', 2), ('2', 5), ('T', 4), ('K', 8),
+                ('3', 17), ('P', 16), ('W', 32), ('4', 65), ('H', 64), ('R', 128),
+                ('5', 257), ('A', 256), ('0', 513), ('O', 512), ('*', 1024), ('-', 0),
+                ('E', 2048), ('U', 4096), ('6', 8193), ('F', 8192), ('R', 16384),
+                ('7', 32769), ('P', 32768), ('B', 65536), ('8', 131073), ('L', 131072),
+                ('G', 262144), ('9', 524289), ('T', 524288), ('S', 1048576),
+                ('D', 2097152), ('Z', 4194304)]
+
+
 def parse_stroke(s: str) -> int:
     result = 0
-    if '#' in s:
-        result |= STENO_KEYS['#']
-        s = s.replace('#', '')
-
-    if '-' in s:
-        left, right = s.split('-', 1)
-        for c in left:
-            if c == '*':
-                result |= STENO_KEYS['*']
-            elif c in 'STKPWHR':
-                result |= STENO_KEYS[c + '-']
-            elif c in VOWELS:
-                result |= STENO_KEYS[{
-                    'A': 'A-', 'O': 'O-', 'E': '-E', 'U': '-U'
-                }[c]]
-        for c in right:
-            key = '-' + c
-            if key in STENO_KEYS:
-                result |= STENO_KEYS[key]
-        return result
-
-    # No explicit hyphen — determine split from steno order
-    has_vowel_or_star = any(c in IMPLICIT_HYPHEN for c in s)
-    if has_vowel_or_star:
-        phase = 'left'
-        for c in s:
-            if phase == 'left':
-                if c in IMPLICIT_HYPHEN:
-                    phase = 'vowel'
-                    if c == '*':
-                        result |= STENO_KEYS['*']
-                    else:
-                        result |= STENO_KEYS[{'A': 'A-', 'O': 'O-', 'E': '-E', 'U': '-U'}[c]]
-                elif c in LEFT_BANK:
-                    result |= STENO_KEYS[c + '-']
-            elif phase == 'vowel':
-                if c in IMPLICIT_HYPHEN:
-                    if c == '*':
-                        result |= STENO_KEYS['*']
-                    else:
-                        result |= STENO_KEYS[{'A': 'A-', 'O': 'O-', 'E': '-E', 'U': '-U'}[c]]
-                else:
-                    phase = 'right'
-                    result |= STENO_KEYS['-' + c]
-            else:
-                result |= STENO_KEYS['-' + c]
-    else:
-        for c in s:
-            if c in LEFT_BANK:
-                result |= STENO_KEYS[c + '-']
+    cursor = 0
+    for character, mask in STROKE_PARSER:
+        if cursor < len(s) and s[cursor] == character:
+            result |= mask
+            cursor += 1
+    if cursor != len(s) or not result:
+        raise ValueError(f"Invalid or out-of-order steno stroke: {s!r}")
     return result
 
 
@@ -209,8 +178,8 @@ class DictionaryCollectionBuilder:
             for outline, translation in raw_dict.items():
                 try:
                     strokes = parse_outline(outline)
-                except (KeyError, ValueError):
-                    continue
+                except (KeyError, ValueError) as error:
+                    raise ValueError(f"{dict_name}: invalid outline {outline!r}") from error
                 stroke_count = len(strokes)
                 by_length[stroke_count][strokes] = translation
                 max_outline_len = max(max_outline_len, stroke_count)
@@ -461,7 +430,8 @@ class DictionaryCollectionBuilder:
         # Timestamp at end of text block
         write_u32(timestamp_end_offset, timestamp)
 
-        return bytes(buf)
+        # QSPI DMA and mapped CRC readers require a whole number of words.
+        return bytes(buf) + bytes((-len(buf)) % 4)
 
 
 def main():

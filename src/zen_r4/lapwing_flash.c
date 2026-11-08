@@ -19,7 +19,37 @@
 #define JSC4_MAGIC 0x3443534aU
 
 BUILD_ASSERT(LAPWING_BYTES % sizeof(uint32_t) == 0);
-BUILD_ASSERT(LAPWING_BYTES <= FLASH_BYTES - SECTOR_BYTES);
+BUILD_ASSERT(LAPWING_BYTES <= BASE_DICTIONARY_LIMIT);
+#if PLOVER_BYTES > 0
+BUILD_ASSERT(LAPWING_BYTES <= PLOVER_FLASH_OFFSET);
+BUILD_ASSERT(PLOVER_BYTES % sizeof(uint32_t) == 0);
+BUILD_ASSERT(PLOVER_FLASH_OFFSET + PLOVER_BYTES <= BASE_DICTIONARY_LIMIT);
+#endif
+
+struct base_image {
+    const char *name;
+    uint32_t offset;
+    uint32_t bytes;
+    uint32_t crc;
+    uint8_t command;
+    uint8_t query;
+    bool verified;
+};
+static struct base_image images[] = {
+    {"LAPWING", 0, LAPWING_BYTES, LAPWING_CRC, 'L', '?'},
+#if PLOVER_BYTES > 0
+    {"PLOVER", PLOVER_FLASH_OFFSET, PLOVER_BYTES, PLOVER_CRC, 'P', 'p'},
+#endif
+};
+
+static bool all_verified(void) {
+    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+        if (!images[i].verified) {
+            return false;
+        }
+    }
+    return true;
+}
 
 PINCTRL_DT_DEFINE(QSPI_NODE);
 
@@ -56,19 +86,19 @@ static bool start_qspi(nrfx_qspi_config_t *config) {
     return id[0] == 0xef && id[1] == 0x40 && id[2] == 0x18;
 }
 
-static bool read_image_crc(void) {
+static bool read_image_crc(const struct base_image *image) {
     uint32_t crc = 0;
 
-    for (uint32_t offset = 0; offset < LAPWING_BYTES; offset += CHUNK_BYTES) {
-        const size_t size = MIN(CHUNK_BYTES, LAPWING_BYTES - offset);
+    for (uint32_t offset = 0; offset < image->bytes; offset += CHUNK_BYTES) {
+        const size_t size = MIN(CHUNK_BYTES, image->bytes - offset);
 
-        if (nrfx_qspi_read(readback, size, offset) != NRFX_SUCCESS) {
+        if (nrfx_qspi_read(readback, size, image->offset + offset) != NRFX_SUCCESS) {
             return false;
         }
         crc = crc32_ieee_update(crc, readback, size);
         k_yield();
     }
-    return crc == LAPWING_CRC;
+    return crc == image->crc;
 }
 
 static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
@@ -81,36 +111,43 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
         return false;
     }
 
-    uint32_t crc = 0;
-    const volatile uint32_t *mapped = (const volatile uint32_t *)XIP_BASE;
-    for (size_t offset = 0; offset < LAPWING_BYTES; offset += CHUNK_BYTES) {
-        const size_t size = MIN(CHUNK_BYTES, LAPWING_BYTES - offset);
-
-        for (size_t index = 0; index < size; index += sizeof(uint32_t)) {
-            const uint32_t word = mapped[(offset + index) / sizeof(uint32_t)];
-            __DSB();
-            memcpy(readback + index, &word, sizeof(word));
+    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+        const struct base_image *image = &images[i];
+        uint32_t crc = 0;
+        const volatile uint32_t *mapped = (const volatile uint32_t *)(XIP_BASE + image->offset);
+        for (size_t offset = 0; offset < image->bytes; offset += CHUNK_BYTES) {
+            const size_t size = MIN(CHUNK_BYTES, image->bytes - offset);
+            for (size_t index = 0; index < size; index += sizeof(uint32_t)) {
+                const uint32_t word = mapped[(offset + index) / sizeof(uint32_t)];
+                __DSB();
+                memcpy(readback + index, &word, sizeof(word));
+            }
+            crc = crc32_ieee_update(crc, readback, size);
+            k_yield();
         }
-        crc = crc32_ieee_update(crc, readback, size);
-        k_yield();
-    }
-    if (crc != LAPWING_CRC) {
-        printk("Lapwing mapped CRC mismatch: %08x\n", crc);
-        return false;
+        if (crc != image->crc) {
+            printk("%s mapped CRC mismatch: %08x\n", image->name, crc);
+            return false;
+        }
     }
     if (!lapwing_verify_native_dictionary(XIP_BASE)) {
         return false;
     }
+#if PLOVER_BYTES > 0
+    if (!plover_verify_native_dictionary(XIP_BASE + PLOVER_FLASH_OFFSET)) {
+        return false;
+    }
+#endif
 
     // The personal-dictionary store serializes its QSPI operations with mapped lookups.
     atomic_set(&mapped_ready, 1);
     return true;
 }
 
-static void reply(const char *message, uint32_t value) {
+static void reply(const struct base_image *image, const char *message, uint32_t value) {
     char line[64];
 
-    snprintk(line, sizeof(line), "LAPWING %s %u\r\n", message, value);
+    snprintk(line, sizeof(line), "%s %s %u\r\n", image->name, message, value);
     for (const char *character = line; *character; character++) {
         uart_poll_out(console, *character);
     }
@@ -144,22 +181,22 @@ static bool wait_until_ready(void) {
     return false;
 }
 
-static bool transfer_image(bool program) {
+static bool transfer_image(const struct base_image *image, bool program) {
     uint32_t crc = 0;
 
-    reply(program ? "WRITE" : "PREFLIGHT", LAPWING_BYTES);
-    for (uint32_t offset = 0; offset < LAPWING_BYTES; offset += CHUNK_BYTES) {
-        const size_t size = MIN(CHUNK_BYTES, LAPWING_BYTES - offset);
+    reply(image, program ? "WRITE" : "PREFLIGHT", image->bytes);
+    for (uint32_t offset = 0; offset < image->bytes; offset += CHUNK_BYTES) {
+        const size_t size = MIN(CHUNK_BYTES, image->bytes - offset);
 
-        if (!receive_chunk(size) || nrfx_qspi_read(readback, size, offset) != NRFX_SUCCESS) {
-            reply("TRANSFER_ERROR", offset);
+        if (!receive_chunk(size) || nrfx_qspi_read(readback, size, image->offset + offset) != NRFX_SUCCESS) {
+            reply(image, "TRANSFER_ERROR", offset);
             return false;
         }
         crc = crc32_ieee_update(crc, incoming, size);
         // NOR writes may clear bits. A conflicting image needs a deliberate erase.
         for (size_t index = 0; index < size; index++) {
             if ((readback[index] & incoming[index]) != incoming[index]) {
-                reply("FLASH_CONFLICT", offset + index);
+                reply(image, "FLASH_CONFLICT", offset + index);
                 return false;
             }
         }
@@ -168,22 +205,22 @@ static bool transfer_image(bool program) {
                 const size_t page = MIN(PAGE_BYTES, size - index);
 
                 if (memcmp(readback + index, incoming + index, page) != 0 &&
-                    (nrfx_qspi_write(incoming + index, page, offset + index) != NRFX_SUCCESS ||
+                    (nrfx_qspi_write(incoming + index, page, image->offset + offset + index) != NRFX_SUCCESS ||
                      !wait_until_ready())) {
-                    reply("PROGRAM_ERROR", offset + index);
+                    reply(image, "PROGRAM_ERROR", offset + index);
                     return false;
                 }
             }
-            if (nrfx_qspi_read(readback, size, offset) != NRFX_SUCCESS ||
+            if (nrfx_qspi_read(readback, size, image->offset + offset) != NRFX_SUCCESS ||
                 memcmp(readback, incoming, size) != 0) {
-                reply("READBACK_ERROR", offset);
+                reply(image, "READBACK_ERROR", offset);
                 return false;
             }
         }
-        reply("ACK", offset + size);
+        reply(image, "ACK", offset + size);
     }
-    if (crc != LAPWING_CRC) {
-        reply("TRANSFER_CRC_ERROR", crc);
+    if (crc != image->crc) {
+        reply(image, "TRANSFER_CRC_ERROR", crc);
         return false;
     }
     return true;
@@ -202,26 +239,47 @@ static void lapwing_worker(void *a, void *b, void *c) {
     config.phy_if.sck_freq = NRF_QSPI_FREQ_DIV16;
 
     const bool qspi_ok = start_qspi(&config);
-    uint32_t magic = 0;
     bool mapping_failed = false;
-    if (qspi_ok && nrfx_qspi_read(&magic, sizeof(magic), 0) == NRFX_SUCCESS &&
-        magic == JSC4_MAGIC && read_image_crc()) {
-        mapping_failed = !enable_verified_mapping(&config);
+    if (qspi_ok) {
+        for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+            struct base_image *image = &images[i];
+            uint32_t magic = 0;
+            image->verified =
+                nrfx_qspi_read(&magic, sizeof(magic), image->offset) == NRFX_SUCCESS &&
+                magic == JSC4_MAGIC && read_image_crc(image);
+        }
+        if (all_verified()) {
+            mapping_failed = !enable_verified_mapping(&config);
+        }
     }
 
     for (;;) {
         uint8_t command;
-
-        if (uart_poll_in(console, &command) == 0 && (command == 'L' || command == '?')) {
-            if (!qspi_ok || mapping_failed) {
-                reply("QSPI_ERROR", 0);
-            } else if (lapwing_mapped_address()) {
-                reply("MAPPED", LAPWING_BYTES);
-            } else if (command == '?') {
-                reply("UNPROVISIONED", LAPWING_BYTES);
-            } else if (transfer_image(false) && transfer_image(true)) {
-                mapping_failed = !enable_verified_mapping(&config);
-                reply(mapping_failed ? "MAPPING_ERROR" : "MAPPED", LAPWING_BYTES);
+        if (uart_poll_in(console, &command) == 0) {
+            for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+                struct base_image *image = &images[i];
+                if (command != image->command && command != image->query) {
+                    continue;
+                }
+                if (!qspi_ok || mapping_failed) {
+                    reply(image, "QSPI_ERROR", 0);
+                } else if (lapwing_mapped_address()) {
+                    reply(image, "MAPPED", image->bytes);
+                } else if (image->verified) {
+                    reply(image, "VERIFIED", image->bytes);
+                } else if (command == image->query) {
+                    reply(image, "UNPROVISIONED", image->bytes);
+                } else if (transfer_image(image, false) && transfer_image(image, true)) {
+                    image->verified = read_image_crc(image);
+                    if (!image->verified) {
+                        reply(image, "READBACK_ERROR", 0);
+                    } else if (all_verified()) {
+                        mapping_failed = !enable_verified_mapping(&config);
+                        reply(image, mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
+                    } else {
+                        reply(image, "VERIFIED", image->bytes);
+                    }
+                }
             }
         }
         k_msleep(10);

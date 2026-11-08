@@ -3,12 +3,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// Independent base regions. Personal snapshots start at 0xF00000.
+#define PLOVER_FLASH_OFFSET 0x200000U
+#define BASE_DICTIONARY_LIMIT 0xF00000U
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 uintptr_t lapwing_mapped_address(void);
 bool lapwing_verify_native_dictionary(uintptr_t address);
+bool plover_verify_native_dictionary(uintptr_t address);
 
 #ifdef __cplusplus
 }

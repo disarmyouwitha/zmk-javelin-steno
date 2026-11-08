@@ -106,7 +106,8 @@ void dispatch(char *line, size_t size, HidWriter &writer) {
     // Expose dictionary operations only. The browser cannot invoke firmware
     // flashing, arbitrary memory access, scripts, or keyboard configuration.
     const char *allowed[] = {"hello", "list_dictionaries", "lookup_stroke",
-                             "add_user_entry", "remove_user_entry", "reset_user_dictionary"};
+                             "add_user_entry", "remove_user_entry", "reset_user_dictionary",
+                             "enable_dictionary", "disable_dictionary", "toggle_dictionary"};
     for (const char *name : allowed) {
         if (is_command(command, name)) {
             zen_javelin_console_line(line, size, writer);

@@ -28,6 +28,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
 #include <zephyr/logging/log.h>
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+#include <zephyr/settings/settings.h>
+#include <errno.h>
+#endif
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -52,6 +56,74 @@ public:
   JavelinEngineLock() { k_mutex_lock(&javelin_engine_mutex, K_FOREVER); }
   ~JavelinEngineLock() { k_mutex_unlock(&javelin_engine_mutex); }
 };
+
+// Versioned ZMK settings record. Preserve selection independently of base images
+// and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
+static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
+
+static int dictionary_settings_set(const char *name, size_t length,
+                                   settings_read_cb read, void *argument) {
+  if (strcmp(name, "dictionaries") != 0) {
+    return -ENOENT;
+  }
+  uint8_t record[2];
+  if (length != sizeof(record) || read(argument, record, sizeof(record)) != sizeof(record) ||
+      record[0] != 1 || (record[1] & ~7)) {
+    return -EINVAL;
+  }
+  dictionary_selection = record[1];
+  return 0;
+}
+
+SETTINGS_STATIC_HANDLER_DEFINE(javelin, "javelin", nullptr, dictionary_settings_set,
+                               nullptr, nullptr);
+
+static void select_dictionary(void *, const char *line) {
+  const char *name = strchr(line, ' ');
+  if (!name) {
+    Console::Printf("ERR No dictionary specified\n\n");
+    return;
+  }
+  ++name;
+  uint8_t bit = 0;
+  if (strcmp(name, "user_dictionary") == 0) {
+    bit = 1;
+  } else if (strcmp(name, "Lapwing Base") == 0) {
+    bit = 2;
+  } else if (strcmp(name, "Plover Base") == 0 && plover_dictionary()) {
+    bit = 4;
+  } else {
+    Console::Printf("ERR Unknown dictionary\n\n");
+    return;
+  }
+  uint8_t selected = dictionary_selection;
+  if (strncmp(line, "enable_dictionary ", 18) == 0) {
+    selected |= bit;
+  } else if (strncmp(line, "disable_dictionary ", 19) == 0) {
+    selected &= ~bit;
+  } else {
+    selected ^= bit;
+  }
+  // Persist before acknowledging or changing the active engine. On failure the
+  // previous selection remains active and the browser receives an error.
+  const uint8_t record[] = {1, selected};
+  if (selected != dictionary_selection &&
+      settings_save_one("javelin/dictionaries", record, sizeof(record)) != 0) {
+    Console::Printf("ERR Unable to save dictionary selection\n\n");
+    return;
+  }
+  dictionary_selection = selected;
+  BufferWriter events;
+  ConsoleWriter::Push(&events);
+  if (selected & bit) {
+    StenoEngine::container.value.EnableDictionary(name);
+  } else {
+    StenoEngine::container.value.DisableDictionary(name);
+  }
+  ConsoleWriter::Pop();
+  Console::SendOk();
+  events.WriteBufferTo(ConsoleWriter::GetActiveWriter());
+}
 #endif
 
 static bool load_dictionary_collection() {
@@ -59,11 +131,23 @@ static bool load_dictionary_collection() {
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
   auto *personal = zen_user_dictionary_open();
   if (personal) {
-    entries.Add(StenoDictionaryListEntry(personal, true));
+    entries.Add(StenoDictionaryListEntry(personal, dictionary_selection & 1));
   }
 #endif
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  entries.Add(StenoDictionaryListEntry(lapwing_dictionary(), dictionary_selection & 2));
+#else
   entries.Add(StenoDictionaryListEntry(lapwing_dictionary(), true));
+#endif
+  if (auto *plover = plover_dictionary()) {
+    // Personal overrides remain first. Fresh settings default to Lapwing.
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+    entries.Add(StenoDictionaryListEntry(plover, dictionary_selection & 4));
+#else
+    entries.Add(StenoDictionaryListEntry(plover, false));
+#endif
+  }
 #else
   const auto *collection =
       reinterpret_cast<const StenoDictionaryCollection *>(_javelin_dict_start);
@@ -128,6 +212,12 @@ static bool load_dictionary_collection() {
 
   // Register console commands
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  Console::instance.RegisterCommand("enable_dictionary", "Enable and save selection",
+                                    select_dictionary, nullptr);
+  Console::instance.RegisterCommand("disable_dictionary", "Disable and save selection",
+                                    select_dictionary, nullptr);
+  Console::instance.RegisterCommand("toggle_dictionary", "Toggle and save selection",
+                                    select_dictionary, nullptr);
   if (personal) {
     zen_user_dictionary_register(Console::instance, dictionaryList.value);
   }

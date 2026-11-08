@@ -30,6 +30,17 @@ assert c.parse_stroke('TP')==0x14
 assert c.parse_stroke('-T')==0x80000
 assert c.parse_stroke('KAT')==0x80108
 assert c.parse_stroke('S')==2
+assert c.parse_stroke('12K') == 0xf
+assert c.parse_stroke('6') == 0x2001
+assert c.parse_stroke('7') == 0x8001
+assert c.parse_stroke('19') == 0x80003
+assert c.parse_stroke('12K') == c.parse_stroke('#STK')
+numeric = {'12K': '12:00', 'K': 'can', '6': 'six', '7': 'seven',
+           '-P': 'plain right P', '12K5*7B9': 'mixed number chord'}
+numeric_blob = c.DictionaryCollectionBuilder().build([('numeric-test', numeric)])
+for stroke, value in numeric.items():
+ assert lookup(numeric_blob, stroke) == value, stroke
+assert len(numeric_blob) % 4 == 0
 raw=json.loads((Path(__file__).resolve().parents[2]/'dicts/cat-test.json').read_text());b=c.DictionaryCollectionBuilder().build([('cat-test',raw)])
 assert u32(b,0)==0x3443534a
 assert u32(b,32)==u32(b,u32(b,12)+u32(b,8))

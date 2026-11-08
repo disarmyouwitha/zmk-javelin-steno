@@ -1,6 +1,6 @@
 # Zen R4 and Corne Ultralight split
 
-The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the Lapwing dictionary on the W25Q128.
+The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
 The left thumb controls keep the standalone assignments. From MAIN, the outer thumb enters Javelin, the middle thumb enters Plover HID, and the inner thumb taps Backspace or holds SYM+NUM. The outer thumb exits either steno mode. The right half supplies the right-bank steno keys, so R1C0 and R2C0 on the left return to their regular unused steno positions.
 
@@ -10,16 +10,48 @@ Use the pinned west workspace and Lapwing image from the [standalone left-half g
 
 ```sh
 repo="$PWD"
+python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
 export ZEPHYR_BASE="$ws/zephyr"
 cd "$ws"
 west build -s zmk/app -d "$repo/build/split-left" -b nice_nano//zmk -S zmk-usb-logging -- \
   -DSHIELD=corne_left "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
+  "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin" \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   -DSHIELD=corne_right "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
+
+The Plover image argument is optional for older Lapwing-only builds. The preparation script downloads a pinned official Plover `main.json`, checks its source checksum, compiles it for address `0x12200000`, and verifies every outline against the compiled image. Numeric outlines include the number bar and corresponding physical keys, matching the pinned engine's stroke parser.
+
+## Select an onboard base dictionary
+
+The dual-base build lists **user_dictionary**, **Lapwing Base**, and **Plover Base** in the existing Javelin browser tools' **Active Dictionaries** controls. On a keyboard without a saved selection, the personal dictionary and Lapwing are enabled and Plover is disabled. Browser enable, disable, and toggle commands save the selection in ZMK's settings before acknowledging success. The selection survives reboot and application UF2 updates. A settings reset clears it, along with other ZMK settings.
+
+To use Plover's onboard base, enable **Plover Base** and disable **Lapwing Base**. To return to Lapwing, enable **Lapwing Base** and disable **Plover Base**. Personal entries have highest priority when enabled. If both bases are enabled, Lapwing takes priority for overlapping outlines, followed by Plover. These switches affect onboard Javelin. Host Plover HID still sends raw strokes to Plover on the computer.
+
+The existing website supplies these controls. Firmware support handles listing, selection, and persistence. Both bases remain read-only through the browser, and the personal dictionary remains editable.
+
+### Flash regions and initial Plover provisioning
+
+| Contents | External flash offset | Image size | CRC32 |
+|---|---|---|---|
+| Lapwing Base, 114,885 outlines | `0x000000` | 1,700,488 bytes | `720cfca6` |
+| Plover Base, 147,424 outlines | `0x200000` | 2,178,864 bytes | `14b65522` |
+| Personal snapshots | `0xF00000` | Two 28 KiB slots | Per-snapshot CRCs |
+
+Plover source: [official main.json at the pinned revision](https://github.com/openstenoproject/plover/blob/8a52c5296c502507f9a46820a4a947ca25f998e6/plover/assets/main.json). Source SHA256: `6570873c7f703ecd39c9870083f643db3475b49462a8db80fe22fe33ac3cfe92`. Compiled padded image SHA256: `6d74757af03ad1769f6f2d587afcc8957a5486b3e31ed3e20f00410c2624e2c4`.
+
+After flashing the dual-base left UF2, program Plover over the diagnostics port, substituting the actual device path:
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 \
+  --base plover build/plover/plover-main.bin
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
+```
+
+Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
 
 ## Flash and check
 
@@ -48,3 +80,5 @@ The HID transport passed the native Javelin handshake, commands spanning multipl
 The builder confirmed all three keyboard modes on the final HID firmware, including normal typing, host Plover HID, and onboard Javelin across both halves. The physical steno test produced “the cat is the cat if the cat is the cat!”
 
 After the editor firmware was flashed and rebooted, the builder reconfirmed normal typing, onboard Javelin, and host Plover HID on both halves.
+
+The dual-base firmware built at 472,520 bytes of application flash and 227,368 bytes of RAM. Host verification checked all 114,885 Lapwing outlines and all 147,424 Plover outlines against their mapped binaries. On the assembled left half, provisioning passed preflight, program/readback, and both base CRC/native lookup checks. HID checks verified initial Lapwing selection, Plover selection (`STKERT` → “dessert” and `12K` → “12:00”), Lapwing priority when both bases are enabled (`STKERT` → “desert”), toggling, rejection of unknown dictionary names, and unchanged personal dictionary contents.
