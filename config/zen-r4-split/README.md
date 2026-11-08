@@ -26,3 +26,7 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
 Flash `build/split-right/zephyr/zmk.uf2` to the Ultralight first and keep the right half powered. Then flash `build/split-left/zephyr/zmk.uf2` to the handwired left half. Keep the left connected to the host over USB. The same Lapwing image already on the left half's external flash should verify and load at boot. Use the [Lapwing uploader](../../tools/zen-r4-lapwing/upload.py) with only the USB serial port argument to check for `MAPPED`.
 
 Check ordinary typing on both halves, then test `TP / -T / KAT / S / -T / KAT` in Javelin with host Plover closed. Use the right half for the final `-T`. Return to MAIN and check the same cross-half chords in Plover HID.
+
+## Pairing an Ultralight previously used in another split
+
+On the tested pair, the left central scanned without finding the right half until the right controller's old Bluetooth settings were cleared. Build the standard `settings_reset` shield for nice!nano v2 and flash it to the Ultralight. When it boots as SETTINGS RESET, return the right half to bootloader mode and flash the split-right image again. Keep the left central powered so it can discover and pair with the right half. The central log confirmed the encrypted connection and its subscription to right-half key positions.
