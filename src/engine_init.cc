@@ -70,7 +70,7 @@ public:
 static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
-static constexpr const char *host_profiles[] = {"Mac U.S./ABC", "Windows U.S. (plain text)"};
+static constexpr const char *host_profiles[] = {"Mac U.S.", "Windows U.S. (plain text)"};
 static uint8_t host_profile = 0;
 
 static void apply_host_profile() {
