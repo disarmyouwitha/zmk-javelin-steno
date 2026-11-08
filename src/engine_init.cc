@@ -28,6 +28,7 @@
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
 #include "lapwing_dictionary.h"
+#include "lapwing_flash.h"
 #endif
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 #include "user_dictionary_store.h"
@@ -56,15 +57,37 @@ static StenoProcessor *processor = nullptr;
 
 static bool initialized = false;
 
-#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+#if defined(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING) && defined(CONFIG_ZMK_SLEEP)
+class JavelinEngineLock {
+public:
+  JavelinEngineLock() : held(lapwing_flash_acquire()) {}
+  ~JavelinEngineLock() {
+    if (held) {
+      lapwing_flash_release();
+    }
+  }
+  explicit operator bool() const { return held; }
+
+private:
+  bool held;
+};
+#elif defined(CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY)
 K_MUTEX_DEFINE(javelin_engine_mutex);
 
 class JavelinEngineLock {
 public:
   JavelinEngineLock() { k_mutex_lock(&javelin_engine_mutex, K_FOREVER); }
   ~JavelinEngineLock() { k_mutex_unlock(&javelin_engine_mutex); }
+  explicit operator bool() const { return true; }
 };
+#else
+class JavelinEngineLock {
+public:
+  explicit operator bool() const { return true; }
+};
+#endif
 
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 // Versioned ZMK settings record. Preserve selection independently of base images
 // and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
 static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
@@ -305,10 +328,8 @@ static bool load_dictionary_collection() {
 extern "C" {
 
 void zmk_javelin_steno_init(void) {
-#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
   const JavelinEngineLock lock;
-#endif
-  if (initialized) {
+  if (!lock || initialized) {
     return;
   }
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
@@ -342,10 +363,8 @@ void zmk_javelin_steno_init(void) {
 }
 
 void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
-#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
   const JavelinEngineLock lock;
-#endif
-  if (!processor) {
+  if (!lock || !processor) {
     return;
   }
   printk("[JAV] key %d %s\n", steno_key_index, is_press ? "down" : "up");
@@ -358,6 +377,9 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 void zen_javelin_console_line(const char *line, size_t size, IWriter &writer) {
   const JavelinEngineLock lock;
+  if (!lock) {
+    return;
+  }
   zmk_javelin_steno_init();
   ConsoleWriter::Push(&writer);
   Console::instance.HandleInput(line, size, ConnectionId::SERIAL_CONSOLE);

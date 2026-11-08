@@ -15,6 +15,12 @@ uintptr_t lapwing_mapped_address(void);
 bool lapwing_verify_native_dictionary(uintptr_t address);
 bool plover_verify_native_dictionary(uintptr_t address);
 
+#ifdef CONFIG_ZMK_SLEEP
+/* Hold across mapped reads and personal dictionary writes. */
+bool lapwing_flash_acquire(void);
+void lapwing_flash_release(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -6,6 +6,9 @@
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
+#ifdef CONFIG_ZMK_SLEEP
+#include <zephyr/pm/device.h>
+#endif
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/sys/printk.h>
@@ -59,6 +62,74 @@ static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_conso
 static atomic_t mapped_ready;
 static uint8_t incoming[CHUNK_BYTES] __aligned(4);
 static uint8_t readback[CHUNK_BYTES] __aligned(4);
+
+#ifdef CONFIG_ZMK_SLEEP
+BUILD_ASSERT(!IS_ENABLED(CONFIG_ZMK_EXT_POWER), "The QSPI driver owns the flash power pin");
+K_MUTEX_DEFINE(flash_lock);
+static bool flash_suspended;
+static atomic_t restart_requested = ATOMIC_INIT(1);
+
+bool lapwing_flash_acquire(void) {
+    if (!atomic_get(&mapped_ready)) {
+        return false;
+    }
+    k_mutex_lock(&flash_lock, K_FOREVER);
+    if (!atomic_get(&mapped_ready)) {
+        k_mutex_unlock(&flash_lock);
+        return false;
+    }
+    return true;
+}
+
+void lapwing_flash_release(void) {
+    k_mutex_unlock(&flash_lock);
+}
+
+static int flash_pm_action(const struct device *dev, enum pm_device_action action) {
+    ARG_UNUSED(dev);
+    if (action == PM_DEVICE_ACTION_RESUME) {
+        // ZMK aborted power-off and rolled back device suspension. Let the
+        // worker restore the same mapping before allowing new flash access.
+        atomic_set(&restart_requested, 1);
+        return 0;
+    }
+    if (action != PM_DEVICE_ACTION_SUSPEND) {
+        return -ENOTSUP;
+    }
+    if (k_mutex_lock(&flash_lock, K_NO_WAIT) != 0) {
+        // ZMK retries on its next idle check. Let any read or save finish.
+        return -EBUSY;
+    }
+    const bool initialized = nrfx_qspi_init_check();
+    if (flash_suspended ||
+        (initialized &&
+         (!reactivate_after_xip() || nrfx_qspi_mem_busy_check() != NRFX_SUCCESS))) {
+        k_mutex_unlock(&flash_lock);
+        return -EBUSY;
+    }
+
+    atomic_clear(&mapped_ready);
+    flash_suspended = true;
+    atomic_clear(&restart_requested);
+    if (initialized) {
+        nrfx_qspi_uninit();
+    }
+    int rc = pinctrl_apply_state(PINCTRL_DT_DEV_CONFIG_GET(QSPI_NODE), PINCTRL_STATE_SLEEP);
+    if (rc == 0) {
+        rc = gpio_pin_configure_dt(&power, GPIO_OUTPUT_INACTIVE);
+    }
+    if (rc != 0) {
+        // A failing suspend is not on ZMK's resume list.
+        atomic_set(&restart_requested, 1);
+    }
+    k_mutex_unlock(&flash_lock);
+    return rc;
+}
+
+PM_DEVICE_DEFINE(zen_r4_flash, flash_pm_action);
+DEVICE_DEFINE(zen_r4_flash, "ZEN_R4_QSPI", NULL, PM_DEVICE_GET(zen_r4_flash), NULL, NULL,
+              POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE, NULL);
+#endif
 
 uintptr_t lapwing_mapped_address(void) {
     return atomic_get(&mapped_ready) ? XIP_BASE : 0;
@@ -226,6 +297,54 @@ static bool transfer_image(const struct base_image *image, bool program) {
     return true;
 }
 
+static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
+    *mapping_failed = false;
+    config->prot_if.readoc = NRF_QSPI_READOC_FASTREAD;
+    if (!start_qspi(config)) {
+        return false;
+    }
+    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+        struct base_image *image = &images[i];
+        uint32_t magic = 0;
+        image->verified =
+            nrfx_qspi_read(&magic, sizeof(magic), image->offset) == NRFX_SUCCESS &&
+            magic == JSC4_MAGIC && read_image_crc(image);
+    }
+    if (all_verified()) {
+        *mapping_failed = !enable_verified_mapping(config);
+    }
+    return true;
+}
+
+static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qspi_ok,
+                           bool *mapping_failed) {
+    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+        struct base_image *image = &images[i];
+        if (command != image->command && command != image->query) {
+            continue;
+        }
+        if (!qspi_ok || *mapping_failed) {
+            reply(image, "QSPI_ERROR", 0);
+        } else if (lapwing_mapped_address()) {
+            reply(image, "MAPPED", image->bytes);
+        } else if (image->verified) {
+            reply(image, "VERIFIED", image->bytes);
+        } else if (command == image->query) {
+            reply(image, "UNPROVISIONED", image->bytes);
+        } else if (transfer_image(image, false) && transfer_image(image, true)) {
+            image->verified = read_image_crc(image);
+            if (!image->verified) {
+                reply(image, "READBACK_ERROR", 0);
+            } else if (all_verified()) {
+                *mapping_failed = !enable_verified_mapping(config);
+                reply(image, *mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
+            } else {
+                reply(image, "VERIFIED", image->bytes);
+            }
+        }
+    }
+}
+
 static void lapwing_worker(void *a, void *b, void *c) {
     ARG_UNUSED(a);
     ARG_UNUSED(b);
@@ -238,49 +357,35 @@ static void lapwing_worker(void *a, void *b, void *c) {
     config.skip_psel_cfg = true;
     config.phy_if.sck_freq = NRF_QSPI_FREQ_DIV16;
 
-    const bool qspi_ok = start_qspi(&config);
     bool mapping_failed = false;
-    if (qspi_ok) {
-        for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
-            struct base_image *image = &images[i];
-            uint32_t magic = 0;
-            image->verified =
-                nrfx_qspi_read(&magic, sizeof(magic), image->offset) == NRFX_SUCCESS &&
-                magic == JSC4_MAGIC && read_image_crc(image);
-        }
-        if (all_verified()) {
-            mapping_failed = !enable_verified_mapping(&config);
-        }
-    }
+#ifdef CONFIG_ZMK_SLEEP
+    bool qspi_ok = false;
+#else
+    const bool qspi_ok = prepare_flash(&config, &mapping_failed);
+#endif
 
     for (;;) {
+#ifdef CONFIG_ZMK_SLEEP
+        if (atomic_get(&restart_requested)) {
+            k_mutex_lock(&flash_lock, K_FOREVER);
+            if (atomic_cas(&restart_requested, 1, 0)) {
+                qspi_ok = prepare_flash(&config, &mapping_failed);
+                flash_suspended = false;
+            }
+            k_mutex_unlock(&flash_lock);
+        }
+#endif
         uint8_t command;
         if (uart_poll_in(console, &command) == 0) {
-            for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
-                struct base_image *image = &images[i];
-                if (command != image->command && command != image->query) {
-                    continue;
-                }
-                if (!qspi_ok || mapping_failed) {
-                    reply(image, "QSPI_ERROR", 0);
-                } else if (lapwing_mapped_address()) {
-                    reply(image, "MAPPED", image->bytes);
-                } else if (image->verified) {
-                    reply(image, "VERIFIED", image->bytes);
-                } else if (command == image->query) {
-                    reply(image, "UNPROVISIONED", image->bytes);
-                } else if (transfer_image(image, false) && transfer_image(image, true)) {
-                    image->verified = read_image_crc(image);
-                    if (!image->verified) {
-                        reply(image, "READBACK_ERROR", 0);
-                    } else if (all_verified()) {
-                        mapping_failed = !enable_verified_mapping(&config);
-                        reply(image, mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
-                    } else {
-                        reply(image, "VERIFIED", image->bytes);
-                    }
-                }
+#ifdef CONFIG_ZMK_SLEEP
+            k_mutex_lock(&flash_lock, K_FOREVER);
+            if (!flash_suspended) {
+                handle_command(command, &config, qspi_ok, &mapping_failed);
             }
+            k_mutex_unlock(&flash_lock);
+#else
+            handle_command(command, &config, qspi_ok, &mapping_failed);
+#endif
         }
         k_msleep(10);
     }
