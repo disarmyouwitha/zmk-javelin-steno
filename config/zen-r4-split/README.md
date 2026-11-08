@@ -82,3 +82,5 @@ The builder confirmed all three keyboard modes on the final HID firmware, includ
 After the editor firmware was flashed and rebooted, the builder reconfirmed normal typing, onboard Javelin, and host Plover HID on both halves.
 
 The dual-base firmware built at 472,520 bytes of application flash and 227,368 bytes of RAM. Host verification checked all 114,885 Lapwing outlines and all 147,424 Plover outlines against their mapped binaries. On the assembled left half, provisioning passed preflight, program/readback, and both base CRC/native lookup checks. HID checks verified initial Lapwing selection, Plover selection (`STKERT` → “dessert” and `12K` → “12:00”), Lapwing priority when both bases are enabled (`STKERT` → “desert”), toggling, rejection of unknown dictionary names, and unchanged personal dictionary contents.
+
+A controller reset with Plover selected reloaded Plover as enabled and Lapwing as disabled. `STKERT` still resolved to “dessert” after reboot. The test then restored and saved Lapwing enabled with Plover disabled, and `STKERT` returned “desert” again.
