@@ -1,3 +1,11 @@
+if(CONFIG_ZMK_ZEN_R4_SPLIT_STATUS)
+  if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    target_sources(app PRIVATE src/zen_r4/split_status_central.c)
+  else()
+    target_sources(app PRIVATE src/zen_r4/split_status_display.c)
+  endif()
+endif()
+
 if(CONFIG_ZMK_JAVELIN_STENO)
 
   zephyr_include_directories(include)

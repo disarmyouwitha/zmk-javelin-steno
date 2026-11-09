@@ -27,6 +27,22 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
 
 The Plover image argument is optional for older Lapwing-only builds. The preparation script downloads a pinned official Plover `main.json`, checks its source checksum, compiles it for address `0x12200000`, and verifies every outline against the compiled image. Numeric outlines include the number bar and corresponding physical keys, matching the pinned engine's stroke parser.
 
+### Right-half nice!view
+
+For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above.
+
+```sh
+west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
+  "-DSHIELD=corne_right nice_view_adapter nice_view" \
+  "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
+  "-DEXTRA_CONF_FILE=$repo/config/zen-r4-split/right-nice-view.conf" \
+  "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
+```
+
+Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
+
+Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **Plover HID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+
 ## Select an onboard base dictionary
 
 The dual-base build lists **user_dictionary**, **Lapwing Base**, and **Plover Base** in the existing Javelin browser tools' **Active Dictionaries** controls. On a keyboard without a saved selection, the personal dictionary and Lapwing are enabled and Plover is disabled. Browser enable, disable, and toggle commands save the selection in ZMK's settings before acknowledging success. The selection survives reboot and application UF2 updates. A settings reset clears it, along with other ZMK settings.

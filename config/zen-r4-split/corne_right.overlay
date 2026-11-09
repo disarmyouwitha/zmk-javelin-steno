@@ -1,0 +1,8 @@
+/ {
+    behaviors {
+        zrst: zrst {
+            compatible = "zmk,behavior-zen-r4-status";
+            #binding-cells = <2>;
+        };
+    };
+};

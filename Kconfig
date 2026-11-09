@@ -42,3 +42,8 @@ config ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
 endif # ZMK_JAVELIN_STENO
 
 endmenu
+
+config ZMK_ZEN_R4_SPLIT_STATUS
+    bool "Sync the Zen R4 layer to the right-half nice!view"
+    depends on ZMK_SPLIT && ZMK_SPLIT_BLE
+    depends on ZMK_SPLIT_ROLE_CENTRAL || (ZMK_DISPLAY && SHIELD_NICE_VIEW && ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)

@@ -1,0 +1,12 @@
+#pragma once
+
+#define ZEN_R4_STATUS_BEHAVIOR "zrst"
+#define ZEN_R4_STATUS_PROTOCOL 1
+
+enum zen_r4_mode {
+    ZEN_R4_MODE_UNKNOWN,
+    ZEN_R4_MODE_TYPING,
+    ZEN_R4_MODE_SYMBOLS,
+    ZEN_R4_MODE_JAVELIN,
+    ZEN_R4_MODE_PLOVER,
+};
