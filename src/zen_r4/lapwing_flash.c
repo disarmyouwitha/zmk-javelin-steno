@@ -1,5 +1,8 @@
 #include "lapwing_flash.h"
 #include "quad.h"
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+#include "battery_log.h"
+#endif
 
 #include <string.h>
 #include <zephyr/drivers/gpio.h>
@@ -67,6 +70,14 @@ static atomic_t mapped_ready;
 static uint8_t readback[CHUNK_BYTES] __aligned(4);
 /* Both bases passed a full CRC since the flash was last without power. */
 static bool trusted __maybe_unused;
+
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+static atomic_t flash_powered;
+
+bool lapwing_flash_is_powered(void) {
+    return atomic_get(&flash_powered) != 0;
+}
+#endif
 
 #ifdef CONFIG_ZMK_SLEEP
 BUILD_ASSERT(!IS_ENABLED(CONFIG_ZMK_EXT_POWER), "The QSPI driver owns the flash power pin");
@@ -157,6 +168,12 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
         NRF_POWER->GPREGRET2 = trust_marker();
     }
     k_mutex_unlock(&flash_lock);
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+    if (rc == 0) {
+        atomic_clear(&flash_powered);
+        zen_battery_log_sleep();
+    }
+#endif
     return rc;
 }
 
@@ -177,6 +194,9 @@ static bool start_qspi(nrfx_qspi_config_t *config) {
     if (!gpio_is_ready_dt(&power) || gpio_pin_configure_dt(&power, GPIO_OUTPUT_ACTIVE) != 0) {
         return false;
     }
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+    atomic_set(&flash_powered, 1);
+#endif
     k_msleep(50);
     if (pinctrl_apply_state(PINCTRL_DT_DEV_CONFIG_GET(QSPI_NODE), PINCTRL_STATE_DEFAULT) != 0 ||
         nrfx_qspi_init(config, NULL, NULL) != NRFX_SUCCESS ||
@@ -448,6 +468,12 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #if SERIAL_PROVISIONING
         uint8_t command;
         if (uart_poll_in(console, &command) == 0) {
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+            if (command == 'B') {
+                zen_battery_log_export(console);
+                continue;
+            }
+#endif
 #ifdef CONFIG_ZMK_SLEEP
             k_mutex_lock(&flash_lock, K_FOREVER);
             if (!flash_suspended) {

@@ -1,5 +1,8 @@
 #include "console.h"
 #include "javelin_hid_transport.h"
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+#include "battery_log.h"
+#endif
 
 #include <string.h>
 #include <zephyr/device.h>
@@ -76,6 +79,10 @@ public:
     explicit HidWriter(const Report &report)
         : bluetooth(report.bluetooth), session(report.session) {}
 
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+    void CountCommand() const { zen_battery_log_editor_command(bluetooth); }
+#endif
+
     void Write(const char *text, size_t size) override {
         if (bluetooth) {
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BLE_HID
@@ -129,6 +136,9 @@ void dispatch(char *line, size_t size, HidWriter &writer) {
     if (strcmp(command, "start_javelin_console\n") == 0 || strcmp(command, "\n") == 0) {
         return;
     }
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+    writer.CountCommand();
+#endif
 
     // Expose dictionary operations and selection of built-in host layouts.
     const char *allowed[] = {"hello", "list_dictionaries", "lookup_stroke",

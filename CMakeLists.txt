@@ -83,6 +83,7 @@ if(CONFIG_ZMK_JAVELIN_STENO)
         COMMAND_ERROR_IS_FATAL ANY)
       set(JAVELIN_COMPACT_MAP_SRC "${PATCHED_COMPACT_MAP}")
       target_sources(app PRIVATE "${LAPWING_SRC}/lapwing_flash.c" "${QSPI_SRC}/quad.c")
+      target_sources_ifdef(CONFIG_ZMK_JAVELIN_BATTERY_LOG app PRIVATE "${LAPWING_SRC}/battery_log.c")
       target_include_directories(app PRIVATE "${QSPI_SRC}")
       target_compile_definitions(app PRIVATE LAPWING_BYTES=${LAPWING_BYTES} LAPWING_CRC=${LAPWING_CRC})
       # Optional second base, provisioned separately without rewriting Lapwing.
