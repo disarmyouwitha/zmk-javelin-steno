@@ -29,13 +29,14 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 ### Right-half nice!view
 
-For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above.
+For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above. The overlay sets display chip select to D0 (P0.08) to match the Ultralight PCB.
 
 ```sh
 west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
   "-DSHIELD=corne_right nice_view_adapter nice_view" \
   "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DEXTRA_CONF_FILE=$repo/config/zen-r4-split/right-nice-view.conf" \
+  "-DEXTRA_DTC_OVERLAY_FILE=$repo/config/zen-r4-split/right-nice-view.overlay" \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
