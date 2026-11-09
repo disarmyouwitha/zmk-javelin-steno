@@ -59,6 +59,10 @@ def read_export(port):
                 rows.append(dict(zip(FIELDS, values)))
         elif header and (match := re.search(rb"ZBL END (\d+) (-?\d+)$", line)):
             count, status = map(int, match.groups())
+            if status == -128 and count == 0 and attempts < 5:
+                # The nRF52 CDC port received B before macOS finished asserting DTR.
+                header = None
+                continue
             if status:
                 raise RuntimeError(f"Keyboard stopped the export with error {status}")
             if count != len(rows) or any(
@@ -118,6 +122,10 @@ def main():
 
     with Serial(args.port or find_port(), 115200, timeout=0.25, write_timeout=5,
                 exclusive=True) as port:
+        port.dtr = False
+        time.sleep(0.25)
+        port.dtr = True
+        time.sleep(1)
         header, raw_rows = read_export(port)
 
     rows = list(decode_rows(header, raw_rows))
