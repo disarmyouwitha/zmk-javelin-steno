@@ -55,14 +55,16 @@ multi-stroke answers are outside this first drill.
 
 From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
 thumb, then release both. The right nice!view shows the word, progress and
-current streak. Correct answers show **CORRECT!** for 700 ms and advance
-automatically. Mistakes show **TRY AGAIN**, reset the streak and retain the
+current streak. Correct answers show **CORRECT** for 250 ms and advance
+automatically. Mistakes show **RETRY**, reset the streak and retain the
 prompt. After ten correct answers the screen shows **DONE** and
 the best streak. The portrait screen follows the supplied
 [steno drill reference](../../docs/assets/offline-practice-reference.svg),
 scaled to the nice!view's 68×160 pixels, with a stroke hint and progress bar.
+The current version uses larger text on a white background with an outlined
+feedback panel for readability.
 
-If all dictionaries are disabled, the screen shows **ENABLE A DICTIONARY**
+If all dictionaries are disabled, the screen shows **ENABLE DICT**
 and **DICT OFF**. Enable Lapwing Base or Plover Base in the browser tools to
 resume. Dictionary changes refresh this warning during the session. Practice
 uses the selected dictionaries and retains personal overrides.

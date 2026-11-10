@@ -35,6 +35,7 @@ static void draw_text(lv_layer_t *layer, int y, int height, const lv_font_t *fon
     label.color = inverted ? lv_color_white() : lv_color_black();
     label.align = LV_TEXT_ALIGN_CENTER;
     label.text = text;
+    label.text_local = 1;
     lv_area_t area = {4, y, PORTRAIT_WIDTH - 5, y + height - 1};
     lv_draw_label(layer, &label, &area);
 }
@@ -58,29 +59,31 @@ static void draw_practice(lv_layer_t *layer, uint32_t practice) {
     unsigned completed = round + (feedback == ZEN_R4_PRACTICE_CORRECT);
     char text[24];
 
-    draw_rect(layer, 4, 4, 60, 16, true);
-    draw_text(layer, 7, 10, &lv_font_montserrat_8, "STENO DRILL", true);
-    draw_text(layer, 27, 20, &lv_font_montserrat_8,
-              no_dictionary ? "ENABLE A\nDICTIONARY" : done ? "SESSION\nCOMPLETE" : "TYPE THIS\nWORD",
+    draw_text(layer, 3, 16, &lv_font_montserrat_12, "STENO", false);
+    draw_rect(layer, 8, 21, 52, 1, true);
+    draw_text(layer, 27, 24, &lv_font_montserrat_10,
+              no_dictionary ? "ENABLE\nDICT" : done ? "ALL DONE" : "TYPE",
               false);
-    draw_text(layer, 47, 30, done ? &lv_font_montserrat_16 : &lv_font_montserrat_24,
+    draw_text(layer, 47, 34, done ? &lv_font_montserrat_16 : &lv_font_montserrat_28,
               done ? "DONE" : zen_r4_practice_words[practice & 3], false);
     draw_rect(layer, 10, 81, 48, 1, true);
-    draw_text(layer, 87, 12, &lv_font_montserrat_10,
+    draw_text(layer, 86, 20, &lv_font_montserrat_16,
               done ? "10 / 10" : zen_r4_practice_outlines[practice & 3], false);
-    static const char *const feedback_text[] = {"READY", "CORRECT!", "TRY AGAIN", "WELL DONE"};
-    draw_rect(layer, 5, 104, 58, 20, true);
-    draw_text(layer, 110, 10, &lv_font_montserrat_8,
-              no_dictionary ? "DICT OFF" : feedback_text[feedback], true);
+    static const char *const feedback_text[] = {"READY", "CORRECT", "RETRY", "DONE"};
+    draw_rect(layer, 3, 107, 62, 22, true);
+    draw_rect(layer, 4, 108, 60, 20, false);
+    draw_text(layer, 111, 16,
+              feedback == ZEN_R4_PRACTICE_CORRECT ? &lv_font_montserrat_10 : &lv_font_montserrat_12,
+              no_dictionary ? "DICT OFF" : feedback_text[feedback], false);
     snprintf(text, sizeof(text), "%s %u", done ? "BEST" : "STREAK", done ? best : streak);
-    draw_text(layer, 131, 10, &lv_font_montserrat_8, text, false);
-    draw_rect(layer, 8, 144, 52, 5, true);
-    draw_rect(layer, 9, 145, 50, 3, false);
+    draw_text(layer, 132, 12, &lv_font_montserrat_10, text, false);
+    draw_rect(layer, 8, 145, 52, 4, true);
+    draw_rect(layer, 9, 146, 50, 2, false);
     if (completed) {
-        draw_rect(layer, 9, 145, completed * 5, 3, true);
+        draw_rect(layer, 9, 146, completed * 5, 2, true);
     }
     snprintf(text, sizeof(text), "%02u / 10", done ? 10 : round + 1);
-    draw_text(layer, 152, 8, &lv_font_montserrat_8, text, false);
+    draw_text(layer, 150, 10, &lv_font_montserrat_10, text, false);
 }
 
 static void refresh_status(struct k_work *work) {
@@ -100,14 +103,14 @@ static void refresh_status(struct k_work *work) {
             [ZEN_R4_MODE_JAVELIN] = "JAVELIN",
             [ZEN_R4_MODE_PLOVER] = "PLOVER\nHID",
         };
-        draw_rect(&layer, 4, 4, 60, 16, true);
-        draw_text(&layer, 7, 10, &lv_font_montserrat_8, "ZEN R4", true);
-        draw_text(&layer, 34, 10, &lv_font_montserrat_8, "MODE", false);
-        draw_text(&layer, 58, 48, &lv_font_montserrat_10, mode_names[atomic_get(&mode)], false);
+        draw_text(&layer, 4, 16, &lv_font_montserrat_12, "ZEN R4", false);
+        draw_rect(&layer, 8, 23, 52, 1, true);
+        draw_text(&layer, 34, 12, &lv_font_montserrat_10, "MODE", false);
+        draw_text(&layer, 58, 48, &lv_font_montserrat_12, mode_names[atomic_get(&mode)], false);
         draw_rect(&layer, 10, 119, 48, 1, true);
         char text[24];
         snprintf(text, sizeof(text), "RIGHT %u%%", (unsigned)zmk_battery_state_of_charge());
-        draw_text(&layer, 140, 10, &lv_font_montserrat_8, text, false);
+        draw_text(&layer, 140, 12, &lv_font_montserrat_10, text, false);
     }
     lv_canvas_finish_layer(status_canvas, &layer);
     // Match the stock nice!view widget's portrait orientation.

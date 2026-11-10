@@ -214,7 +214,7 @@ static bool practice_process_key(int index, bool pressed) {
           practice.best = practice.streak;
         }
         practice.feedback = ZEN_R4_PRACTICE_CORRECT;
-        k_work_reschedule(&practice_advance_work, K_MSEC(700));
+        k_work_reschedule(&practice_advance_work, K_MSEC(250));
       } else {
         practice.streak = 0;
         practice.feedback = ZEN_R4_PRACTICE_INCORRECT;
