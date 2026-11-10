@@ -47,3 +47,7 @@ config ZMK_ZEN_R4_SPLIT_STATUS
     bool "Sync the Zen R4 layer to the right-half nice!view"
     depends on ZMK_SPLIT && ZMK_SPLIT_BLE
     depends on ZMK_SPLIT_ROLE_CENTRAL || (ZMK_DISPLAY && SHIELD_NICE_VIEW && ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)
+
+config ZMK_ZEN_R4_PRACTICE
+    bool "Offline single-stroke practice on the right nice!view"
+    depends on ZMK_ZEN_R4_SPLIT_STATUS && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL

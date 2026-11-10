@@ -44,6 +44,40 @@ Flash the right build to the Ultralight and the matching left build to the handw
 
 Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **Plover HID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
+## Offline practice trial
+
+The `zen-r4/offline-practice` branch adds a ten-prompt single-stroke drill
+using CAT, THE, IF and IS in a repeating order. The left central owns the
+session and looks up each completed chord through Javelin's active dictionary
+list, including personal overrides. Comparison ignores letter case. Use
+ordinary one-stroke translations for these words. Formatting commands and
+multi-stroke answers are outside this first drill.
+
+From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
+thumb, then release both. The right nice!view shows the word, progress and
+current streak. Correct answers show **CORRECT!** for 700 ms and advance
+automatically. Mistakes show **TRY AGAIN**, reset the streak and retain the
+prompt. After ten correct answers the screen shows **DRILL COMPLETE** and
+the best streak.
+
+The outer left thumb returns to Typing. The outer right thumb exits to normal
+Javelin. Leave and re-enter Practice to restart. A right-half reboot or
+reconnect reloads the current screen from the left. Rebooting the left resets
+the session. Both halves can run on battery with the computer off.
+
+Practice consumes its steno chords before the normal Javelin output pipeline,
+so a connected computer receives no practice text. Keys pressed during correct
+feedback are ignored until that chord is fully released. Practice leaves
+dictionary contents and selection intact.
+
+Build both halves with the nice!view build options above and
+`CONFIG_ZMK_ZEN_R4_PRACTICE=y` on the central, enabled in this branch's left
+configuration. Hardware validation should cover a mistake followed by a
+correct answer, all ten prompts, entry and exit while a steno key is held,
+right-half reconnect, and normal typing, onboard Javelin and Plover HID after
+leaving Practice. Confirm the connected host receives no text during the drill,
+then repeat with USB disconnected.
+
 ## Select an onboard base dictionary
 
 The dual-base build lists **user_dictionary**, **Lapwing Base**, and **Plover Base** in the existing Javelin browser tools' **Active Dictionaries** controls. On a keyboard without a saved selection, the personal dictionary and Lapwing are enabled and Plover is disabled. Browser enable, disable, and toggle commands save the selection in ZMK's settings before acknowledging success. The selection survives reboot and application UF2 updates. A settings reset clears it, along with other ZMK settings.

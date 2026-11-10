@@ -25,6 +25,12 @@
 #include "steno_key_state.h"
 #include "static_allocate.h"
 #include "stroke.h"
+#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#include "zen_r4/split_status.h"
+#include <new>
+#include <strings.h>
+#include <zephyr/sys/atomic.h>
+#endif
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
 #include "lapwing_dictionary.h"
@@ -85,6 +91,130 @@ class JavelinEngineLock {
 public:
   explicit operator bool() const { return true; }
 };
+#endif
+
+#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+K_MUTEX_DEFINE(practice_mutex);
+static atomic_t practice_screen;
+static StenoKeyState practice_pending_releases;
+static struct {
+  bool active;
+  bool ignore_chord;
+  uint8_t round;
+  uint8_t streak;
+  uint8_t best;
+  zen_r4_practice_feedback feedback;
+  StenoKeyState keys;
+  StenoKeyState chord;
+} practice;
+
+static void practice_publish() {
+  uint32_t snapshot = 0;
+  if (practice.active) {
+    snapshot = ZEN_R4_PRACTICE_ACTIVE | (practice.round % 4) |
+               (uint32_t(practice.feedback) << 2) |
+               (uint32_t(practice.round) << 4) |
+               (uint32_t(practice.streak) << 8) |
+               (uint32_t(practice.best) << 12);
+  }
+  atomic_set(&practice_screen, snapshot);
+  zen_r4_split_status_refresh();
+}
+
+static void practice_advance(struct k_work *) {
+  k_mutex_lock(&practice_mutex, K_FOREVER);
+  if (practice.active && practice.feedback == ZEN_R4_PRACTICE_CORRECT) {
+    ++practice.round;
+    practice.feedback = practice.round == ZEN_R4_PRACTICE_ROUNDS
+                            ? ZEN_R4_PRACTICE_DONE
+                            : ZEN_R4_PRACTICE_PROMPT;
+    practice_publish();
+  }
+  k_mutex_unlock(&practice_mutex);
+}
+
+K_WORK_DELAYABLE_DEFINE(practice_advance_work, practice_advance);
+
+extern "C" uint32_t zen_r4_practice_snapshot(void) {
+  return uint32_t(atomic_get(&practice_screen));
+}
+
+extern "C" void zen_r4_practice_set_active(bool active) {
+  if (active) {
+    zmk_javelin_steno_init();
+  }
+  const JavelinEngineLock engine_lock;
+  if (!engine_lock) {
+    return;
+  }
+  k_mutex_lock(&practice_mutex, K_FOREVER);
+  if (active != practice.active) {
+    k_work_cancel_delayable(&practice_advance_work);
+    if (processor) {
+      // Cancel partial strokes and repeats at the practice boundary.
+      practice_pending_releases |= processor->GetCurrentKeyState();
+      stenoRepeat.value.Process(StenoKeyState(), StenoAction::CANCEL_ALL);
+      new (processor) StenoProcessor(stenoRepeat.value);
+    }
+    practice_pending_releases |= practice.keys;
+    practice = {};
+    practice.active = active && processor;
+    practice_publish();
+  }
+  k_mutex_unlock(&practice_mutex);
+}
+
+// Called under the engine lock, so dictionary edits and flash sleep cannot
+// race a lookup. Practice chords never enter the host-output processor.
+static bool practice_process_key(int index, bool pressed) {
+  k_mutex_lock(&practice_mutex, K_FOREVER);
+  StenoKeyState key;
+  key.Process(static_cast<StenoKey>(index), true);
+  if ((practice_pending_releases & key).IsNotEmpty()) {
+    practice_pending_releases &= ~key;
+    if (!pressed) {
+      k_mutex_unlock(&practice_mutex);
+      return true;
+    }
+  }
+  if (!practice.active) {
+    k_mutex_unlock(&practice_mutex);
+    return false;
+  }
+  if (pressed && practice.keys.IsEmpty()) {
+    practice.ignore_chord = practice.feedback == ZEN_R4_PRACTICE_CORRECT ||
+                            practice.feedback == ZEN_R4_PRACTICE_DONE;
+  }
+  practice.keys.Process(static_cast<StenoKey>(index), pressed);
+  practice.chord |= practice.keys;
+  if (!pressed && practice.keys.IsEmpty() && practice.chord.IsNotEmpty()) {
+    if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
+        practice.feedback != ZEN_R4_PRACTICE_DONE) {
+      const StenoStroke stroke = practice.chord.ToStroke();
+      auto result = StenoEngine::container.value.GetDictionary().Lookup(
+          StenoDictionaryLookup(&stroke, 1));
+      const bool correct =
+          result.IsValid() &&
+          strcasecmp(result.GetText(), zen_r4_practice_words[practice.round % 4]) == 0;
+      result.Destroy();
+      if (correct) {
+        ++practice.streak;
+        if (practice.streak > practice.best) {
+          practice.best = practice.streak;
+        }
+        practice.feedback = ZEN_R4_PRACTICE_CORRECT;
+        k_work_reschedule(&practice_advance_work, K_MSEC(700));
+      } else {
+        practice.streak = 0;
+        practice.feedback = ZEN_R4_PRACTICE_INCORRECT;
+      }
+      practice_publish();
+    }
+    practice.chord.Reset();
+  }
+  k_mutex_unlock(&practice_mutex);
+  return true;
+}
 #endif
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
@@ -367,6 +497,11 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
   if (!lock || !processor) {
     return;
   }
+#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+  if (practice_process_key(steno_key_index, is_press)) {
+    return;
+  }
+#endif
   printk("[JAV] key %d %s\n", steno_key_index, is_press ? "down" : "up");
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
   printk("[JAV] key processed\n");

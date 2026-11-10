@@ -46,11 +46,22 @@ static void send_status(struct k_work *work) {
         .param1 = current_mode(),
         .param2 = ZEN_R4_STATUS_PROTOCOL,
     };
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
+    uint32_t practice = zen_r4_practice_snapshot();
+    if (practice & ZEN_R4_PRACTICE_ACTIVE) {
+        binding.param1 = practice;
+        binding.param2 = ZEN_R4_PRACTICE_PROTOCOL;
+    }
+#endif
     struct zmk_behavior_binding_event event = {.timestamp = k_uptime_get()};
     zmk_split_central_invoke_behavior(0, &binding, event, true);
 }
 
 K_WORK_DEFINE(send_status_work, send_status);
+
+void zen_r4_split_status_refresh(void) {
+    k_work_submit(&send_status_work);
+}
 
 static void sync_after_connect(struct k_work *work) {
     send_status(work);
@@ -89,7 +100,12 @@ BT_CONN_CB_DEFINE(zen_r4_split_status_conn) = {
 };
 
 static int layer_changed(const zmk_event_t *event) {
-    k_work_submit(&send_status_work);
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
+    const char *name =
+        zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active()));
+    zen_r4_practice_set_active(name && strcmp(name, "PRACTICE") == 0);
+#endif
+    zen_r4_split_status_refresh();
     return ZMK_EV_EVENT_BUBBLE;
 }
 

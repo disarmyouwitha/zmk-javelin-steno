@@ -11,6 +11,10 @@
 #define STENO 2
 #define PLOVER_HID 3
 
+#ifndef CORNE_RIGHT_SYMBOL_THUMBS
+#define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &none
+#endif
+
 #ifndef CORNE_LEFT_MAIN_THUMBS
 #define CORNE_LEFT_MAIN_THUMBS &kp LCMD &mo SYM_NUM &kp BSPC
 #endif
@@ -72,7 +76,7 @@
 CORNE_LEFT_SYMBOL_ROW_0                                                        &kp KP_PLUS &kp N7 &kp N8 &kp N9 &kp BSPC &kp BSPC
 CORNE_LEFT_SYMBOL_ROW_1                                                        &kp MINUS   &kp N4 &kp N5 &kp N6 &kp RET  &kp RET
 &kp LS(LEFT)   &none        &none       &kp SPACE &none      &none           &kp EQUAL   &kp N1 &kp N2 &kp N3 &kp DOT  &trans
-                                      &trans &trans &trans                 &none &kp N0 &none
+                                      &trans &trans &trans                 CORNE_RIGHT_SYMBOL_THUMBS
             >;
         };
 
