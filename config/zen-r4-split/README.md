@@ -44,10 +44,10 @@ Flash the right build to the Ultralight and the matching left build to the handw
 
 Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **Plover HID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
-## Offline practice trial
+## Offline practice
 
-The `zen-r4/offline-practice` branch adds a ten-prompt single-stroke drill
-using CAT, THE, IF and IS in a repeating order. The left central owns the
+Practice is a ten-prompt single-stroke drill using CAT, THE, IF and IS in a
+repeating order. The left central owns the
 session and looks up each completed chord through Javelin's active dictionary
 list, including personal overrides. Comparison ignores letter case. Use
 ordinary one-stroke translations for these words. Formatting commands and
@@ -80,7 +80,7 @@ feedback are ignored until that chord is fully released. Practice leaves
 dictionary contents and selection intact.
 
 Build both halves with the nice!view build options above and
-`CONFIG_ZMK_ZEN_R4_PRACTICE=y` on the central, enabled in this branch's left
+`CONFIG_ZMK_ZEN_R4_PRACTICE=y` on the central, enabled in the split left
 configuration. Hardware validation should cover a mistake followed by a
 correct answer, all ten prompts, entry and exit while a steno key is held,
 right-half reconnect, and normal typing, onboard Javelin and Plover HID after
