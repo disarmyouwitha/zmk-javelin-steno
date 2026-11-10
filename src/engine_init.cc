@@ -526,22 +526,23 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
     return;
   }
 #endif
-  printk("[JAV] key %d %s\n", steno_key_index, is_press ? "down" : "up");
+  LOG_DBG("[JAV] key %d %s", steno_key_index, is_press ? "down" : "up");
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
-  printk("[JAV] key processed\n");
 }
 
 } // extern "C"
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-void zen_javelin_console_line(const char *line, size_t size, IWriter &writer) {
+bool zen_javelin_console_line(const char *line, size_t size, IWriter &writer) {
   const JavelinEngineLock lock;
   if (!lock) {
-    return;
+    // The flash is asleep, unprovisioned or still verifying.
+    return false;
   }
   zmk_javelin_steno_init();
   ConsoleWriter::Push(&writer);
   Console::instance.HandleInput(line, size, ConnectionId::SERIAL_CONSOLE);
   ConsoleWriter::Pop();
+  return true;
 }
 #endif

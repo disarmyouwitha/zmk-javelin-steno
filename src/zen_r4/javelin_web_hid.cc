@@ -10,7 +10,8 @@
 
 extern "C" bool zmk_usb_is_hid_ready(void);
 
-void zen_javelin_console_line(const char *line, size_t size, IWriter &writer);
+// False when the engine could not take the command, so nothing was written.
+bool zen_javelin_console_line(const char *line, size_t size, IWriter &writer);
 
 namespace {
 constexpr size_t REPORT_BYTES = JAVELIN_HID_REPORT_BYTES;
@@ -137,29 +138,25 @@ void dispatch(char *line, size_t size, HidWriter &writer) {
                              "get_parameter", "set_host_layout",
 #endif
     };
-    for (const char *name : allowed) {
-        if (is_command(command, name)) {
-            zen_javelin_console_line(line, size, writer);
-            return;
-        }
-    }
-    if (strcmp(command, "print_dictionary user_dictionary\n") == 0) {
-        zen_javelin_console_line(line, size, writer);
-        return;
-    }
     // The Active Dictionaries page updates its checkboxes from status events
     // after an enable/disable reply. Allow its subscription over this HID link.
-    if (strcmp(command, "enable_events dictionary_status\n") == 0 ||
-        strcmp(command, "disable_events dictionary_status\n") == 0) {
-        zen_javelin_console_line(line, size, writer);
+    bool forward = strcmp(command, "print_dictionary user_dictionary\n") == 0 ||
+                   strcmp(command, "enable_events dictionary_status\n") == 0 ||
+                   strcmp(command, "disable_events dictionary_status\n") == 0;
+    for (const char *name : allowed) {
+        forward = forward || is_command(command, name);
+    }
+    if (forward && zen_javelin_console_line(line, size, writer)) {
         return;
     }
 
     if (channel) {
         writer.Write(line, 4);
     }
-    constexpr char message[] = "ERR Command unavailable on this keyboard\n\n";
-    writer.Write(message, sizeof(message) - 1);
+    // Always answer, so the browser never waits on a command that was dropped.
+    const char *message = forward ? "ERR Dictionary flash is not ready\n\n"
+                                  : "ERR Command unavailable on this keyboard\n\n";
+    writer.Write(message, strlen(message));
 }
 
 struct CommandBuffer {

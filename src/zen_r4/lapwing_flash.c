@@ -58,16 +58,47 @@ PINCTRL_DT_DEFINE(QSPI_NODE);
 
 static const struct gpio_dt_spec power =
     GPIO_DT_SPEC_GET(DT_PATH(zephyr_user), flash_power_gpios);
+#define SERIAL_PROVISIONING IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_SERIAL_PROVISIONING)
+#if SERIAL_PROVISIONING
 static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
-static atomic_t mapped_ready;
 static uint8_t incoming[CHUNK_BYTES] __aligned(4);
+#endif
+static atomic_t mapped_ready;
 static uint8_t readback[CHUNK_BYTES] __aligned(4);
+/* Both bases passed a full CRC since the flash was last without power. */
+static bool trusted __maybe_unused;
 
 #ifdef CONFIG_ZMK_SLEEP
 BUILD_ASSERT(!IS_ENABLED(CONFIG_ZMK_EXT_POWER), "The QSPI driver owns the flash power pin");
 K_MUTEX_DEFINE(flash_lock);
 static bool flash_suspended;
 static atomic_t restart_requested = ATOMIC_INIT(1);
+static K_SEM_DEFINE(restart_wake, 0, 1);
+
+/* GPREGRET2 survives System OFF and resets, and clears when power is lost.
+ * Deep sleep leaves a marker tied to the expected images, so the wake that
+ * follows can skip the two full CRC passes. Anything else verifies in full.
+ */
+static uint8_t trust_marker(void) {
+    uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES;
+
+    value ^= value >> 16;
+    value ^= value >> 8;
+    value &= 0xff;
+    return value ? (uint8_t)value : 0xa5;
+}
+
+static bool take_wake_trust(void) {
+    const bool wake = (NRF_POWER->GPREGRET2 & 0xff) == trust_marker();
+
+    NRF_POWER->GPREGRET2 = 0;
+    return wake || trusted;
+}
+
+static void request_restart(void) {
+    atomic_set(&restart_requested, 1);
+    k_sem_give(&restart_wake);
+}
 
 bool lapwing_flash_acquire(void) {
     if (!atomic_get(&mapped_ready)) {
@@ -90,7 +121,8 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
     if (action == PM_DEVICE_ACTION_RESUME) {
         // ZMK aborted power-off and rolled back device suspension. Let the
         // worker restore the same mapping before allowing new flash access.
-        atomic_set(&restart_requested, 1);
+        NRF_POWER->GPREGRET2 = 0;
+        request_restart();
         return 0;
     }
     if (action != PM_DEVICE_ACTION_SUSPEND) {
@@ -120,7 +152,9 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
     }
     if (rc != 0) {
         // A failing suspend is not on ZMK's resume list.
-        atomic_set(&restart_requested, 1);
+        request_restart();
+    } else if (trusted) {
+        NRF_POWER->GPREGRET2 = trust_marker();
     }
     k_mutex_unlock(&flash_lock);
     return rc;
@@ -129,6 +163,10 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
 PM_DEVICE_DEFINE(zen_r4_flash, flash_pm_action);
 DEVICE_DEFINE(zen_r4_flash, "ZEN_R4_QSPI", NULL, PM_DEVICE_GET(zen_r4_flash), NULL, NULL,
               POST_KERNEL, CONFIG_KERNEL_INIT_PRIORITY_DEVICE, NULL);
+#else
+static bool take_wake_trust(void) {
+    return false;
+}
 #endif
 
 uintptr_t lapwing_mapped_address(void) {
@@ -172,7 +210,7 @@ static bool read_image_crc(const struct base_image *image) {
     return crc == image->crc;
 }
 
-static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
+static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
     if (w25q128_enable_volatile_quad() != NRFX_SUCCESS) {
         return false;
     }
@@ -182,7 +220,7 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
         return false;
     }
 
-    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+    for (size_t i = 0; !quick && i < ARRAY_SIZE(images); i++) {
         const struct base_image *image = &images[i];
         uint32_t crc = 0;
         const volatile uint32_t *mapped = (const volatile uint32_t *)(XIP_BASE + image->offset);
@@ -211,10 +249,12 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config) {
 #endif
 
     // The personal-dictionary store serializes its QSPI operations with mapped lookups.
+    trusted = true;
     atomic_set(&mapped_ready, 1);
     return true;
 }
 
+#if SERIAL_PROVISIONING
 static void reply(const struct base_image *image, const char *message, uint32_t value) {
     char line[64];
 
@@ -296,8 +336,9 @@ static bool transfer_image(const struct base_image *image, bool program) {
     }
     return true;
 }
+#endif /* SERIAL_PROVISIONING */
 
-static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
+static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool quick) {
     *mapping_failed = false;
     config->prot_if.readoc = NRF_QSPI_READOC_FASTREAD;
     if (!start_qspi(config)) {
@@ -308,13 +349,36 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
         uint32_t magic = 0;
         image->verified =
             nrfx_qspi_read(&magic, sizeof(magic), image->offset) == NRFX_SUCCESS &&
-            magic == JSC4_MAGIC && read_image_crc(image);
+            magic == JSC4_MAGIC && (quick || read_image_crc(image));
     }
     if (all_verified()) {
-        *mapping_failed = !enable_verified_mapping(config);
+        *mapping_failed = !enable_verified_mapping(config, quick);
     }
     return true;
 }
+
+/* A wake from our own deep sleep checks the chip ID, image headers and native
+ * lookups. A cold boot, or a quick check that fails, runs both CRC passes.
+ */
+static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
+    const bool quick = take_wake_trust();
+    bool qspi_ok = prepare_flash(config, mapping_failed, quick);
+
+    if (quick && (!qspi_ok || *mapping_failed || !atomic_get(&mapped_ready))) {
+        printk("Quick flash check failed; verifying in full\n");
+        trusted = false;
+        if (nrfx_qspi_init_check()) {
+            (void)reactivate_after_xip();
+            nrfx_qspi_uninit();
+        }
+        qspi_ok = prepare_flash(config, mapping_failed, false);
+    }
+    printk("External flash %s after %s check\n",
+           atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full");
+    return qspi_ok;
+}
+
+#if SERIAL_PROVISIONING
 
 static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qspi_ok,
                            bool *mapping_failed) {
@@ -336,7 +400,7 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
             if (!image->verified) {
                 reply(image, "READBACK_ERROR", 0);
             } else if (all_verified()) {
-                *mapping_failed = !enable_verified_mapping(config);
+                *mapping_failed = !enable_verified_mapping(config, false);
                 reply(image, *mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
             } else {
                 reply(image, "VERIFIED", image->bytes);
@@ -344,6 +408,8 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
         }
     }
 }
+
+#endif /* SERIAL_PROVISIONING */
 
 static void lapwing_worker(void *a, void *b, void *c) {
     ARG_UNUSED(a);
@@ -355,13 +421,16 @@ static void lapwing_worker(void *a, void *b, void *c) {
         NRF_QSPI_PIN_NOT_CONNECTED, NRF_QSPI_PIN_NOT_CONNECTED, NRF_QSPI_PIN_NOT_CONNECTED);
     config.skip_gpio_cfg = true;
     config.skip_psel_cfg = true;
-    config.phy_if.sck_freq = NRF_QSPI_FREQ_DIV16;
+    /* 32 MHz / divider. The enum is the divider minus one. */
+    BUILD_ASSERT(NRF_QSPI_FREQ_DIV1 == 0 && NRF_QSPI_FREQ_DIV16 == 15);
+    config.phy_if.sck_freq =
+        (nrf_qspi_frequency_t)(CONFIG_ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER - 1);
 
     bool mapping_failed = false;
 #ifdef CONFIG_ZMK_SLEEP
     bool qspi_ok = false;
 #else
-    const bool qspi_ok = prepare_flash(&config, &mapping_failed);
+    const bool qspi_ok = bring_up_flash(&config, &mapping_failed);
 #endif
 
     for (;;) {
@@ -369,12 +438,13 @@ static void lapwing_worker(void *a, void *b, void *c) {
         if (atomic_get(&restart_requested)) {
             k_mutex_lock(&flash_lock, K_FOREVER);
             if (atomic_cas(&restart_requested, 1, 0)) {
-                qspi_ok = prepare_flash(&config, &mapping_failed);
+                qspi_ok = bring_up_flash(&config, &mapping_failed);
                 flash_suspended = false;
             }
             k_mutex_unlock(&flash_lock);
         }
 #endif
+#if SERIAL_PROVISIONING
         uint8_t command;
         if (uart_poll_in(console, &command) == 0) {
 #ifdef CONFIG_ZMK_SLEEP
@@ -388,6 +458,14 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #endif
         }
         k_msleep(10);
+#elif defined(CONFIG_ZMK_SLEEP)
+        /* Nothing to poll. Sleep until a resume asks for the mapping again. */
+        ARG_UNUSED(qspi_ok);
+        k_sem_take(&restart_wake, K_FOREVER);
+#else
+        ARG_UNUSED(qspi_ok);
+        return;
+#endif
     }
 }
 

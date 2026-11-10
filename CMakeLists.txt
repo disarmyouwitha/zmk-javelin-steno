@@ -24,6 +24,10 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     if(NOT EXISTS "${JAVELIN_SRC_DIR}/engine.h")
       message(FATAL_ERROR "Pinned Javelin engine not found; see config/west.yml")
     endif()
+    # Patch a private copy so the pinned west checkout stays clean.
+    set(JAVELIN_PRIVATE_DIR "${CMAKE_CURRENT_BINARY_DIR}/javelin-engine")
+    file(COPY "${JAVELIN_SRC_DIR}/" DESTINATION "${JAVELIN_PRIVATE_DIR}" PATTERN ".git" EXCLUDE)
+    set(JAVELIN_SRC_DIR "${JAVELIN_PRIVATE_DIR}")
     execute_process(
       COMMAND ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_LIST_DIR}/tools/build/prepare_engine.py"
               "${JAVELIN_SRC_DIR}"

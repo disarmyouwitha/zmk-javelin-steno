@@ -27,7 +27,7 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor.
 
-Press a key on the left half to wake it. Startup restores flash power and verifies the base dictionaries before onboard Javelin and the editor can use them. On hardware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
+Press a key on the left half to wake it. Startup restores flash power and checks the base dictionaries before onboard Javelin and the editor can use them. A cold boot reads both bases in full, which takes 20–40 seconds at the handwired half's 2 MHz flash clock. A wake from deep sleep checks the chip ID, the image headers and a few native lookups instead, since the flash was unpowered and unchanged while asleep. That quick wake path is new and still needs a hardware check. On the earlier firmware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
 ## External QSPI flash
 
@@ -67,3 +67,40 @@ The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate ta
 ## License
 
 The Javelin steno engine is licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
+
+## Handoff notes for Codex (branch `claude/wake-speed-and-cleanup`)
+
+These changes came from a code review by Claude on 2026-11-10. **None of them have been compiled or run on hardware.** The review machine had no Zephyr toolchain. Build and test before merging to `main`.
+
+### What changed
+
+| Area | Change | Files |
+| --- | --- | --- |
+| Wake time | A wake from the keyboard's own deep sleep skips the two full CRC passes and does a quick check (JEDEC ID, JSC4 headers, KAT/hello native lookups). A cold boot still verifies in full. A failed quick check falls back to the full check. | `src/zen_r4/lapwing_flash.c` |
+| Wake marker | On a successful suspend, the firmware writes a one-byte marker to `NRF_POWER->GPREGRET2`, derived from the expected image CRCs and sizes. It is read and cleared at boot. | `src/zen_r4/lapwing_flash.c` |
+| Flash clock | New `CONFIG_ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER` (1–16, default 16, which is the previous 2 MHz). | `Kconfig`, `src/zen_r4/lapwing_flash.c` |
+| Serial provisioning | Now optional: `CONFIG_ZMK_JAVELIN_STENO_SERIAL_PROVISIONING`, default on when `ZMK_USB_LOGGING` is on. `ZMK_JAVELIN_STENO_EXTERNAL_LAPWING` no longer depends on `ZMK_USB_LOGGING`, so the everyday build can omit `-S zmk-usb-logging`. | `Kconfig`, `src/zen_r4/lapwing_flash.c` |
+| Flash worker | Without serial provisioning, the worker blocks on a semaphore instead of polling every 10 ms. | `src/zen_r4/lapwing_flash.c` |
+| Engine patching | The build copies the Javelin engine into the build directory and patches the copy, so the pinned west checkout stays clean. | `CMakeLists.txt` |
+| Logging | Per-key and per-HID-event `printk` calls are now `LOG_DBG`. | `src/engine_init.cc`, `src/platform/zmk_key_shim.cc` |
+| Editor replies | `zen_javelin_console_line` returns `bool`. The browser gets `ERR Dictionary flash is not ready` when the engine cannot take a command, and a failed add reports that the personal dictionary may be full. | `src/engine_init.cc`, `src/zen_r4/javelin_web_hid.cc`, `src/zen_r4/user_dictionary_store.cc` |
+| Display sync | Status snapshots retry for about 34 seconds after connect (4 at 1 s, then 6 at 5 s). | `src/zen_r4/split_status_central.c` |
+| Dictionary compiler | Warns on stderr about translations of 128 UTF-8 bytes or more. The longest today is 58 bytes. | `tools/dict_compiler/compile_dict.py` |
+| Right half | New conf file enables deep sleep. | `config/zen-r4-split/corne_right.conf` |
+
+### What to verify
+
+1. The left half builds both with and without `-S zmk-usb-logging`. The build without the snippet has never been compiled.
+2. After deep sleep, a keypress wake reaches working onboard Javelin in a few seconds, and the log shows `External flash mapped after quick check`.
+3. A cold boot (battery removed) still logs `after full check`.
+4. `upload.py` still provisions and its query still reports the images as mapped, on a build with the snippet.
+5. The right half sleeps, wakes and reconnects.
+6. `GPREGRET2` is assumed to be untouched by the Adafruit bootloader and ZMK. If something clears it, wakes stay slow but remain correct.
+
+### Decisions already made by the owner
+
+- Do not add CI to this repository.
+- Leave the right half's matrix and chip-select configuration alone until the first custom PCB is ordered.
+- Base-dictionary provisioning stays on serial. No HID upload.
+- Base dictionaries stay read-only; changes go in the personal dictionary.
+- Dictionary saves keep blocking lookups, since both use the same flash.

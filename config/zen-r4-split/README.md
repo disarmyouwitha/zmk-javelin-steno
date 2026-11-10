@@ -25,6 +25,8 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
+`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use: the bases still load, the browser editor runs over HID, and the keyboard skips the logging overhead on battery. Per-key steno logging is at debug level in either build. The right half now deep-sleeps after 15 idle minutes on battery; press one of its keys to wake it.
+
 The Plover image argument is optional for older Lapwing-only builds. The preparation script downloads a pinned official Plover `main.json`, checks its source checksum, compiles it for address `0x12200000`, and verifies every outline against the compiled image. Numeric outlines include the number bar and corresponding physical keys, matching the pinned engine's stroke parser.
 
 ### Right-half nice!view

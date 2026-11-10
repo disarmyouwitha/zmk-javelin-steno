@@ -12,6 +12,10 @@
 BUILD_ASSERT(ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT == 1);
 BUILD_ASSERT(sizeof(ZEN_R4_STATUS_BEHAVIOR) <= ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN);
 
+/* Four snapshots a second apart, then six more spread over half a minute. */
+#define SYNC_FAST_ATTEMPTS 4
+#define SYNC_SLOW_ATTEMPTS 6
+
 static atomic_t connected;
 static atomic_t sync_attempts;
 
@@ -66,9 +70,12 @@ void zen_r4_split_status_refresh(void) {
 static void sync_after_connect(struct k_work *work) {
     send_status(work);
     // ZMK discovers the remote behavior characteristic after the link comes up.
-    // Send a few snapshots during discovery, then only send on layer changes.
-    if (atomic_get(&connected) && atomic_dec(&sync_attempts) > 1) {
-        k_work_reschedule(k_work_delayable_from_work(work), K_SECONDS(1));
+    // Send snapshots through discovery, which can outlast the first few seconds
+    // on a fresh pairing. After that, only send on layer changes.
+    const atomic_val_t remaining = atomic_dec(&sync_attempts) - 1;
+    if (atomic_get(&connected) && remaining > 0) {
+        k_work_reschedule(k_work_delayable_from_work(work),
+                          remaining > SYNC_SLOW_ATTEMPTS ? K_SECONDS(1) : K_SECONDS(5));
     }
 }
 
@@ -82,7 +89,7 @@ static bool is_split_link(struct bt_conn *conn) {
 static void status_connected(struct bt_conn *conn, uint8_t err) {
     if (err == 0 && is_split_link(conn)) {
         atomic_set(&connected, 1);
-        atomic_set(&sync_attempts, 4);
+        atomic_set(&sync_attempts, SYNC_FAST_ATTEMPTS + SYNC_SLOW_ATTEMPTS);
         k_work_reschedule(&sync_status_work, K_MSEC(500));
     }
 }

@@ -197,6 +197,11 @@ class DictionaryCollectionBuilder:
         for text in text_list:
             text_to_offset[text] = len(text_block)
             encoded = text.encode('utf-8')
+            if len(encoded) >= 128:
+                # The external-flash reader copies each translation through a
+                # 128-byte buffer and drops anything longer.
+                print(f"warning: {len(encoded)}-byte translation will not load from "
+                      f"external flash: {text[:40]!r}...", file=sys.stderr)
             text_block.extend(encoded)
             text_block.append(0)
 
