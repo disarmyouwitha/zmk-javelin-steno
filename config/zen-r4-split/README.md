@@ -61,8 +61,8 @@ prompt. After ten correct answers the screen shows **DONE** and
 the best streak. The portrait screen follows the supplied
 [steno drill reference](../../docs/assets/offline-practice-reference.svg),
 scaled to the nice!view's 68×160 pixels, with a stroke hint and progress bar.
-The current version uses larger text on a white background with an outlined
-feedback panel for readability.
+The current version uses larger text with light lettering on a dark background
+and an outlined feedback panel.
 
 If all dictionaries are disabled, the screen shows **ENABLE DICT**
 and **DICT OFF**. Enable Lapwing Base or Plover Base in the browser tools to

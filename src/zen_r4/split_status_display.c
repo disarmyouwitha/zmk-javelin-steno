@@ -113,6 +113,10 @@ static void refresh_status(struct k_work *work) {
         draw_text(&layer, 140, 12, &lv_font_montserrat_10, text, false);
     }
     lv_canvas_finish_layer(status_canvas, &layer);
+    // Invert the complete L8 screen, including text, outlines and progress.
+    for (size_t i = 0; i < sizeof(portrait_buffer); i++) {
+        portrait_buffer[i] = UINT8_MAX - portrait_buffer[i];
+    }
     // Match the stock nice!view widget's portrait orientation.
     lv_draw_sw_rotate(portrait_buffer, landscape_buffer, PORTRAIT_WIDTH, PORTRAIT_HEIGHT,
                       lv_draw_buf_width_to_stride(PORTRAIT_WIDTH, CANVAS_FORMAT),
