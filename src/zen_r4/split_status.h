@@ -6,6 +6,7 @@
 #define ZEN_R4_STATUS_PROTOCOL 1
 #define ZEN_R4_PRACTICE_PROTOCOL 2
 #define ZEN_R4_PRACTICE_ACTIVE (1u << 31)
+#define ZEN_R4_PRACTICE_NO_DICTIONARY (1u << 16)
 #define ZEN_R4_PRACTICE_ROUNDS 10
 
 enum zen_r4_practice_feedback {
@@ -16,6 +17,7 @@ enum zen_r4_practice_feedback {
 };
 
 static const char *const zen_r4_practice_words[] = {"CAT", "THE", "IF", "IS"};
+static const char *const zen_r4_practice_outlines[] = {"KAT", "-T", "TP", "S"};
 
 /* One complete screen snapshot fits in the existing split behavior packet.
  * Bits 0..1 word, 2..3 feedback, 4..7 round, 8..11 streak, 12..15 best.

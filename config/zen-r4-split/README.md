@@ -57,8 +57,15 @@ From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
 thumb, then release both. The right nice!view shows the word, progress and
 current streak. Correct answers show **CORRECT!** for 700 ms and advance
 automatically. Mistakes show **TRY AGAIN**, reset the streak and retain the
-prompt. After ten correct answers the screen shows **DRILL COMPLETE** and
-the best streak.
+prompt. After ten correct answers the screen shows **DONE** and
+the best streak. The portrait screen follows the supplied
+[steno drill reference](../../docs/assets/offline-practice-reference.svg),
+scaled to the nice!view's 68×160 pixels, with a stroke hint and progress bar.
+
+If all dictionaries are disabled, the screen shows **ENABLE A DICTIONARY**
+and **DICT OFF**. Enable Lapwing Base or Plover Base in the browser tools to
+resume. Dictionary changes refresh this warning during the session. Practice
+uses the selected dictionaries and retains personal overrides.
 
 The outer left thumb returns to Typing. The outer right thumb exits to normal
 Javelin. Leave and re-enter Practice to restart. A right-half reboot or

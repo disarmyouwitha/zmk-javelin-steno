@@ -100,6 +100,7 @@ static StenoKeyState practice_pending_releases;
 static struct {
   bool active;
   bool ignore_chord;
+  bool no_dictionary;
   uint8_t round;
   uint8_t streak;
   uint8_t best;
@@ -111,7 +112,9 @@ static struct {
 static void practice_publish() {
   uint32_t snapshot = 0;
   if (practice.active) {
-    snapshot = ZEN_R4_PRACTICE_ACTIVE | (practice.round % 4) |
+    snapshot = ZEN_R4_PRACTICE_ACTIVE |
+               (practice.no_dictionary ? ZEN_R4_PRACTICE_NO_DICTIONARY : 0) |
+               (practice.round % 4) |
                (uint32_t(practice.feedback) << 2) |
                (uint32_t(practice.round) << 4) |
                (uint32_t(practice.streak) << 8) |
@@ -159,6 +162,10 @@ extern "C" void zen_r4_practice_set_active(bool active) {
     practice_pending_releases |= practice.keys;
     practice = {};
     practice.active = active && processor;
+    if (practice.active) {
+      practice.no_dictionary =
+          StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
+    }
     practice_publish();
   }
   k_mutex_unlock(&practice_mutex);
@@ -191,13 +198,17 @@ static bool practice_process_key(int index, bool pressed) {
     if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
         practice.feedback != ZEN_R4_PRACTICE_DONE) {
       const StenoStroke stroke = practice.chord.ToStroke();
+      practice.no_dictionary =
+          StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
       auto result = StenoEngine::container.value.GetDictionary().Lookup(
           StenoDictionaryLookup(&stroke, 1));
       const bool correct =
           result.IsValid() &&
           strcasecmp(result.GetText(), zen_r4_practice_words[practice.round % 4]) == 0;
       result.Destroy();
-      if (correct) {
+      if (practice.no_dictionary) {
+        practice.feedback = ZEN_R4_PRACTICE_PROMPT;
+      } else if (correct) {
         ++practice.streak;
         if (practice.streak > practice.best) {
           practice.best = practice.streak;
@@ -214,6 +225,16 @@ static bool practice_process_key(int index, bool pressed) {
   }
   k_mutex_unlock(&practice_mutex);
   return true;
+}
+
+static void practice_dictionary_changed() {
+  k_mutex_lock(&practice_mutex, K_FOREVER);
+  if (practice.active) {
+    practice.no_dictionary =
+        StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
+    practice_publish();
+  }
+  k_mutex_unlock(&practice_mutex);
 }
 #endif
 
@@ -334,6 +355,9 @@ static void select_dictionary(void *, const char *line) {
     StenoEngine::container.value.DisableDictionary(name);
   }
   ConsoleWriter::Pop();
+#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+  practice_dictionary_changed();
+#endif
   Console::SendOk();
   events.WriteBufferTo(ConsoleWriter::GetActiveWriter());
 }
