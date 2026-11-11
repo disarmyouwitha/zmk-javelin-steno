@@ -15,6 +15,9 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/sys/crc.h>
 #include <zephyr/sys/printk.h>
+#if IS_ENABLED(CONFIG_SETTINGS)
+#include <zephyr/settings/settings.h>
+#endif
 
 #define QSPI_NODE DT_NODELABEL(qspi)
 #define XIP_BASE DT_REG_ADDR_BY_NAME(QSPI_NODE, qspi_mm)
@@ -123,11 +126,66 @@ static uint8_t trust_marker(void) {
     return value ? (uint8_t)value : 0xa5;
 }
 
+/* A full CRC pass over both bases leaves a record in the keyboard's settings,
+ * tied to the images this firmware expects. While it is there, a cold boot
+ * runs the quick check too. The bases only change through serial
+ * provisioning, which removes the record before it writes.
+ */
+#define TRUST_SETTING "lapwing/verified"
+
+static uint32_t image_fingerprint(void) {
+    const uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES;
+
+    return value ? value : 0xa5a5a5a5U;
+}
+
+#if IS_ENABLED(CONFIG_SETTINGS)
+static int read_trust(const char *key, size_t len, settings_read_cb read_cb, void *cb_arg,
+                      void *param) {
+    ARG_UNUSED(key);
+    uint32_t value = 0;
+
+    if (len == sizeof(value) && read_cb(cb_arg, &value, sizeof(value)) == sizeof(value)) {
+        *(uint32_t *)param = value;
+    }
+    return 0;
+}
+
+static bool stored_trust(void) {
+    uint32_t value = 0;
+
+    return settings_subsys_init() == 0 &&
+           settings_load_subtree_direct(TRUST_SETTING, read_trust, &value) == 0 &&
+           value == image_fingerprint();
+}
+
+static void store_trust(void) {
+    const uint32_t value = image_fingerprint();
+
+    if (!stored_trust() && settings_save_one(TRUST_SETTING, &value, sizeof(value)) != 0) {
+        printk("Could not record the verified dictionaries
+");
+    }
+}
+
+static void clear_trust(void) {
+    (void)settings_delete(TRUST_SETTING);
+}
+#else
+static bool stored_trust(void) {
+    return false;
+}
+static void store_trust(void) {
+}
+static void clear_trust(void) {
+}
+#endif
+
 static bool take_wake_trust(void) {
     const bool wake = (NRF_POWER->GPREGRET2 & 0xff) == trust_marker();
 
     NRF_POWER->GPREGRET2 = 0;
-    return wake || trusted;
+    return wake || trusted || stored_trust();
 }
 
 static void request_restart(void) {
@@ -491,8 +549,9 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
     return true;
 }
 
-/* A wake from our own deep sleep checks the chip ID, image headers and native
- * lookups. A cold boot, or a quick check that fails, runs both CRC passes.
+/* Start-up checks the chip ID, image headers and native lookups. Both CRC
+ * passes run when no full check is on record for these images, such as the
+ * first boot after provisioning, and when the quick check fails.
  */
 static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
     const int64_t started = k_uptime_get();
@@ -510,6 +569,13 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
             nrfx_qspi_uninit();
         }
         qspi_ok = prepare_flash(config, mapping_failed, false);
+    }
+    if (!quick) {
+        if (atomic_get(&mapped_ready)) {
+            store_trust();
+        } else {
+            clear_trust();
+        }
     }
     printk("External flash %s after %s check in %d ms\n",
            atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full",
@@ -540,12 +606,15 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
             reply(image, "VERIFIED", image->bytes);
         } else if (command == image->query) {
             reply(image, "UNPROVISIONED", image->bytes);
-        } else if (transfer_image(image, false) && transfer_image(image, true)) {
+        } else if ((clear_trust(), transfer_image(image, false)) && transfer_image(image, true)) {
             image->verified = read_image_crc(image);
             if (!image->verified) {
                 reply(image, "READBACK_ERROR", 0);
             } else if (all_verified()) {
                 *mapping_failed = !enable_verified_mapping(config, false);
+                if (!*mapping_failed) {
+                    store_trust();
+                }
                 reply(image, *mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
                 lapwing_flash_ready_changed();
             } else {
@@ -669,4 +738,5 @@ static void lapwing_worker(void *a, void *b, void *c) {
     }
 }
 
-K_THREAD_DEFINE(lapwing_flash, 2048, lapwing_worker, NULL, NULL, NULL, 5, 0, 200);
+/* The stack leaves room for the settings read and write above. */
+K_THREAD_DEFINE(lapwing_flash, 3072, lapwing_worker, NULL, NULL, NULL, 5, 0, 200);
