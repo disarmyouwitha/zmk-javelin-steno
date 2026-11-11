@@ -4,8 +4,8 @@ manifest:
       url-base: https://github.com/zmkfirmware
     - name: jthlim
       url-base: https://github.com/jthlim
-    - name: petercpark
-      url-base: https://github.com/petercpark
+    - name: disarmyouwitha
+      url-base: https://github.com/disarmyouwitha
   projects:
     - name: zmk
       remote: zmkfirmware
@@ -15,8 +15,10 @@ manifest:
       remote: jthlim
       revision: 22726675b2dcf3b8b6ba1e20898f25e324b2260a
       path: javelin-steno
+    # Fork of petercpark/zmk-hid-io-plover-hid at d895457, plus key names
+    # for ZMK Studio (branch studio-key-names).
     - name: zmk-hid-io-plover-hid
-      remote: petercpark
-      revision: d895457418590dddf628c5ae907b39deec7095ff
+      remote: disarmyouwitha
+      revision: 25ca1c55e31781e49499178584520129b9586635
   self:
     path: config
