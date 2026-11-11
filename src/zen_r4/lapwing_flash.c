@@ -337,6 +337,9 @@ static bool enable_quad_reads(nrfx_qspi_config_t *config) {
 }
 
 static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
+    /* Already done on the start-up path. Repeated here because the serial
+     * provisioning path maps without it, and it costs one status write.
+     */
     if (!enable_quad_reads(config)) {
         return false;
     }

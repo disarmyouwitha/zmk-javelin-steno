@@ -194,14 +194,22 @@ void hid_worker(void *, void *, void *) {
         if (!zmk_usb_is_hid_ready()) {
             k_sem_give(&transmit_ready);
         }
+        bool partial = false;
         for (auto &buffer : buffers) {
-            if (!buffer.bluetooth && !zmk_usb_is_hid_ready()) {
+            if (buffer.channel == -2) {
+                continue;
+            }
+            if ((!buffer.bluetooth && !zmk_usb_is_hid_ready()) ||
+                k_uptime_get() - buffer.last_packet > 5000) {
                 reset_buffer(buffer);
+            } else {
+                partial = true;
             }
         }
-        // Sleep until the editor sends something. Partial lines left by a
-        // disconnect expire through the five-second check below.
-        if (k_msgq_get(&received_reports, &report, K_FOREVER) != 0) {
+        // Sleep until the editor sends something. While a command is half
+        // received, wake ten times a second so a disconnect or a stalled
+        // sender clears it promptly.
+        if (k_msgq_get(&received_reports, &report, partial ? K_MSEC(100) : K_FOREVER) != 0) {
             continue;
         }
         if (report.bluetooth) {
