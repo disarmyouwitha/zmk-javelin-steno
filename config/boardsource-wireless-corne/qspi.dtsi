@@ -1,0 +1,49 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pinctrl/nrf-pinctrl.h>
+
+/ {
+	zephyr,user {
+		flash-power-gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&pinctrl {
+	boardsource_qspi_default: boardsource_qspi_default {
+		bus {
+			psels = <NRF_PSEL(QSPI_CSN, 0, 7)>,
+				<NRF_PSEL(QSPI_SCK, 0, 12)>,
+				<NRF_PSEL(QSPI_IO0, 0, 21)>,
+				<NRF_PSEL(QSPI_IO1, 0, 19)>;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+		wp_hold {
+			psels = <NRF_PSEL(QSPI_IO2, 0, 5)>,
+				<NRF_PSEL(QSPI_IO3, 0, 23)>;
+			bias-pull-up;
+			nordic,drive-mode = <NRF_DRIVE_H0H1>;
+		};
+	};
+
+	boardsource_qspi_sleep: boardsource_qspi_sleep {
+		bus {
+			psels = <NRF_PSEL(QSPI_CSN, 0, 7)>,
+				<NRF_PSEL(QSPI_SCK, 0, 12)>,
+				<NRF_PSEL(QSPI_IO0, 0, 21)>,
+				<NRF_PSEL(QSPI_IO1, 0, 19)>,
+				<NRF_PSEL(QSPI_IO2, 0, 5)>,
+				<NRF_PSEL(QSPI_IO3, 0, 23)>;
+			bias-disable;
+			low-power-enable;
+		};
+	};
+};
+
+&qspi {
+	status = "okay";
+	pinctrl-0 = <&boardsource_qspi_default>;
+	pinctrl-1 = <&boardsource_qspi_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+/* SPI2 uses the same header pins for the right-side nice!view. */
+&nice_view_spi { status = "disabled"; };

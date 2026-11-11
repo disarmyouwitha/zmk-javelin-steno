@@ -1,0 +1,33 @@
+# The vendor board defconfig also configures the ZMK application. Declare
+# those settings here so the same board can build this standalone probe.
+source "Kconfig.zephyr"
+
+config ZMK_KEYBOARD_NAME
+	string
+
+config ZMK_SPLIT_ROLE_CENTRAL
+	bool
+
+config ZMK_SPLIT
+	bool
+
+config ZMK_USB
+	bool "Vendor ZMK USB default"
+
+config ZMK_STUDIO
+	bool "Vendor ZMK Studio default"
+
+config ZMK_STUDIO_LOCKING
+	bool "Vendor ZMK Studio locking default"
+
+config ZMK_BLE
+	bool "Vendor ZMK BLE default"
+
+config ZMK_SLEEP
+	bool "Vendor ZMK sleep default"
+
+config ZMK_DISPLAY
+	bool
+
+config ZMK_DISPLAY_BLANK_ON_IDLE
+	bool

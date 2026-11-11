@@ -1,0 +1,15 @@
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+    ext_power {
+        compatible = "zmk,ext-power-generic";
+        control-gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+    };
+
+    behaviors {
+        zrst: zrst {
+            compatible = "zmk,behavior-zen-r4-status";
+            #binding-cells = <2>;
+        };
+    };
+};

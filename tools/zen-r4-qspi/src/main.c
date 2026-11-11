@@ -65,7 +65,7 @@ static void run_probe(struct probe_result *result)
 	config.skip_psel_cfg = true;
 	config.phy_if.sck_freq = NRF_QSPI_FREQ_DIV16;
 
-	printk("Enabling flash VCC (P0.13 high)\n");
+	printk("Enabling switched flash VCC\n");
 	if (!gpio_is_ready_dt(&flash_power)) {
 		result->failure = "VCC GPIO device unavailable";
 		return;
@@ -225,9 +225,9 @@ int main(void)
 #elif defined(SCRATCH_PROBE)
 	printk("\nZen R4 QSPI probe - scratch-sector program, read and erase\n");
 #elif defined(QUAD_PROBE)
-	printk("\nZen R4 QSPI probe - quad output with volatile QE if needed\n");
+	printk("\n%s - quad output with volatile QE if needed\n", CONFIG_USB_DEVICE_PRODUCT);
 #else
-	printk("\nZen R4 QSPI probe - read only\n");
+	printk("\n%s - read only\n", CONFIG_USB_DEVICE_PRODUCT);
 #endif
 	run_probe(&result);
 	for (;;) {

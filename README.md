@@ -57,6 +57,7 @@ The existing website loaded **Active Dictionaries** with USB unplugged. A separa
 ## Build and wiring
 
 - [Tested Zen R4 / Corne Ultralight split](config/zen-r4-split/README.md) has the build, flash, provisioning, pairing, and verification steps. [Split keymap](config/zen-r4-split/corne.keymap)
+- [Boardsource Wireless Corne SMT port](config/boardsource-wireless-corne/README.md) has the integrated-controller builds, expansion-header wiring, and staged hardware bring-up. Builds are ready for hardware testing.
 - [Standalone handwired left half](config/zen-r4-left/README.md) covers the 21-switch matrix, pin assignments, and Lapwing-only bring-up. [Wiring diagram](config/zen-r4-left/zen_r4_left_wiring_diagram.png)
 - [QSPI diagnostics](tools/zen-r4-qspi/README.md) covers JEDEC detection, quad reads, flash readback, and the memory-mapped lookup bench.
 

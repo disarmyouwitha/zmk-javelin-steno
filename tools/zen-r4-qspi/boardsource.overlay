@@ -1,0 +1,13 @@
+#include "../../config/boardsource-wireless-corne/qspi.dtsi"
+
+/ {
+	chosen {
+		zephyr,console = &probe_cdc;
+	};
+};
+
+&zephyr_udc0 {
+	probe_cdc: probe_cdc {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
