@@ -6,6 +6,7 @@
 #include <zmk/keymap.h>
 #include <zmk/split/bluetooth/service.h>
 #include <zmk/split/central.h>
+#include <dt-bindings/zmk/zen_r4_layers.h>
 
 #include "split_status.h"
 #if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
@@ -13,6 +14,22 @@
 #endif
 
 BUILD_ASSERT(ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT == 1);
+
+/* Modes are recognised by layer ID, a layer's position in the devicetree
+ * keymap. ZMK Studio can rename or reorder layers without changing it. These
+ * checks fail the build if the keymap order drifts from zen_r4_layers.h.
+ */
+#define CHECK_LAYER_ID(node, id)                                                                   \
+    COND_CODE_1(DT_NODE_EXISTS(node), (BUILD_ASSERT(DT_NODE_CHILD_IDX(node) == (id));), ())
+CHECK_LAYER_ID(DT_PATH(keymap, main_layer), ZEN_R4_LAYER_MAIN)
+CHECK_LAYER_ID(DT_PATH(keymap, sym_num_layer), ZEN_R4_LAYER_SYM_NUM)
+CHECK_LAYER_ID(DT_PATH(keymap, steno_layer), ZEN_R4_LAYER_STENO)
+CHECK_LAYER_ID(DT_PATH(keymap, plover_hid_layer), ZEN_R4_LAYER_PLOVER_HID)
+CHECK_LAYER_ID(DT_PATH(keymap, practice_layer), ZEN_R4_LAYER_PRACTICE)
+
+static zmk_keymap_layer_id_t active_layer(void) {
+    return zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active());
+}
 BUILD_ASSERT(sizeof(ZEN_R4_STATUS_BEHAVIOR) <= ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN);
 
 /* Four snapshots a second apart, then six more spread over half a minute. */
@@ -38,28 +55,20 @@ static enum zen_r4_mode dictionary_mode(enum zen_r4_mode ready) {
 }
 
 static enum zen_r4_mode current_mode(void) {
-    const char *name =
-        zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active()));
-    if (!name) {
-        return ZEN_R4_MODE_UNKNOWN;
-    }
-    if (strcmp(name, "MAIN") == 0) {
-        return ZEN_R4_MODE_TYPING;
-    }
-    if (strcmp(name, "SYM+NUM") == 0) {
+    switch (active_layer()) {
+    case ZEN_R4_LAYER_SYM_NUM:
         return ZEN_R4_MODE_SYMBOLS;
-    }
-    if (strcmp(name, "STENO") == 0) {
+    case ZEN_R4_LAYER_STENO:
         return dictionary_mode(ZEN_R4_MODE_JAVELIN);
-    }
-    if (strcmp(name, "PRACTICE") == 0) {
+    case ZEN_R4_LAYER_PRACTICE:
         /* Shown only until practice starts and sends its own screen. */
         return dictionary_mode(ZEN_R4_MODE_UNKNOWN);
-    }
-    if (strcmp(name, "PLOVER HID") == 0) {
+    case ZEN_R4_LAYER_PLOVER_HID:
         return ZEN_R4_MODE_PLOVER;
+    default:
+        /* The main layer, and any layer a user adds in ZMK Studio. */
+        return ZEN_R4_MODE_TYPING;
     }
-    return ZEN_R4_MODE_UNKNOWN;
 }
 
 static void send_status(struct k_work *work) {
@@ -129,12 +138,11 @@ BT_CONN_CB_DEFINE(zen_r4_split_status_conn) = {
 };
 
 static void apply_layer(void) {
-    const char *name =
-        zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active()));
-    const bool practice = name && strcmp(name, "PRACTICE") == 0;
+    const zmk_keymap_layer_id_t layer = active_layer();
+    const bool practice = layer == ZEN_R4_LAYER_PRACTICE;
 #if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
     /* Have the dictionaries ready before the first stroke on these layers. */
-    if (practice || (name && strcmp(name, "STENO") == 0)) {
+    if (practice || layer == ZEN_R4_LAYER_STENO) {
         lapwing_flash_prepare();
     }
 #endif
