@@ -95,7 +95,8 @@ bool lapwing_flash_is_powered(void) {
 #ifdef CONFIG_ZMK_SLEEP
 BUILD_ASSERT(!IS_ENABLED(CONFIG_ZMK_EXT_POWER), "The QSPI driver owns the flash power pin");
 K_MUTEX_DEFINE(flash_lock);
-static bool flash_suspended;
+/* True until the first bring-up, and again whenever the flash is powered down. */
+static bool flash_suspended = true;
 static atomic_t restart_requested = ATOMIC_INIT(1);
 static K_SEM_DEFINE(restart_wake, 0, 1);
 #if IDLE_OFF
@@ -273,6 +274,16 @@ enum lapwing_flash_state lapwing_flash_status(void) {
         return LAPWING_FLASH_READY;
     }
     return atomic_get(&checked) ? LAPWING_FLASH_UNAVAILABLE : LAPWING_FLASH_LOADING;
+}
+
+void lapwing_flash_prepare(void) {
+#if IDLE_OFF
+    /* Restart the idle timer, and start an idle flash without waiting for it. */
+    note_use();
+    if (!atomic_get(&mapped_ready) && atomic_get(&idle_off)) {
+        request_restart();
+    }
+#endif
 }
 
 static bool start_qspi(nrfx_qspi_config_t *config) {
@@ -569,7 +580,10 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #ifdef CONFIG_ZMK_SLEEP
         if (atomic_get(&restart_requested)) {
             k_mutex_lock(&flash_lock, K_FOREVER);
-            if (atomic_cas(&restart_requested, 1, 0)) {
+            /* Several callers may ask for one wake. Only a powered-down flash
+             * is brought up; a request that arrives late is already served.
+             */
+            if (atomic_cas(&restart_requested, 1, 0) && flash_suspended) {
                 qspi_ok = bring_up_flash(&config, &mapping_failed);
                 flash_suspended = false;
 #if IDLE_OFF

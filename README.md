@@ -25,7 +25,7 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 ## Deep sleep on battery
 
-The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after 30 seconds without a stroke, practice or editor command, and powers it back up on the next one. It is off by default and has not been tested on hardware.
+The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without a stroke, practice or editor command. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. Selecting the steno or practice layer starts the flash again, and so does the next stroke or editor command if it powered down while that layer stayed selected. The setting is off by default and has not been tested on hardware.
 
 Press a key on the left half to wake it. Startup restores flash power and checks the base dictionaries before onboard Javelin and the editor can use them. A cold boot verifies both base images in full, reading them over four data lines. Until that finishes, the right display shows **Loading...** on the steno and practice layers, and practice starts by itself once the dictionaries are ready. When a retained marker identifies a wake from deep sleep, the firmware checks the chip ID, image headers and native lookups. If that check fails, it verifies both images in full. On the earlier firmware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
@@ -63,6 +63,21 @@ The existing website loaded **Active Dictionaries** with USB unplugged. A separa
 Use the [pinned west manifest](config/west.yml). The JSC4 dictionary format depends on the pinned engine's native structure layout.
 
 The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate target that runs a four-entry Javelin fixture from internal flash. The [`&javsteno` key bindings](include/dt-bindings/zmk/javelin_steno.h) apply to both builds.
+
+## Debug and test code to remove or gate
+
+These exist for bring-up and battery testing. Before calling the firmware finished, remove each one or put it behind a build flag.
+
+| Item | Where | Current state |
+| --- | --- | --- |
+| `W` serial query: last flash check path and its time in milliseconds | `src/zen_r4/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
+| Battery and activity logger, its `B` serial export and host script | `src/zen_r4/battery_log.c`, `tools/zen-r4-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
+| 128 KiB internal flash partition reserved for the battery log | `config/zen-r4-split/corne_left.overlay` | Always reserved, even with the logger off |
+| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | Off by default. Decide whether to keep it, make it the default, or delete it |
+| Start-up prints such as `[JAV] ...`, the JEDEC ID, flash check time and idle power-down | `src/engine_init.cc`, `src/zen_r4/lapwing_flash.c`, `src/zen_r4/lapwing_dictionary.cc` | Always compiled, visible only on the logging serial port |
+| `CONFIG_STACK_SENTINEL` and `CONFIG_THREAD_NAME` | `config/zen-r4-split/corne_left.conf` | Always on |
+
+Serial provisioning with `upload.py` is not on this list. It stays, and is already limited to builds with the logging snippet.
 
 ## License
 

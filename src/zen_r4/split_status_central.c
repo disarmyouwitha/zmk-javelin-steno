@@ -129,10 +129,19 @@ BT_CONN_CB_DEFINE(zen_r4_split_status_conn) = {
 };
 
 static void apply_layer(void) {
-#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
     const char *name =
         zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active()));
-    zen_r4_practice_set_active(name && strcmp(name, "PRACTICE") == 0);
+    const bool practice = name && strcmp(name, "PRACTICE") == 0;
+#if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+    /* Have the dictionaries ready before the first stroke on these layers. */
+    if (practice || (name && strcmp(name, "STENO") == 0)) {
+        lapwing_flash_prepare();
+    }
+#endif
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
+    zen_r4_practice_set_active(practice);
+#else
+    ARG_UNUSED(practice);
 #endif
     zen_r4_split_status_refresh();
 }
