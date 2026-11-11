@@ -163,8 +163,7 @@ static void store_trust(void) {
     const uint32_t value = image_fingerprint();
 
     if (!stored_trust() && settings_save_one(TRUST_SETTING, &value, sizeof(value)) != 0) {
-        printk("Could not record the verified dictionaries
-");
+        printk("Could not record the verified dictionaries\n");
     }
 }
 
