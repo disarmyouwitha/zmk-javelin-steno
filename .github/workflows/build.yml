@@ -1,0 +1,94 @@
+name: Build firmware
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    container:
+      image: zmkfirmware/zmk-build-arm:stable
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: left-logging
+            shield: corne_left
+            snippet: zmk-usb-logging
+            dictionaries: true
+          - name: left-studio
+            shield: corne_left
+            snippet: studio-rpc-usb-uart
+            dictionaries: true
+            extra: -DCONFIG_ZMK_STUDIO=y
+          - name: right
+            shield: corne_right
+          - name: right-nice-view
+            shield: corne_right nice_view_adapter nice_view
+            nice_view: true
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      # This repository has its own zephyr/ folder, so the west workspace
+      # lives beside it and only borrows the pinned manifest.
+      - name: Fetch the pinned ZMK, Zephyr and modules
+        run: |
+          git config --global --add safe.directory "*"
+          mkdir -p ws/config
+          cp repo/config/west.yml ws/config/west.yml
+          cd ws
+          west init -l config
+          west update --fetch-opt=--filter=tree:0
+          west zephyr-export
+
+      - name: Compile the base dictionaries
+        if: matrix.dictionaries
+        working-directory: repo
+        run: |
+          mkdir -p build/lapwing
+          curl --fail --location \
+            https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json \
+            -o build/lapwing/lapwing-base.json
+          python3 tools/dict_compiler/compile_dict.py build/lapwing/lapwing-base.json \
+            --base-addr 0x12000000 -o build/lapwing/lapwing-base.bin
+          python3 tools/zen-r4-lapwing/prepare_plover.py
+
+      - name: Build
+        working-directory: ws
+        shell: bash
+        run: |
+          repo="$GITHUB_WORKSPACE/repo"
+          args=("-DSHIELD=${{ matrix.shield }}"
+                "-DZMK_CONFIG=$repo/config/zen-r4-split"
+                "-DZMK_EXTRA_MODULES=$repo")
+          if [ "${{ matrix.dictionaries }}" = "true" ]; then
+            args+=("-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin"
+                   "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin")
+          fi
+          if [ "${{ matrix.nice_view }}" = "true" ]; then
+            args+=("-DEXTRA_CONF_FILE=$repo/config/zen-r4-split/right-nice-view.conf"
+                   "-DEXTRA_DTC_OVERLAY_FILE=$repo/config/zen-r4-split/right-nice-view.overlay")
+          fi
+          if [ -n "${{ matrix.extra }}" ]; then
+            args+=(${{ matrix.extra }})
+          fi
+          snippet=()
+          if [ -n "${{ matrix.snippet }}" ]; then
+            snippet=(-S "${{ matrix.snippet }}")
+          fi
+          west build -s zmk/app -d "$GITHUB_WORKSPACE/out" -b nice_nano//zmk "${snippet[@]}" -- "${args[@]}"
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: out/zephyr/zmk.uf2
+          if-no-files-found: error
