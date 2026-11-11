@@ -65,6 +65,7 @@ static const struct gpio_dt_spec power =
 #if SERIAL_PROVISIONING
 static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 static uint8_t incoming[CHUNK_BYTES] __aligned(4);
+static bool last_check_quick;
 #endif
 static atomic_t mapped_ready;
 static uint8_t readback[CHUNK_BYTES] __aligned(4);
@@ -396,6 +397,9 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
     }
     printk("External flash %s after %s check\n",
            atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full");
+#if SERIAL_PROVISIONING
+    last_check_quick = quick;
+#endif
     return qspi_ok;
 }
 
@@ -468,6 +472,10 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #if SERIAL_PROVISIONING
         uint8_t command;
         if (uart_poll_in(console, &command) == 0) {
+            if (command == 'W') {
+                reply(&images[0], last_check_quick ? "CHECK_QUICK" : "CHECK_FULL", 0);
+                continue;
+            }
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
             if (command == 'B') {
                 zen_battery_log_export(console);

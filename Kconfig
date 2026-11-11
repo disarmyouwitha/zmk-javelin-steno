@@ -56,7 +56,7 @@ config ZMK_JAVELIN_STENO_BLE_HID
 
 config ZMK_JAVELIN_BATTERY_LOG
     bool "Record Zen R4 battery samples in a dedicated internal flash partition"
-    depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING && ZMK_BLE && FLASH_MAP && HWINFO
+    depends on ZMK_JAVELIN_STENO_SERIAL_PROVISIONING && ZMK_BLE && FLASH_MAP && HWINFO
     select FCB
 
 config ZMK_JAVELIN_STENO_MACOS_US_LAYOUT

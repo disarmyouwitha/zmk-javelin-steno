@@ -1,11 +1,15 @@
 # Zen R4 battery logging trial
 
-The left-half build on `zen-r4/battery-logging` logs on the keyboard while
-running on battery. It samples every five minutes, at startup, on USB state
+Battery logging is off by default. To enable it, use `-S zmk-usb-logging`
+and add `-DCONFIG_ZMK_JAVELIN_BATTERY_LOG=y` to the split left build's CMake
+arguments. Use a separate build directory for this variant. The left half
+samples every five minutes, at startup, on USB state
 changes, and after the flash rail is switched off just before deep sleep. The
 128 KiB circular log uses a dedicated internal flash partition. At five-minute
 intervals it holds roughly eight days of continuous awake samples, with extra
-events reducing that window. Old sectors roll off as space is needed.
+events reducing that window. Old sectors roll off as space is needed. The
+standard split left build reserves the same flash partition so a later
+logger build can export retained records.
 
 Each row has the measured voltage and ZMK's estimated percent, a sequence number
 and boot number, uptime, the event, activity, USB, host and split Bluetooth status,

@@ -25,7 +25,12 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
-`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use: the bases still load, the browser editor runs over HID, and the keyboard skips the logging overhead on battery. Per-key steno logging is at debug level in either build. The right half now deep-sleeps after 15 idle minutes on battery; press one of its keys to wake it.
+`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`.
+
+Right-half deep sleep is off in the standard build. To enable it, add
+`-DCONFIG_ZMK_SLEEP=y` to the right build's CMake arguments. Wake a sleeping
+right half with one of its own keys. The [battery logger](../../tools/zen-r4-battery/README.md)
+is an opt-in for the left build.
 
 The Plover image argument is optional for older Lapwing-only builds. The preparation script downloads a pinned official Plover `main.json`, checks its source checksum, compiles it for address `0x12200000`, and verifies every outline against the compiled image. Numeric outlines include the number bar and corresponding physical keys, matching the pinned engine's stroke parser.
 
