@@ -61,4 +61,8 @@ enum zen_r4_mode {
     ZEN_R4_MODE_SYMBOLS,
     ZEN_R4_MODE_JAVELIN,
     ZEN_R4_MODE_PLOVER,
+    /* A steno or practice layer is selected, but the dictionaries are not usable. */
+    ZEN_R4_MODE_LOADING,
+    ZEN_R4_MODE_NO_DICTIONARY,
+    ZEN_R4_MODE_COUNT,
 };

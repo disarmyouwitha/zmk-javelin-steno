@@ -8,6 +8,9 @@
 #include <zmk/split/central.h>
 
 #include "split_status.h"
+#if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+#include "lapwing_flash.h"
+#endif
 
 BUILD_ASSERT(ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT == 1);
 BUILD_ASSERT(sizeof(ZEN_R4_STATUS_BEHAVIOR) <= ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN);
@@ -18,6 +21,21 @@ BUILD_ASSERT(sizeof(ZEN_R4_STATUS_BEHAVIOR) <= ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN);
 
 static atomic_t connected;
 static atomic_t sync_attempts;
+
+/* A layer that needs the dictionaries says so while they are not usable. */
+static enum zen_r4_mode dictionary_mode(enum zen_r4_mode ready) {
+#if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+    switch (lapwing_flash_status()) {
+    case LAPWING_FLASH_LOADING:
+        return ZEN_R4_MODE_LOADING;
+    case LAPWING_FLASH_UNAVAILABLE:
+        return ZEN_R4_MODE_NO_DICTIONARY;
+    default:
+        break;
+    }
+#endif
+    return ready;
+}
 
 static enum zen_r4_mode current_mode(void) {
     const char *name =
@@ -32,7 +50,11 @@ static enum zen_r4_mode current_mode(void) {
         return ZEN_R4_MODE_SYMBOLS;
     }
     if (strcmp(name, "STENO") == 0) {
-        return ZEN_R4_MODE_JAVELIN;
+        return dictionary_mode(ZEN_R4_MODE_JAVELIN);
+    }
+    if (strcmp(name, "PRACTICE") == 0) {
+        /* Shown only until practice starts and sends its own screen. */
+        return dictionary_mode(ZEN_R4_MODE_UNKNOWN);
     }
     if (strcmp(name, "PLOVER HID") == 0) {
         return ZEN_R4_MODE_PLOVER;
@@ -106,15 +128,34 @@ BT_CONN_CB_DEFINE(zen_r4_split_status_conn) = {
     .disconnected = status_disconnected,
 };
 
-static int layer_changed(const zmk_event_t *event) {
+static void apply_layer(void) {
 #if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
     const char *name =
         zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(zmk_keymap_highest_layer_active()));
     zen_r4_practice_set_active(name && strcmp(name, "PRACTICE") == 0);
 #endif
     zen_r4_split_status_refresh();
+}
+
+static int layer_changed(const zmk_event_t *event) {
+    apply_layer();
     return ZMK_EV_EVENT_BUBBLE;
 }
+
+#if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+/* The dictionaries became usable, or a check gave up. Practice selected during
+ * the check starts now, and the right display drops its loading message.
+ */
+static void flash_ready(struct k_work *work) {
+    apply_layer();
+}
+
+K_WORK_DEFINE(flash_ready_work, flash_ready);
+
+void lapwing_flash_ready_changed(void) {
+    k_work_submit(&flash_ready_work);
+}
+#endif
 
 ZMK_LISTENER(zen_r4_split_status, layer_changed);
 ZMK_SUBSCRIPTION(zen_r4_split_status, zmk_layer_state_changed);

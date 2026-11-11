@@ -25,7 +25,9 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
-`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`.
+`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`, followed by how long that check took in milliseconds.
+
+To test battery life with the dictionary flash powered down while idle, uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `corne_left.conf`. The first stroke or editor command after an idle period waits for the flash to start; the `W` reply shows how long that took.
 
 The right half enters deep sleep after 15 idle minutes on battery. Wake it
 with one of its own keys. The [battery logger](../../tools/zen-r4-battery/README.md)

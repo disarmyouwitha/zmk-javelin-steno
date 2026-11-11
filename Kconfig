@@ -43,6 +43,22 @@ config ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER
       dictionary check after a cold boot. Confirm each new value with
       tools/zen-r4-qspi before relying on it.
 
+config ZMK_JAVELIN_STENO_FLASH_IDLE_OFF
+    bool "Power the external flash down while the dictionaries are idle"
+    depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING && ZMK_SLEEP
+    help
+      Switch the flash rail and QSPI off after a period with no steno
+      strokes, practice or editor commands. The next use powers it back up
+      with the quick check and then proceeds, which delays that first key or
+      command while the flash starts. Off by default: the flash stays on
+      whenever the keyboard is awake.
+
+config ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS
+    int "Seconds without dictionary use before the flash powers down"
+    depends on ZMK_JAVELIN_STENO_FLASH_IDLE_OFF
+    range 5 3600
+    default 30
+
 config ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
     bool "Edit the personal dictionary over Javelin WebHID"
     depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING

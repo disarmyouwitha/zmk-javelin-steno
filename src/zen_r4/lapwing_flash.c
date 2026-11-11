@@ -66,10 +66,22 @@ static const struct gpio_dt_spec power =
 static const struct device *const console = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
 static uint8_t incoming[CHUNK_BYTES] __aligned(4);
 static bool last_check_quick;
+static uint32_t last_check_ms;
 #endif
+#define IDLE_OFF IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF)
 static atomic_t mapped_ready;
+/* Set once a bring-up attempt has finished, whatever its result. */
+static atomic_t checked;
+
+/* Called whenever the dictionaries become usable or a bring-up gives up.
+ * Runs on the flash worker with the flash lock held: only submit work.
+ */
+__weak void lapwing_flash_ready_changed(void) {
+}
 static uint8_t readback[CHUNK_BYTES] __aligned(4);
-/* Both bases passed a full CRC since the flash was last without power. */
+/* Both bases passed a full CRC since this controller last lost power. The
+ * flash cannot change while its rail is off, so later bring-ups may be quick.
+ */
 static bool trusted __maybe_unused;
 
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
@@ -86,6 +98,16 @@ K_MUTEX_DEFINE(flash_lock);
 static bool flash_suspended;
 static atomic_t restart_requested = ATOMIC_INIT(1);
 static K_SEM_DEFINE(restart_wake, 0, 1);
+#if IDLE_OFF
+#define IDLE_OFF_MS (CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS * 1000U)
+/* Set while the idle timer, and not ZMK's sleep, has the flash powered down. */
+static atomic_t idle_off;
+static atomic_t last_use;
+
+static void note_use(void) {
+    atomic_set(&last_use, (atomic_val_t)k_uptime_get_32());
+}
+#endif
 
 /* GPREGRET2 survives System OFF and resets, and clears when power is lost.
  * Deep sleep leaves a marker tied to the expected images, so the wake that
@@ -112,20 +134,67 @@ static void request_restart(void) {
     k_sem_give(&restart_wake);
 }
 
+/* Ask the worker to power an idle flash back up, and wait for the result. */
+static bool wake_idle_flash(void) {
+#if IDLE_OFF
+    if (!atomic_get(&idle_off)) {
+        return false;
+    }
+    request_restart();
+    for (int waited = 0; atomic_get(&idle_off) && waited < 1000; waited += 2) {
+        k_msleep(2);
+    }
+    return atomic_get(&mapped_ready) != 0;
+#else
+    return false;
+#endif
+}
+
 bool lapwing_flash_acquire(void) {
-    if (!atomic_get(&mapped_ready)) {
-        return false;
-    }
-    k_mutex_lock(&flash_lock, K_FOREVER);
-    if (!atomic_get(&mapped_ready)) {
+    /* The second pass covers an idle power-down that won the lock first. */
+    for (int attempt = 0; attempt < 2; attempt++) {
+#if IDLE_OFF
+        note_use();
+#endif
+        if (!atomic_get(&mapped_ready) && !wake_idle_flash()) {
+            return false;
+        }
+        k_mutex_lock(&flash_lock, K_FOREVER);
+        if (atomic_get(&mapped_ready)) {
+            return true;
+        }
         k_mutex_unlock(&flash_lock);
-        return false;
     }
-    return true;
+    return false;
 }
 
 void lapwing_flash_release(void) {
     k_mutex_unlock(&flash_lock);
+}
+
+/* Hold flash_lock. False while a flash operation is still in progress. */
+static bool flash_is_idle(bool initialized) {
+    return !initialized ||
+           (reactivate_after_xip() && nrfx_qspi_mem_busy_check() == NRFX_SUCCESS);
+}
+
+/* Hold flash_lock. Stops QSPI, floats its pins and switches the rail off. */
+static int power_down_flash(bool initialized) {
+    atomic_clear(&mapped_ready);
+    flash_suspended = true;
+    if (initialized) {
+        nrfx_qspi_uninit();
+    }
+    int rc = pinctrl_apply_state(PINCTRL_DT_DEV_CONFIG_GET(QSPI_NODE), PINCTRL_STATE_SLEEP);
+    if (rc == 0) {
+        rc = gpio_pin_configure_dt(&power, GPIO_OUTPUT_INACTIVE);
+    }
+#ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
+    if (rc == 0) {
+        atomic_clear(&flash_powered);
+    }
+#endif
+    return rc;
 }
 
 static int flash_pm_action(const struct device *dev, enum pm_device_action action) {
@@ -144,24 +213,27 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
         // ZMK retries on its next idle check. Let any read or save finish.
         return -EBUSY;
     }
-    const bool initialized = nrfx_qspi_init_check();
-    if (flash_suspended ||
-        (initialized &&
-         (!reactivate_after_xip() || nrfx_qspi_mem_busy_check() != NRFX_SUCCESS))) {
+    int rc = 0;
+    if (flash_suspended) {
+#if IDLE_OFF
+        /* The idle timer already powered the flash down. Sleep takes over. */
+        if (!atomic_cas(&idle_off, 1, 0)) {
+            k_mutex_unlock(&flash_lock);
+            return -EBUSY;
+        }
+#else
         k_mutex_unlock(&flash_lock);
         return -EBUSY;
+#endif
+    } else {
+        const bool initialized = nrfx_qspi_init_check();
+        if (!flash_is_idle(initialized)) {
+            k_mutex_unlock(&flash_lock);
+            return -EBUSY;
+        }
+        rc = power_down_flash(initialized);
     }
-
-    atomic_clear(&mapped_ready);
-    flash_suspended = true;
     atomic_clear(&restart_requested);
-    if (initialized) {
-        nrfx_qspi_uninit();
-    }
-    int rc = pinctrl_apply_state(PINCTRL_DT_DEV_CONFIG_GET(QSPI_NODE), PINCTRL_STATE_SLEEP);
-    if (rc == 0) {
-        rc = gpio_pin_configure_dt(&power, GPIO_OUTPUT_INACTIVE);
-    }
     if (rc != 0) {
         // A failing suspend is not on ZMK's resume list.
         request_restart();
@@ -171,7 +243,6 @@ static int flash_pm_action(const struct device *dev, enum pm_device_action actio
     k_mutex_unlock(&flash_lock);
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
     if (rc == 0) {
-        atomic_clear(&flash_powered);
         zen_battery_log_sleep();
     }
 #endif
@@ -189,6 +260,19 @@ static bool take_wake_trust(void) {
 
 uintptr_t lapwing_mapped_address(void) {
     return atomic_get(&mapped_ready) ? XIP_BASE : 0;
+}
+
+enum lapwing_flash_state lapwing_flash_status(void) {
+#if IDLE_OFF
+    /* An idle flash comes back on first use, so it still counts as ready. */
+    if (atomic_get(&idle_off)) {
+        return LAPWING_FLASH_READY;
+    }
+#endif
+    if (atomic_get(&mapped_ready)) {
+        return LAPWING_FLASH_READY;
+    }
+    return atomic_get(&checked) ? LAPWING_FLASH_UNAVAILABLE : LAPWING_FLASH_LOADING;
 }
 
 static bool start_qspi(nrfx_qspi_config_t *config) {
@@ -231,13 +315,18 @@ static bool read_image_crc(const struct base_image *image) {
     return crc == image->crc;
 }
 
-static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
+/* Four data lines for every read that follows, raw or mapped. */
+static bool enable_quad_reads(nrfx_qspi_config_t *config) {
     if (w25q128_enable_volatile_quad() != NRFX_SUCCESS) {
         return false;
     }
     config->prot_if.readoc = NRF_QSPI_READOC_READ4O;
-    if (nrfx_qspi_reconfigure(config) != NRFX_SUCCESS ||
-        nrfx_qspi_activate(true) != NRFX_SUCCESS) {
+    return nrfx_qspi_reconfigure(config) == NRFX_SUCCESS &&
+           nrfx_qspi_activate(true) == NRFX_SUCCESS;
+}
+
+static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
+    if (!enable_quad_reads(config)) {
         return false;
     }
 
@@ -365,6 +454,16 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
     if (!start_qspi(config)) {
         return false;
     }
+    /* The raw CRC pass reads every byte of both bases. On one data line it
+     * was most of the cold-boot wait, so switch to four lines first.
+     */
+    if (!enable_quad_reads(config)) {
+        for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+            images[i].verified = false;
+        }
+        *mapping_failed = true;
+        return true;
+    }
     for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
         struct base_image *image = &images[i];
         uint32_t magic = 0;
@@ -382,7 +481,10 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
  * lookups. A cold boot, or a quick check that fails, runs both CRC passes.
  */
 static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
+    const int64_t started = k_uptime_get();
     bool quick = take_wake_trust();
+
+    atomic_clear(&checked);
     bool qspi_ok = prepare_flash(config, mapping_failed, quick);
 
     if (quick && (!qspi_ok || *mapping_failed || !atomic_get(&mapped_ready))) {
@@ -395,10 +497,14 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
         }
         qspi_ok = prepare_flash(config, mapping_failed, false);
     }
-    printk("External flash %s after %s check\n",
-           atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full");
+    printk("External flash %s after %s check in %d ms\n",
+           atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full",
+           (int)(k_uptime_get() - started));
+    atomic_set(&checked, 1);
+    lapwing_flash_ready_changed();
 #if SERIAL_PROVISIONING
     last_check_quick = quick;
+    last_check_ms = (uint32_t)(k_uptime_get() - started);
 #endif
     return qspi_ok;
 }
@@ -427,6 +533,7 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
             } else if (all_verified()) {
                 *mapping_failed = !enable_verified_mapping(config, false);
                 reply(image, *mapping_failed ? "MAPPING_ERROR" : "MAPPED", image->bytes);
+                lapwing_flash_ready_changed();
             } else {
                 reply(image, "VERIFIED", image->bytes);
             }
@@ -465,15 +572,39 @@ static void lapwing_worker(void *a, void *b, void *c) {
             if (atomic_cas(&restart_requested, 1, 0)) {
                 qspi_ok = bring_up_flash(&config, &mapping_failed);
                 flash_suspended = false;
+#if IDLE_OFF
+                note_use();
+                atomic_clear(&idle_off);
+#endif
             }
             k_mutex_unlock(&flash_lock);
         }
+#if IDLE_OFF
+        if (atomic_get(&mapped_ready) &&
+            k_uptime_get_32() - (uint32_t)atomic_get(&last_use) >= IDLE_OFF_MS) {
+            k_mutex_lock(&flash_lock, K_FOREVER);
+            /* Recheck under the lock: a lookup may have just used the flash. */
+            const bool initialized = nrfx_qspi_init_check();
+            if (atomic_get(&mapped_ready) && !flash_suspended &&
+                k_uptime_get_32() - (uint32_t)atomic_get(&last_use) >= IDLE_OFF_MS &&
+                flash_is_idle(initialized)) {
+                if (power_down_flash(initialized) == 0) {
+                    atomic_set(&idle_off, 1);
+                    printk("External flash powered down while idle\n");
+                } else {
+                    request_restart();
+                }
+            }
+            k_mutex_unlock(&flash_lock);
+        }
+#endif
 #endif
 #if SERIAL_PROVISIONING
         uint8_t command;
         if (uart_poll_in(console, &command) == 0) {
             if (command == 'W') {
-                reply(&images[0], last_check_quick ? "CHECK_QUICK" : "CHECK_FULL", 0);
+                reply(&images[0], last_check_quick ? "CHECK_QUICK" : "CHECK_FULL",
+                      last_check_ms);
                 continue;
             }
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
@@ -484,6 +615,16 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #endif
 #ifdef CONFIG_ZMK_SLEEP
             k_mutex_lock(&flash_lock, K_FOREVER);
+#if IDLE_OFF
+            /* A provisioning command needs the flash, so end an idle power-down. */
+            if (flash_suspended && atomic_get(&idle_off)) {
+                atomic_clear(&restart_requested);
+                qspi_ok = bring_up_flash(&config, &mapping_failed);
+                flash_suspended = false;
+                atomic_clear(&idle_off);
+            }
+            note_use();
+#endif
             if (!flash_suspended) {
                 handle_command(command, &config, qspi_ok, &mapping_failed);
             }
@@ -494,9 +635,16 @@ static void lapwing_worker(void *a, void *b, void *c) {
         }
         k_msleep(10);
 #elif defined(CONFIG_ZMK_SLEEP)
-        /* Nothing to poll. Sleep until a resume asks for the mapping again. */
+        /* Nothing to poll. Sleep until something asks for the mapping again,
+         * waking now and then only while an idle power-down is still due.
+         */
         ARG_UNUSED(qspi_ok);
+#if IDLE_OFF
+        k_sem_take(&restart_wake, atomic_get(&mapped_ready)
+                                      ? K_MSEC(MAX(IDLE_OFF_MS / 4U, 1000U)) : K_FOREVER);
+#else
         k_sem_take(&restart_wake, K_FOREVER);
+#endif
 #else
         ARG_UNUSED(qspi_ok);
         return;

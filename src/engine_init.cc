@@ -203,6 +203,15 @@ extern "C" uint32_t zen_r4_practice_snapshot(void) {
 extern "C" void zen_r4_practice_set_active(bool active) {
   if (active) {
     zmk_javelin_steno_init();
+  } else {
+    // Leaving a layer that never started practice needs no engine access,
+    // so ordinary layer changes do not touch the dictionary flash.
+    k_mutex_lock(&practice_mutex, K_FOREVER);
+    const bool was_active = practice.active;
+    k_mutex_unlock(&practice_mutex);
+    if (!was_active) {
+      return;
+    }
   }
   const JavelinEngineLock engine_lock;
   if (!engine_lock) {
@@ -565,9 +574,26 @@ void zmk_javelin_steno_init(void) {
 }
 
 void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
+  // Steno keys whose press reached the engine. A key held while the flash
+  // becomes ready must not deliver a release without its press. Key events
+  // all arrive on the system work queue, so this needs no lock.
+  static uint64_t delivered_presses;
+  const uint64_t bit =
+      steno_key_index >= 0 && steno_key_index < 64 ? uint64_t(1) << steno_key_index : 0;
+
   const JavelinEngineLock lock;
-  if (!lock || !processor) {
-    return;
+  const bool ready = lock && processor;
+  if (is_press) {
+    if (!ready) {
+      return;
+    }
+    delivered_presses |= bit;
+  } else {
+    const bool was_delivered = !bit || (delivered_presses & bit);
+    delivered_presses &= ~bit;
+    if (!ready || !was_delivered) {
+      return;
+    }
   }
 #ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
   if (practice_process_key(steno_key_index, is_press)) {

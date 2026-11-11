@@ -118,6 +118,8 @@ static void refresh_status(struct k_work *work) {
             [ZEN_R4_MODE_SYMBOLS] = "SYM + NUM",
             [ZEN_R4_MODE_JAVELIN] = "Javelin",
             [ZEN_R4_MODE_PLOVER] = "Plover HID",
+            [ZEN_R4_MODE_LOADING] = "Loading...",
+            [ZEN_R4_MODE_NO_DICTIONARY] = "No dictionary",
         };
         draw_text(&layer, 4, 15, &lv_font_montserrat_12, "ZEN R4", false);
         draw_text(&layer, 24, 20, &lv_font_montserrat_16, mode_names[atomic_get(&mode)], false);
@@ -169,7 +171,7 @@ static int status_received(struct zmk_behavior_binding *binding,
         }
         atomic_set(&practice_screen, value);
     } else if (binding->param2 == ZEN_R4_STATUS_PROTOCOL &&
-               binding->param1 <= ZEN_R4_MODE_PLOVER) {
+               binding->param1 < ZEN_R4_MODE_COUNT) {
         atomic_clear(&practice_screen);
         atomic_set(&mode, binding->param1);
     } else {
