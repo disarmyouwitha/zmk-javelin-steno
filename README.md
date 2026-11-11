@@ -68,9 +68,9 @@ The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate ta
 
 The firmware is prepared for ZMK Studio, though no build in this repository enables it yet and none of this has been tested with Studio.
 
-- The typing, steno, Plover and practice modes are recognised by layer ID, defined in [`zen_r4_layers.h`](include/dt-bindings/zmk/zen_r4_layers.h). Renaming or reordering those layers in Studio leaves the right display, practice and flash handling working. A steno layer built from scratch on a new layer still types, but is shown as a typing layer.
+- The typing, steno, Plover and practice modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming or reordering those layers in Studio leaves the right display, practice and flash handling working. A steno layer built from scratch on a new layer still types, but is shown as a typing layer.
 - The `&javsteno` behavior lists its 38 steno keys by name, so Studio can assign them.
-- The build fails if the keymap's layer order no longer matches `zen_r4_layers.h`.
+- The build fails if the keymap's layer order no longer matches `javelin_steno_layers.h`.
 
 ## Debug and test code to remove or gate
 

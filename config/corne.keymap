@@ -5,14 +5,14 @@
 #include <behaviors/plover_hid.dtsi>
 #include <dt-bindings/zmk/hid-io/plover_hid.h>
 #include <dt-bindings/zmk/javelin_steno.h>
-#include <dt-bindings/zmk/zen_r4_layers.h>
+#include <dt-bindings/zmk/javelin_steno_layers.h>
 
 // The firmware recognises these layers by ID. Keep the layer order below in
-// step with zen_r4_layers.h.
-#define MAIN ZEN_R4_LAYER_MAIN
-#define SYM_NUM ZEN_R4_LAYER_SYM_NUM
-#define STENO ZEN_R4_LAYER_STENO
-#define PLOVER_HID ZEN_R4_LAYER_PLOVER_HID
+// step with javelin_steno_layers.h.
+#define MAIN JAVELIN_LAYER_MAIN
+#define SYM_NUM JAVELIN_LAYER_SYM_NUM
+#define STENO JAVELIN_LAYER_STENO
+#define PLOVER_HID JAVELIN_LAYER_PLOVER_HID
 
 #ifndef CORNE_RIGHT_SYMBOL_THUMBS
 #define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &none
