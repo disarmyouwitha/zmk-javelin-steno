@@ -42,14 +42,22 @@ struct base_image {
     uint32_t crc;
     uint8_t command;
     uint8_t query;
+    uint8_t erase;
     bool verified;
 };
 static struct base_image images[] = {
-    {"LAPWING", 0, LAPWING_BYTES, LAPWING_CRC, 'L', '?'},
+    {"LAPWING", 0, LAPWING_BYTES, LAPWING_CRC, 'L', '?', 'E'},
 #if PLOVER_BYTES > 0
-    {"PLOVER", PLOVER_FLASH_OFFSET, PLOVER_BYTES, PLOVER_CRC, 'P', 'p'},
+    {"PLOVER", PLOVER_FLASH_OFFSET, PLOVER_BYTES, PLOVER_CRC, 'P', 'p', 'e'},
 #endif
 };
+
+/* Provisioning erases a base in 64 KiB blocks, so each base must own every
+ * block it touches.
+ */
+#define ERASE_BLOCK_BYTES 0x10000U
+BUILD_ASSERT(PLOVER_FLASH_OFFSET % ERASE_BLOCK_BYTES == 0);
+BUILD_ASSERT(BASE_DICTIONARY_LIMIT % ERASE_BLOCK_BYTES == 0);
 
 static bool all_verified(void) {
     for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
@@ -484,6 +492,41 @@ static bool wait_until_ready(void) {
     return false;
 }
 
+/* Hold flash_lock. Takes the dictionaries out of use, then erases every block
+ * of one base so it can be programmed again. Leaves the other base and the
+ * personal dictionary alone.
+ */
+static bool erase_image(struct base_image *image) {
+    atomic_clear(&mapped_ready);
+    trusted = false;
+    NRF_POWER->GPREGRET2 = 0;
+    clear_trust();
+    image->verified = false;
+    if (!reactivate_after_xip()) {
+        return false;
+    }
+
+    const uint32_t end = ROUND_UP(image->offset + image->bytes, ERASE_BLOCK_BYTES);
+
+    for (uint32_t address = image->offset; address < end; address += ERASE_BLOCK_BYTES) {
+        if (nrfx_qspi_erase(NRF_QSPI_ERASE_LEN_64KB, address) != NRFX_SUCCESS) {
+            return false;
+        }
+        /* A block erase can take two seconds on this chip. */
+        const int64_t deadline = k_uptime_get() + 5000;
+        nrfx_err_t rc;
+
+        while ((rc = nrfx_qspi_mem_busy_check()) == NRFX_ERROR_BUSY && k_uptime_get() < deadline) {
+            k_msleep(5);
+        }
+        if (rc != NRFX_SUCCESS) {
+            return false;
+        }
+        reply(image, "ERASE", address + ERASE_BLOCK_BYTES - image->offset);
+    }
+    return true;
+}
+
 static bool transfer_image(const struct base_image *image, bool program) {
     uint32_t crc = 0;
 
@@ -605,6 +648,18 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
                            bool *mapping_failed) {
     for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
         struct base_image *image = &images[i];
+        if (command == image->erase) {
+            if (!qspi_ok) {
+                reply(image, "QSPI_ERROR", 0);
+            } else if (erase_image(image)) {
+                *mapping_failed = false;
+                reply(image, "ERASED", image->bytes);
+            } else {
+                reply(image, "ERASE_ERROR", 0);
+            }
+            lapwing_flash_ready_changed();
+            continue;
+        }
         if (command != image->command && command != image->query) {
             continue;
         }

@@ -62,6 +62,8 @@ def main():
     parser.add_argument("port", help="USB CDC device path")
     parser.add_argument("image", type=Path, nargs="?", help="Mapped JSC4 image to program")
     parser.add_argument("--base", choices=("lapwing", "plover"), default="lapwing")
+    parser.add_argument("--force", action="store_true",
+                        help="Erase and program again a base the firmware reports as verified")
     args = parser.parse_args()
     base = args.base.upper()
     image = args.image.read_bytes() if args.image else None
@@ -76,13 +78,22 @@ def main():
 
         if size != len(image):
             raise RuntimeError(f"Firmware expects {size:,} bytes")
-        if state in ("MAPPED", "VERIFIED"):
-            print("Dictionary is already verified")
+        if state in ("MAPPED", "VERIFIED") and not args.force:
+            print("Dictionary is already verified. Use --force to erase and program it again.")
             return
-        if state != "UNPROVISIONED":
+        if state not in ("MAPPED", "VERIFIED", "UNPROVISIONED"):
             raise RuntimeError(f"Unexpected starting state {state}")
 
         print(f"{base} image: {len(image):,} bytes, CRC32 {zlib.crc32(image):08x}", flush=True)
+        # Erase first, so leftover or damaged contents cannot block the write.
+        print("Erasing", flush=True)
+        port.write(b"e" if base == "PLOVER" else b"E")
+        while True:
+            state, value = response(port, 10, base)
+            if state == "ERASED":
+                break
+            if state != "ERASE":
+                raise RuntimeError(f"Unexpected reply {state} during the erase")
         port.write(b"P" if base == "PLOVER" else b"L")
         if response(port, base=base) != ("PREFLIGHT", size):
             raise RuntimeError("Device did not start the preflight")

@@ -135,7 +135,7 @@ python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 \
 python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
 ```
 
-Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
+Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It erases the selected base's region first, in 64 KiB blocks, and writes only that region. The other base and the personal dictionary are left alone. If the keyboard reports a base as verified, `upload.py` leaves it as it is; add `--force` to erase and program it again, for example when a base looks damaged. It rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
 
 ## Flash and check
 
