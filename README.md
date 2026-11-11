@@ -33,7 +33,7 @@ Nothing on this branch has been compiled or run on hardware. Work through these 
 
 **Optional**
 
-14. Battery test: uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `config/zen-r4-split/corne_left.conf` and rebuild the left.
+14. Battery test: the dictionary flash now powers down after 30 idle seconds outside the steno layer. To compare against always-on, uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF=n` in `config/zen-r4-split/corne_left.conf` and rebuild the left.
 15. For exact memory use: `west build -d build/split-left -t ram_report` and `-t rom_report`.
 
 **Later**
@@ -66,7 +66,7 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 ## Deep sleep on battery
 
-The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without dictionary use on the typing and Plover HID layers. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. The flash stays on for as long as the steno layer is selected, including during practice. Selecting the steno layer starts the flash again, and so does an editor command on another layer. The setting is off by default and has not been tested on hardware.
+The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. With `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, which is on by default, the flash also powers down after a period without dictionary use on the typing and Plover HID layers. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. The flash stays on for as long as the steno layer is selected, including during practice. Selecting the steno layer starts the flash again, and so does an editor command on another layer, which waits while it starts. Setting the option to `n` keeps the flash on whenever the keyboard is awake. Idle power-down has not been tested on hardware.
 
 Press a key on the left half to wake it. Startup restores flash power and checks the base dictionaries before onboard Javelin and the editor can use them. Start-up runs a quick check: the chip ID, the image headers and native lookups in each base. The full check, which reads every byte of both base images over four data lines and compares their CRCs, runs after provisioning, on the first boot of firmware built for different images, and whenever the quick check fails. A passed full check is recorded in the keyboard's settings, and serial provisioning removes that record before it writes. The quick check does not notice damage in the middle of an image. The base images are only written by provisioning, and the personal dictionary keeps its own CRC-checked snapshots. Until the check finishes, the right display shows **Loading...** on the steno layer, and practice starts by itself once the dictionaries are ready. On the earlier firmware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
@@ -149,7 +149,7 @@ These exist for bring-up and battery testing. Before calling the firmware finish
 | `W` serial query: last flash check path and its time in milliseconds | `src/zen_r4/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
 | Battery and activity logger, its `B` serial export and host script | `src/zen_r4/battery_log.c`, `tools/zen-r4-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
 | 128 KiB internal flash partition reserved for the battery log | `config/zen-r4-split/corne_left.overlay` | Always reserved, even with the logger off |
-| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | Off by default. Decide whether to keep it, make it the default, or delete it |
+| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | On by default. Once battery testing settles it, remove the option or keep it as a plain setting |
 | Start-up prints such as `[JAV] ...`, the JEDEC ID, flash check time and idle power-down | `src/engine_init.cc`, `src/zen_r4/lapwing_flash.c`, `src/zen_r4/lapwing_dictionary.cc` | Always compiled, visible only on the logging serial port |
 | `CONFIG_STACK_SENTINEL` and `CONFIG_THREAD_NAME` | `config/zen-r4-split/corne_left.conf` | Always on |
 
