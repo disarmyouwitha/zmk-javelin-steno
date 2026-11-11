@@ -55,28 +55,33 @@ Check **Typing** after connection, **SYM + NUM** while holding the middle left t
 
 ## Offline practice
 
-Practice is a ten-prompt single-stroke drill using CAT, THE, IF and IS in a
-repeating order. The left central owns the
-session and looks up each completed chord through Javelin's active dictionary
-list, including personal overrides. Comparison ignores letter case. Use
-ordinary one-stroke translations for these words. Formatting commands and
-multi-stroke answers are outside this first drill.
+Practice starts in **WORDS**. The left central looks up each completed chord
+through Javelin's active dictionaries, including personal overrides. The
+ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
+translations without regard to letter case.
 
 From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
-thumb, then release both. The right nice!view shows the word, progress and
-current streak. Correct answers show **CORRECT** for 250 ms and advance
-automatically. Mistakes show **RETRY**, reset the streak and retain the
-prompt. After ten correct answers the screen shows **DONE** and
-the best streak. The portrait screen follows the supplied
-[steno drill reference](../../docs/assets/offline-practice-reference.svg),
-scaled to the nice!view's 68×160 pixels, with a stroke hint and progress bar.
-The current version uses larger text with light lettering on a dark background
-and an outlined feedback panel.
+thumb, then release both. Tap either left star by itself to go to the previous
+drill, or either right star to go to the next. The order wraps through
+**WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
+Switching starts a fresh ten-prompt run with a new streak.
 
-If all dictionaries are disabled, the screen shows **ENABLE DICT**
-and **DICT OFF**. Enable Lapwing Base or Plover Base in the browser tools to
-resume. Dictionary changes refresh this warning during the session. Practice
-uses the selected dictionaries and retains personal overrides.
+**LEFT** and **RIGHT** use the corresponding consonant banks from
+[StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
+Tap the displayed steno key and release it. A leading hyphen indicates a
+right-hand key, such as `-F`. Either left S key counts as `S`.
+The hand drills check raw strokes and work with all dictionaries disabled.
+When both base dictionaries are off, **WORDS** uses the verified onboard
+Lapwing Base for outlines that the active personal dictionary does not cover.
+This lookup is local to Practice. It requires no computer and leaves saved
+dictionary selections alone. **ENABLE DICT** appears if WORDS has neither a
+usable active dictionary nor an available Lapwing base.
+
+The right nice!view shows the drill, prompt, progress, and streak. The portrait
+screen uses bold prompts and headings. Correct answers show **CORRECT** for
+250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
+and keep the current prompt. After ten correct answers the screen shows
+**DONE** and the best streak.
 
 The outer left thumb returns to Typing. The outer right thumb exits to normal
 Javelin. Leave and re-enter Practice to restart. A right-half reboot or
@@ -93,7 +98,9 @@ Build both halves with the nice!view build options above and
 configuration. Hardware validation should cover a mistake followed by a
 correct answer, all ten prompts, entry and exit while a steno key is held,
 right-half reconnect, and normal typing, onboard Javelin and Plover HID after
-leaving Practice. Confirm the connected host receives no text during the drill,
+leaving Practice. Check both star directions and complete all three drills with
+all dictionaries disabled. Confirm that ordinary Javelin still sends raw steno
+after exiting Practice with that selection. Confirm the connected host receives no text during the drill,
 then repeat with USB disconnected.
 
 ## Select an onboard base dictionary

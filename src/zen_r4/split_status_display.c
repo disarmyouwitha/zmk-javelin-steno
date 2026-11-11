@@ -28,16 +28,22 @@ static uint8_t landscape_buffer[LV_CANVAS_BUF_SIZE(160, 68, 8, LV_DRAW_BUF_STRID
     __aligned(LV_DRAW_BUF_ALIGN);
 
 static void draw_text(lv_layer_t *layer, int y, int height, const lv_font_t *font,
-                      const char *text, bool inverted) {
+                      const char *text, bool bold) {
     lv_draw_label_dsc_t label;
     lv_draw_label_dsc_init(&label);
     label.font = font;
-    label.color = inverted ? lv_color_white() : lv_color_black();
+    label.color = lv_color_black();
     label.align = LV_TEXT_ALIGN_CENTER;
     label.text = text;
     label.text_local = 1;
     lv_area_t area = {4, y, layer->buf_area.x2 - 4, y + height - 1};
     lv_draw_label(layer, &label, &area);
+    if (bold) {
+        // A one-pixel horizontal overstrike keeps the prompt readable at 1 bit.
+        area.x1++;
+        area.x2++;
+        lv_draw_label(layer, &label, &area);
+    }
 }
 
 static void draw_rect(lv_layer_t *layer, int x, int y, int width, int height, bool black) {
@@ -54,21 +60,29 @@ static void draw_practice(lv_layer_t *layer, uint32_t practice) {
     unsigned round = (practice >> 4) & 15;
     unsigned streak = (practice >> 8) & 15;
     unsigned best = (practice >> 12) & 15;
+    enum zen_r4_practice_drill drill =
+        (practice & ZEN_R4_PRACTICE_DRILL_MASK) >> ZEN_R4_PRACTICE_DRILL_SHIFT;
+    bool words = drill == ZEN_R4_PRACTICE_WORDS;
     bool no_dictionary = practice & ZEN_R4_PRACTICE_NO_DICTIONARY;
     bool done = feedback == ZEN_R4_PRACTICE_DONE;
     unsigned completed = round + (feedback == ZEN_R4_PRACTICE_CORRECT);
     char text[24];
 
-    draw_text(layer, 3, 16, &lv_font_montserrat_12, "STENO", false);
+    static const char *const drill_names[] = {"WORDS", "LEFT", "RIGHT"};
+    const char *outline = zen_r4_practice_outline(drill, round);
+    const char *prompt = words ? zen_r4_practice_words[practice & 3] : outline;
+    draw_text(layer, 3, 16, &lv_font_montserrat_12, drill_names[drill], true);
     draw_rect(layer, 8, 21, 52, 1, true);
-    draw_text(layer, 27, 24, &lv_font_montserrat_10,
-              no_dictionary ? "ENABLE\nDICT" : done ? "ALL DONE" : "TYPE",
-              false);
+    if (no_dictionary) {
+        draw_text(layer, 27, 24, &lv_font_montserrat_10, "ENABLE DICT", false);
+    } else {
+        draw_text(layer, 26, 19, &lv_font_montserrat_16, "<       >", false);
+    }
     draw_text(layer, 47, 34, done ? &lv_font_montserrat_16 : &lv_font_montserrat_28,
-              done ? "DONE" : zen_r4_practice_words[practice & 3], false);
+              done ? "DONE" : prompt, true);
     draw_rect(layer, 10, 81, 48, 1, true);
-    draw_text(layer, 86, 20, &lv_font_montserrat_16,
-              done ? "10 / 10" : zen_r4_practice_outlines[practice & 3], false);
+    draw_text(layer, 86, 20, words || done ? &lv_font_montserrat_16 : &lv_font_montserrat_12,
+              done ? "10 / 10" : words ? outline : "TAP KEY", false);
     static const char *const feedback_text[] = {"READY", "CORRECT", "RETRY", "DONE"};
     draw_rect(layer, 3, 107, 62, 22, true);
     draw_rect(layer, 4, 108, 60, 20, false);
@@ -143,7 +157,10 @@ static int status_received(struct zmk_behavior_binding *binding,
         unsigned round = (value >> 4) & 15;
         unsigned feedback = (value >> 2) & 3;
         if (!(value & ZEN_R4_PRACTICE_ACTIVE) ||
-            (value & ~(ZEN_R4_PRACTICE_ACTIVE | ZEN_R4_PRACTICE_NO_DICTIONARY | 0xffffu)) ||
+            (value & ~(ZEN_R4_PRACTICE_ACTIVE | ZEN_R4_PRACTICE_NO_DICTIONARY |
+                       ZEN_R4_PRACTICE_DRILL_MASK | 0xffffu)) ||
+            (value & ZEN_R4_PRACTICE_DRILL_MASK) >=
+                (ZEN_R4_PRACTICE_DRILL_COUNT << ZEN_R4_PRACTICE_DRILL_SHIFT) ||
             round > ZEN_R4_PRACTICE_ROUNDS ||
             ((round == ZEN_R4_PRACTICE_ROUNDS) != (feedback == ZEN_R4_PRACTICE_DONE)) ||
             ((value >> 8) & 15) > ZEN_R4_PRACTICE_ROUNDS ||
