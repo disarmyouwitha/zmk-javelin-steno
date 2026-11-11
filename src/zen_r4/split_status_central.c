@@ -182,10 +182,8 @@ static void apply_layer(void) {
     const bool steno = active_layer() == JAVELIN_LAYER_STENO;
     ARG_UNUSED(steno);
 #if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
-    /* Have the dictionaries ready before the first stroke on this layer. */
-    if (steno) {
-        lapwing_flash_prepare();
-    }
+    /* Keep the dictionaries powered and ready while this layer is selected. */
+    lapwing_flash_hold(steno);
 #endif
 #if IS_ENABLED(CONFIG_ZMK_ZEN_R4_PRACTICE)
     /* Leaving the steno layer ends practice. */

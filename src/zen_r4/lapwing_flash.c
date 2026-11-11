@@ -106,6 +106,8 @@ static K_SEM_DEFINE(restart_wake, 0, 1);
 #define IDLE_OFF_MS (CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS * 1000U)
 /* Set while the idle timer, and not ZMK's sleep, has the flash powered down. */
 static atomic_t idle_off;
+/* Set while the steno layer is selected: the idle timer leaves the flash on. */
+static atomic_t held;
 static atomic_t last_use;
 
 static void note_use(void) {
@@ -333,13 +335,22 @@ enum lapwing_flash_state lapwing_flash_status(void) {
     return atomic_get(&checked) ? LAPWING_FLASH_UNAVAILABLE : LAPWING_FLASH_LOADING;
 }
 
-void lapwing_flash_prepare(void) {
+void lapwing_flash_hold(bool hold) {
 #if IDLE_OFF
-    /* Restart the idle timer, and start an idle flash without waiting for it. */
-    note_use();
-    if (!atomic_get(&mapped_ready) && atomic_get(&idle_off)) {
-        request_restart();
+    const bool was_held = atomic_set(&held, hold) != 0;
+
+    if (hold) {
+        /* Start an idle flash without waiting for the first stroke. */
+        note_use();
+        if (!atomic_get(&mapped_ready) && atomic_get(&idle_off)) {
+            request_restart();
+        }
+    } else if (was_held) {
+        /* The idle period counts from leaving the layer. */
+        note_use();
     }
+#else
+    ARG_UNUSED(hold);
 #endif
 }
 
@@ -665,12 +676,12 @@ static void lapwing_worker(void *a, void *b, void *c) {
             k_mutex_unlock(&flash_lock);
         }
 #if IDLE_OFF
-        if (atomic_get(&mapped_ready) &&
+        if (atomic_get(&mapped_ready) && !atomic_get(&held) &&
             k_uptime_get_32() - (uint32_t)atomic_get(&last_use) >= IDLE_OFF_MS) {
             k_mutex_lock(&flash_lock, K_FOREVER);
             /* Recheck under the lock: a lookup may have just used the flash. */
             const bool initialized = nrfx_qspi_init_check();
-            if (atomic_get(&mapped_ready) && !flash_suspended &&
+            if (atomic_get(&mapped_ready) && !flash_suspended && !atomic_get(&held) &&
                 k_uptime_get_32() - (uint32_t)atomic_get(&last_use) >= IDLE_OFF_MS &&
                 flash_is_idle(initialized)) {
                 if (power_down_flash(initialized) == 0) {

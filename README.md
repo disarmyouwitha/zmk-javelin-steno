@@ -13,7 +13,7 @@ Nothing on this branch has been compiled or run on hardware. Work through these 
 
 **Build and flash, without Studio first**
 
-3. Build both halves with the commands in the [split guide](config/zen-r4-split/README.md#build). Add `-p` to each `west build` for a clean rebuild, since the keymap, devicetree and build options changed. Keep `-S zmk-usb-logging` on the left for this round.
+3. Build both halves with the commands in the [split guide](config/zen-r4-split/README.md#build). Or let GitHub build them: see [Automatic builds](#automatic-builds). Add `-p` to each `west build` for a clean rebuild, since the keymap, devicetree and build options changed. Keep `-S zmk-usb-logging` on the left for this round.
 4. Fix any compile errors. This is the first compile, so expect some.
 5. Flash **both** halves. The status messages between the halves changed, and an old right half ignores the new ones.
 
@@ -66,7 +66,7 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 ## Deep sleep on battery
 
-The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without a stroke, practice or editor command. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. Selecting the steno layer starts the flash again, and so does the next stroke or editor command if it powered down while that layer stayed selected. The setting is off by default and has not been tested on hardware.
+The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without dictionary use on the typing and Plover HID layers. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. The flash stays on for as long as the steno layer is selected, including during practice. Selecting the steno layer starts the flash again, and so does an editor command on another layer. The setting is off by default and has not been tested on hardware.
 
 Press a key on the left half to wake it. Startup restores flash power and checks the base dictionaries before onboard Javelin and the editor can use them. Start-up runs a quick check: the chip ID, the image headers and native lookups in each base. The full check, which reads every byte of both base images over four data lines and compares their CRCs, runs after provisioning, on the first boot of firmware built for different images, and whenever the quick check fails. A passed full check is recorded in the keyboard's settings, and serial provisioning removes that record before it writes. The quick check does not notice damage in the middle of an image. The base images are only written by provisioning, and the personal dictionary keeps its own CRC-checked snapshots. Until the check finishes, the right display shows **Loading...** on the steno layer, and practice starts by itself once the dictionaries are ready. On the earlier firmware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
@@ -104,6 +104,19 @@ The existing website loaded **Active Dictionaries** with USB unplugged. A separa
 Use the [pinned west manifest](config/west.yml). The JSC4 dictionary format depends on the pinned engine's native structure layout.
 
 The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate target that runs a four-entry Javelin fixture from internal flash. The [`&javsteno` key bindings](include/dt-bindings/zmk/javelin_steno.h) apply to both builds.
+
+## Automatic builds
+
+[`.github/workflows/build.yml`](.github/workflows/build.yml) builds the split firmware on GitHub for every push that changes something other than documentation, and on demand from the **Actions** tab of the repository with **Run workflow**. It runs four builds, and each passes or fails by itself:
+
+| Build | What it is |
+| --- | --- |
+| `left-logging` | Left half with the diagnostics serial port, for provisioning |
+| `left-studio` | Left half with ZMK Studio over USB |
+| `right` | Right half |
+| `right-nice-view` | Right half with the nice!view |
+
+Each run prints the flash and RAM totals in its log and attaches the `.uf2` files under **Artifacts** on the page for that run. The workflow has not run yet, so expect to fix it on its first run.
 
 ## ZMK Studio
 

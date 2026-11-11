@@ -22,10 +22,11 @@ enum lapwing_flash_state {
 };
 enum lapwing_flash_state lapwing_flash_status(void);
 
-/* The dictionaries are about to be used, for example a steno layer was just
- * selected. Starts a flash that powered down while idle. Never blocks.
+/* Hold the flash on while a layer that uses the dictionaries is selected.
+ * Taking the hold starts a flash that powered down while idle. Releasing it
+ * lets the idle period run again. Never blocks.
  */
-void lapwing_flash_prepare(void);
+void lapwing_flash_hold(bool hold);
 
 /* Weak hook, called when the status above changes. It runs on the flash
  * worker with the flash lock held, so an override must only submit work.
