@@ -361,11 +361,12 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
  * lookups. A cold boot, or a quick check that fails, runs both CRC passes.
  */
 static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
-    const bool quick = take_wake_trust();
+    bool quick = take_wake_trust();
     bool qspi_ok = prepare_flash(config, mapping_failed, quick);
 
     if (quick && (!qspi_ok || *mapping_failed || !atomic_get(&mapped_ready))) {
         printk("Quick flash check failed; verifying in full\n");
+        quick = false;
         trusted = false;
         if (nrfx_qspi_init_check()) {
             (void)reactivate_after_xip();

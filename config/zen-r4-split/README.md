@@ -31,6 +31,9 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 ### Right-half nice!view
 
+The normal mode and battery screens use a horizontal layout with dark text on
+a light background. Practice uses a portrait layout.
+
 For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above. The overlay sets display chip select to D0 (P0.08) to match the Ultralight PCB.
 
 ```sh

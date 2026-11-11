@@ -36,7 +36,7 @@ static void draw_text(lv_layer_t *layer, int y, int height, const lv_font_t *fon
     label.align = LV_TEXT_ALIGN_CENTER;
     label.text = text;
     label.text_local = 1;
-    lv_area_t area = {4, y, PORTRAIT_WIDTH - 5, y + height - 1};
+    lv_area_t area = {4, y, layer->buf_area.x2 - 4, y + height - 1};
     lv_draw_label(layer, &label, &area);
 }
 
@@ -87,32 +87,34 @@ static void draw_practice(lv_layer_t *layer, uint32_t practice) {
 }
 
 static void refresh_status(struct k_work *work) {
-    lv_canvas_set_buffer(status_canvas, portrait_buffer, PORTRAIT_WIDTH, PORTRAIT_HEIGHT,
-                         CANVAS_FORMAT);
+    uint32_t practice = atomic_get(&practice_screen);
+    bool portrait = (practice & ZEN_R4_PRACTICE_ACTIVE) != 0;
+    lv_canvas_set_buffer(status_canvas, portrait ? portrait_buffer : landscape_buffer,
+                         portrait ? PORTRAIT_WIDTH : PORTRAIT_HEIGHT,
+                         portrait ? PORTRAIT_HEIGHT : PORTRAIT_WIDTH, CANVAS_FORMAT);
     lv_canvas_fill_bg(status_canvas, lv_color_white(), LV_OPA_COVER);
     lv_layer_t layer;
     lv_canvas_init_layer(status_canvas, &layer);
-    uint32_t practice = atomic_get(&practice_screen);
-    if (practice & ZEN_R4_PRACTICE_ACTIVE) {
+    if (portrait) {
         draw_practice(&layer, practice);
     } else {
         static const char *const mode_names[] = {
-            [ZEN_R4_MODE_UNKNOWN] = "WAITING\nFOR LEFT",
-            [ZEN_R4_MODE_TYPING] = "TYPING",
-            [ZEN_R4_MODE_SYMBOLS] = "SYM\n+ NUM",
-            [ZEN_R4_MODE_JAVELIN] = "JAVELIN",
-            [ZEN_R4_MODE_PLOVER] = "PLOVER\nHID",
+            [ZEN_R4_MODE_UNKNOWN] = "Waiting for left",
+            [ZEN_R4_MODE_TYPING] = "Typing",
+            [ZEN_R4_MODE_SYMBOLS] = "SYM + NUM",
+            [ZEN_R4_MODE_JAVELIN] = "Javelin",
+            [ZEN_R4_MODE_PLOVER] = "Plover HID",
         };
-        draw_text(&layer, 4, 16, &lv_font_montserrat_12, "ZEN R4", false);
-        draw_rect(&layer, 8, 23, 52, 1, true);
-        draw_text(&layer, 34, 12, &lv_font_montserrat_10, "MODE", false);
-        draw_text(&layer, 58, 48, &lv_font_montserrat_12, mode_names[atomic_get(&mode)], false);
-        draw_rect(&layer, 10, 119, 48, 1, true);
+        draw_text(&layer, 4, 15, &lv_font_montserrat_12, "ZEN R4", false);
+        draw_text(&layer, 24, 20, &lv_font_montserrat_16, mode_names[atomic_get(&mode)], false);
         char text[24];
-        snprintf(text, sizeof(text), "RIGHT %u%%", (unsigned)zmk_battery_state_of_charge());
-        draw_text(&layer, 140, 12, &lv_font_montserrat_10, text, false);
+        snprintf(text, sizeof(text), "Right %u%%", (unsigned)zmk_battery_state_of_charge());
+        draw_text(&layer, 51, 14, &lv_font_montserrat_10, text, false);
     }
     lv_canvas_finish_layer(status_canvas, &layer);
+    if (!portrait) {
+        return;
+    }
     // Invert the complete L8 screen, including text, outlines and progress.
     for (size_t i = 0; i < sizeof(portrait_buffer); i++) {
         portrait_buffer[i] = UINT8_MAX - portrait_buffer[i];

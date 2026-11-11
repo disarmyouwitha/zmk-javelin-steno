@@ -182,8 +182,9 @@ void finish_edit(bool changed) {
         Console::Printf("ERR Unable to restore the saved personal dictionary\n\n");
         return;
     }
-    Console::Printf(changed ? "ERR Unable to save the personal dictionary\n\n"
-                            : "ERR Entry not added; the personal dictionary may be full\n\n");
+    Console::Printf("%s", changed
+                              ? "ERR Unable to save the personal dictionary\n\n"
+                              : "ERR Entry not added; the personal dictionary may be full\n\n");
 }
 
 bool parse_outline(const char *line, StrokeListParser &parser) {

@@ -67,10 +67,15 @@ HARNESS = r'''
 #include "stubs.h"
 extern "C" bool zmk_usb_is_hid_ready() { return usb_ready; }
 std::vector<std::string> commands;
-void zen_javelin_console_line(const char *p,size_t n,IWriter &w) {
+bool console_ready = true;
+bool zen_javelin_console_line(const char *p,size_t n,IWriter &w) {
+    if (!console_ready) {
+        return false;
+    }
     commands.emplace_back(p,n);
     std::string reply="ACK "+std::string(p,n)+std::string(140,'x')+"\n\n";
     w.Write(reply.data(),reply.size());
+    return true;
 }
 extern "C" int zen_javelin_ble_session_valid(uint32_t s) { return s==live_session; }
 extern "C" int zen_javelin_ble_send(const void *p,size_t n,uint32_t s) {
@@ -82,6 +87,7 @@ void reset() {
     commands.clear();usb_tx.clear();ble_tx.clear();received_reports.messages.clear();
     for(auto &b:buffers) reset_buffer(b);
     k_sem_give(&transmit_ready);usb_ready=true;live_session=2;
+    console_ready = true;
 }
 void usb(const std::string &s) {
     usb_setup_packet setup{0x0200};int32_t n=s.size();auto *p=(uint8_t *)s.data();
@@ -109,6 +115,22 @@ int main() {
     reset();ble("c02 flash_erase\n");run();assert(commands.empty());
     std::string reply;for(auto &r:ble_tx) for(auto c:r) if(c) reply+=(char)c;
     assert(reply.find("ERR Command unavailable")!=std::string::npos);
+
+    reset();
+    console_ready = false;
+    ble("c09 list_dictionaries\n");
+    usb("c10 lookup_stroke KAT\n");
+    run();
+    assert(commands.empty());
+    std::string ble_error, usb_error;
+    for (const auto &report : ble_tx) {
+        for (auto byte : report) if (byte) ble_error += char(byte);
+    }
+    for (const auto &report : usb_tx) {
+        for (auto byte : report) if (byte) usb_error += char(byte);
+    }
+    assert(ble_error == "c09 ERR Dictionary flash is not ready\n\n");
+    assert(usb_error == "c10 ERR Dictionary flash is not ready\n\n");
 
     reset();ble("c04 add_user_entry KAT ");
     for(int i=0;i<40;i++) ble("c04 "+std::string(59,'a'));
@@ -139,7 +161,7 @@ def main():
                         str(ROOT / "src/zen_r4"), str(root / "test.cc"),
                         "-o", str(root / "test")], check=True)
         subprocess.run([str(root / "test")], check=True)
-    print("PASS: BLE without USB, transport isolation, stale sessions, allowlist, overflow, USB reconnect")
+    print("PASS: BLE without USB, transport isolation, stale sessions, allowlist, flash not ready, overflow, USB reconnect")
 
 
 if __name__ == "__main__":
