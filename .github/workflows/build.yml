@@ -52,11 +52,11 @@ jobs:
       - name: Compile the base dictionaries
         if: matrix.dictionaries
         working-directory: repo
+        env:
+          PYTHONUTF8: "1"
         run: |
           mkdir -p build/lapwing
-          curl --fail --location \
-            https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json \
-            -o build/lapwing/lapwing-base.json
+          python3 -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])"             https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json             build/lapwing/lapwing-base.json
           python3 tools/dict_compiler/compile_dict.py build/lapwing/lapwing-base.json \
             --base-addr 0x12000000 -o build/lapwing/lapwing-base.bin
           python3 tools/zen-r4-lapwing/prepare_plover.py
