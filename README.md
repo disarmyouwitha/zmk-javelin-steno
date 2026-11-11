@@ -2,6 +2,47 @@
 
 This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javelin-steno) on the keyboard. The tested full-dictionary build pairs a handwired Zen R4 left half with a Corne Ultralight right half. Both use nice!nano v2 controllers. The right half sends key positions to the left over Bluetooth, and the left connects to the computer over USB or Bluetooth. Normal typing, Plover HID, and onboard Javelin have all passed Bluetooth testing on a Mac with the left half powered by battery.
 
+## To do on the first build of `claude/boot-speed-and-flash-idle`
+
+Nothing on this branch has been compiled or run on hardware. Work through these in order and delete this section once they pass.
+
+**Get the code**
+
+1. In this repository: `git fetch`, then `git checkout claude/boot-speed-and-flash-idle`.
+2. In the west workspace: run `west update`. `config/west.yml` now takes the Plover HID module from the `disarmyouwitha/zmk-hid-io-plover-hid` fork, and the build uses the old copy until this is run.
+
+**Build and flash, without Studio first**
+
+3. Build both halves with the commands in the [split guide](config/zen-r4-split/README.md#build). Add `-p` to each `west build` for a clean rebuild, since the keymap, devicetree and build options changed. Keep `-S zmk-usb-logging` on the left for this round.
+4. Fix any compile errors. This is the first compile, so expect some.
+5. Flash **both** halves. The status messages between the halves changed, and an old right half ignores the new ones.
+
+**Check on the keyboard**
+
+6. First boot does one full dictionary check and records it. Reboot again: send `W` to the diagnostics port and expect `LAPWING CHECK_QUICK` with a time in milliseconds.
+7. The steno layer shows **Loading...** on the right display until the check finishes, then **Javelin**.
+8. Typing, onboard Javelin and Plover HID still work across both halves.
+9. Practice: hold SYM+NUM and tap the outer right thumb. The key left of the top S turns practice off and on. The outer left thumb returns to typing.
+10. Browser editor: connect, edit an entry, then try a disconnect mid-command, a reconnect, and a switch between USB and Bluetooth.
+
+**Then try ZMK Studio, on the left half only**
+
+11. Rebuild the left with `-S studio-rpc-usb-uart` in place of `-S zmk-usb-logging`, and add `-DCONFIG_ZMK_STUDIO=y` after the `--`. Note the flash and RAM totals the build prints. If it does not fit, the build fails with the numbers.
+12. Open ZMK Studio over USB. It starts unlocked. Work through the [Studio checks](#studio-checks-still-to-run-on-hardware).
+13. Once Studio saves a keymap, the keyboard ignores later edits to the `.keymap` file until **Restore stock settings** is used in Studio.
+
+**Optional**
+
+14. Battery test: uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `config/zen-r4-split/corne_left.conf` and rebuild the left.
+15. For exact memory use: `west build -d build/split-left -t ram_report` and `-t rom_report`.
+
+**Later**
+
+- Merge this branch and `main` into `boardsource-wireless-corne`, and remove `CONFIG_ZMK_STUDIO=n` from the Boardsource left config.
+- Apply the locked StenoSquid pin map from the Boardsource-StenoSquid README to `qspi.dtsi`.
+- Remove or gate the items under [Debug and test code](#debug-and-test-code-to-remove-or-gate).
+- Scrub the Zen R4 names after the merge.
+
 ## What works on the tested split
 
 | Mode | What happens |
@@ -25,7 +66,7 @@ From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for hos
 
 ## Deep sleep on battery
 
-The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without a stroke, practice or editor command. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. Selecting the steno or practice layer starts the flash again, and so does the next stroke or editor command if it powered down while that layer stayed selected. The setting is off by default and has not been tested on hardware.
+The left half enters deep sleep after 15 minutes without key activity while USB power is disconnected. It lets any in-progress dictionary save finish, stops QSPI, puts its signal pins in a high-impedance state, and switches off the flash rail and breakout LED. During ordinary Bluetooth idle, the flash stays available for the wireless dictionary editor. An optional build setting, `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF`, instead powers the flash down after a period without a stroke, practice or editor command. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` sets that period and defaults to 30. Selecting the steno layer starts the flash again, and so does the next stroke or editor command if it powered down while that layer stayed selected. The setting is off by default and has not been tested on hardware.
 
 Press a key on the left half to wake it. Startup restores flash power and checks the base dictionaries before onboard Javelin and the editor can use them. Start-up runs a quick check: the chip ID, the image headers and native lookups in each base. The full check, which reads every byte of both base images over four data lines and compares their CRCs, runs after provisioning, on the first boot of firmware built for different images, and whenever the quick check fails. A passed full check is recorded in the keyboard's settings, and serial provisioning removes that record before it writes. The quick check does not notice damage in the middle of an image. The base images are only written by provisioning, and the personal dictionary keeps its own CRC-checked snapshots. Until the check finishes, the right display shows **Loading...** on the steno layer, and practice starts by itself once the dictionaries are ready. On the earlier firmware, the breakout LED went out in deep sleep and onboard Javelin translated successfully after a keypress wake. Powered USB insertion is also expected to wake the controller. [nRF52840 power specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/power.html)
 
