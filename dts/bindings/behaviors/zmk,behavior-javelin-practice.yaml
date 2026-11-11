@@ -1,0 +1,7 @@
+description: |
+  Steno practice key. On the steno layer it turns practice on or off. On any
+  other layer it selects the steno layer with practice on.
+
+compatible: "zmk,behavior-javelin-practice"
+
+include: zero_param.yaml

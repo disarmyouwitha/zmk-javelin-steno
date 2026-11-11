@@ -31,6 +31,11 @@
 #define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP &bt BT_CLR &none
 #endif
 
+#ifndef CORNE_STENO_SPARE_KEY
+// The unused key left of the top S on the steno layer.
+#define CORNE_STENO_SPARE_KEY &none
+#endif
+
 #ifndef CORNE_LEFT_SYMBOL_ROW_1
 #define CORNE_LEFT_SYMBOL_ROW_1 &none &none &kp LEFT &kp DOWN &kp RIGHT &none
 #endif
@@ -88,7 +93,7 @@ CORNE_LEFT_SYMBOL_ROW_1                                                        &
             // Onboard Javelin; physical steno positions preserved from the Zen keymap.
             bindings = <
 &javsteno STENO_NUM12 &javsteno STENO_NUM1  &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5    &javsteno STENO_NUM6 &javsteno STENO_NUM7 &javsteno STENO_NUM8 &javsteno STENO_NUM9 &javsteno STENO_NUM10 &javsteno STENO_NUM11
-&none        &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR
+CORNE_STENO_SPARE_KEY &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR
 &none        &javsteno STENO_S2 &javsteno STENO_KL  &javsteno STENO_WL  &javsteno STENO_RL  &javsteno STENO_STAR2    &javsteno STENO_STAR4 &javsteno STENO_RR  &javsteno STENO_BR  &javsteno STENO_GR  &javsteno STENO_SR  &javsteno STENO_ZR
                                       &to MAIN &javsteno STENO_A &javsteno STENO_O               &javsteno STENO_E &javsteno STENO_U &to PLOVER_HID
             >;

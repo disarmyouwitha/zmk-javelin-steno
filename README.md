@@ -68,9 +68,23 @@ The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate ta
 
 The firmware is prepared for ZMK Studio, though no build in this repository enables it yet and none of this has been tested with Studio.
 
-- The typing, steno, Plover and practice modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming or reordering those layers in Studio leaves the right display, practice and flash handling working. A steno layer built from scratch on a new layer still types, but is shown as a typing layer.
+- The typing, steno and Plover modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming those layers in Studio leaves the right display, practice and flash handling working. Reordering should too, since the pinned ZMK keeps a layer's ID when it moves, but that is untested.
+- Practice has no layer of its own. It runs on the steno layer and the `&javpractice` key turns it on and off, so the steno keys are mapped once. A steno layer built from scratch on a new layer still types, but gets no dictionary pre-wake or loading message.
+- A layer renamed in Studio shows its new name on the right display, cut to 8 characters, and so does a layer added in Studio. **Loading...** and **No dictionary** still take over on the steno layer. A layer that keeps its keymap name shows the built-in label such as **Typing** or **Javelin**, and so does a layer with no name. A rename shows after the next layer change. Both halves need this firmware.
+- The split keymap reserves two spare layers, `extra1` and `extra2`, for Studio to hand out. Builds without Studio ignore them.
+- Studio starts unlocked: `corne_left.conf` sets `CONFIG_ZMK_STUDIO_LOCKING=n`, so no unlock key is needed. To try Studio on the left half, build with `-S studio-rpc-usb-uart` in place of `-S zmk-usb-logging` and add `-DCONFIG_ZMK_STUDIO=y`.
 - The `&javsteno` behavior lists its 38 steno keys by name, so Studio can assign them.
 - The build fails if the keymap's layer order no longer matches `javelin_steno_layers.h`.
+
+### Studio checks still to run on hardware
+
+- The custom `&ht` hold-tap shows its hold and tap keys.
+- `&javsteno` offers the named steno keys, and `&plv` the named Plover HID keys.
+- Editing a typing key leaves Javelin, Plover HID and practice working.
+- Studio's USB serial port works alongside the browser dictionary editor. Studio and the logging port used for provisioning are separate builds.
+- A saved Studio keymap survives a reboot, and **Restore stock settings** brings back the keymap file.
+- Renaming and reordering layers keeps the right display and practice correct.
+- Browser editor: disconnect mid-command, reconnect, switch between USB and Bluetooth, and resume editing.
 
 ## Debug and test code to remove or gate
 

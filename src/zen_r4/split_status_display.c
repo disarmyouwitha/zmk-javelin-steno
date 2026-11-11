@@ -16,7 +16,12 @@
 BUILD_ASSERT(DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT));
 BUILD_ASSERT(__builtin_strcmp(DEVICE_DT_NAME(DT_DRV_INST(0)), ZEN_R4_STATUS_BEHAVIOR) == 0);
 
+/* Past the modes the left can send: show the layer name it sent instead. */
+#define MODE_LAYER_NAME ZEN_R4_MODE_COUNT
+
 static atomic_t mode;
+static atomic_t layer_name_low;
+static atomic_t layer_name_high;
 static atomic_t practice_screen;
 static lv_obj_t *status_canvas;
 #define PORTRAIT_WIDTH 68
@@ -122,8 +127,21 @@ static void refresh_status(struct k_work *work) {
             [ZEN_R4_MODE_NO_DICTIONARY] = "No dictionary",
         };
         draw_text(&layer, 4, 15, &lv_font_montserrat_12, "ZEN R4", false);
-        draw_text(&layer, 24, 20, &lv_font_montserrat_16, mode_names[atomic_get(&mode)], false);
         char text[24];
+        const atomic_val_t shown = atomic_get(&mode);
+        char name[ZEN_R4_LAYER_NAME_CHARS + 1];
+        const char *title = name;
+        if (shown == MODE_LAYER_NAME) {
+            const uint64_t packed = (uint64_t)(uint32_t)atomic_get(&layer_name_high) << 32 |
+                                    (uint32_t)atomic_get(&layer_name_low);
+            for (int i = 0; i < ZEN_R4_LAYER_NAME_CHARS; i++) {
+                name[i] = (packed >> (7 * i)) & 0x7f;
+            }
+            name[ZEN_R4_LAYER_NAME_CHARS] = 0;
+        } else {
+            title = mode_names[shown];
+        }
+        draw_text(&layer, 24, 20, &lv_font_montserrat_16, title, false);
         snprintf(text, sizeof(text), "Right %u%%", (unsigned)zmk_battery_state_of_charge());
         draw_text(&layer, 51, 14, &lv_font_montserrat_10, text, false);
     }
@@ -170,6 +188,11 @@ static int status_received(struct zmk_behavior_binding *binding,
             return -EINVAL;
         }
         atomic_set(&practice_screen, value);
+    } else if ((binding->param2 & 0xff) == ZEN_R4_LAYER_NAME_PROTOCOL) {
+        atomic_clear(&practice_screen);
+        atomic_set(&layer_name_low, binding->param1);
+        atomic_set(&layer_name_high, binding->param2 >> 8);
+        atomic_set(&mode, MODE_LAYER_NAME);
     } else if (binding->param2 == ZEN_R4_STATUS_PROTOCOL &&
                binding->param1 < ZEN_R4_MODE_COUNT) {
         atomic_clear(&practice_screen);

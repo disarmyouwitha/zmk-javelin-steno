@@ -62,8 +62,9 @@ through Javelin's active dictionaries, including personal overrides. The
 ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
-From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
-thumb, then release both. Tap either left star by itself to go to the previous
+Practice runs on the steno layer. From Typing, hold the middle left thumb for
+SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
+the key left of the top S turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
 Switching starts a fresh ten-prompt run with a new streak.
@@ -85,8 +86,9 @@ screen uses bold prompts and headings. Correct answers show **CORRECT** for
 and keep the current prompt. After ten correct answers the screen shows
 **DONE** and the best streak.
 
-The outer left thumb returns to Typing. The outer right thumb exits to normal
-Javelin. Leave and re-enter Practice to restart. A right-half reboot or
+The outer left thumb returns to Typing. The key left of the top S exits to
+normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
+layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
 the session. Both halves can run on battery with the computer off.
 

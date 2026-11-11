@@ -6,6 +6,10 @@ if(CONFIG_ZMK_ZEN_R4_SPLIT_STATUS)
   endif()
 endif()
 
+if(CONFIG_ZMK_ZEN_R4_PRACTICE)
+  target_sources(app PRIVATE src/behaviors/behavior_javelin_practice.c)
+endif()
+
 if(CONFIG_ZMK_JAVELIN_STENO)
 
   zephyr_include_directories(include)

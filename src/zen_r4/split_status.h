@@ -5,6 +5,12 @@
 #define ZEN_R4_STATUS_BEHAVIOR "zrst"
 #define ZEN_R4_STATUS_PROTOCOL 1
 #define ZEN_R4_PRACTICE_PROTOCOL 2
+/* A renamed layer, or one the firmware has no mode for, is shown by its name. The low byte of
+ * the second parameter is this tag. The other 56 bits of the two parameters
+ * hold up to eight 7-bit characters, the first in the lowest bits.
+ */
+#define ZEN_R4_LAYER_NAME_PROTOCOL 3
+#define ZEN_R4_LAYER_NAME_CHARS 8
 #define ZEN_R4_PRACTICE_ACTIVE (1u << 31)
 #define ZEN_R4_PRACTICE_NO_DICTIONARY (1u << 16)
 #define ZEN_R4_PRACTICE_DRILL_SHIFT 17
@@ -50,6 +56,10 @@ extern "C" {
 #endif
 void zen_r4_split_status_refresh(void);
 void zen_r4_practice_set_active(bool active);
+/* The practice key: on the steno layer it turns practice on or off. Anywhere
+ * else it selects the steno layer with practice on.
+ */
+void zen_r4_practice_toggle(void);
 uint32_t zen_r4_practice_snapshot(void);
 #ifdef __cplusplus
 }
