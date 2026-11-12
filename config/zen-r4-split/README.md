@@ -13,8 +13,11 @@ Use the pinned west workspace and Lapwing image from the [standalone left-half g
 ```sh
 repo="$PWD"
 python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
+# This workspace keeps a separate manifest copy.
+cp "$repo/config/west.yml" "$ws/config/west.yml"
 export ZEPHYR_BASE="$ws/zephyr"
 cd "$ws"
+west update
 west build -s zmk/app -d "$repo/build/split-left" -b nice_nano//zmk -S zmk-usb-logging -- \
   -DSHIELD=corne_left "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \

@@ -4,17 +4,27 @@ This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javeli
 
 ## To do on the first build of `claude/boot-speed-and-flash-idle`
 
-Nothing on this branch has been compiled or run on hardware. Work through these in order and delete this section once they pass.
+GitHub Actions successfully built all four targets at `2ac81ae`. The hardware checks below remain to be completed. Work through them in order and delete this section once they pass.
 
 **Get the code**
 
 1. In this repository: `git fetch`, then `git checkout claude/boot-speed-and-flash-idle`.
-2. In the west workspace: run `west update`. `config/west.yml` now takes the Plover HID module from the `disarmyouwitha/zmk-hid-io-plover-hid` fork, and the build uses the old copy until this is run.
+2. Synchronize the west workspace's manifest with this checkout, then update its dependencies. The Mac workspace keeps a separate manifest copy. Set `repo` and `ws` to their absolute paths, then run:
+
+   ```sh
+   cp "$repo/config/west.yml" "$ws/config/west.yml"
+   cd "$ws"
+   west update
+   west list zmk-hid-io-plover-hid -f '{url} {revision}'
+   git -C zmk-hid-io-plover-hid rev-parse HEAD
+   ```
+
+   Expect the `disarmyouwitha/zmk-hid-io-plover-hid` fork at `25ca1c55e31781e49499178584520129b9586635`. Repeat this synchronization when switching to a checkout with a different manifest.
 
 **Build and flash, without Studio first**
 
 3. Build both halves with the commands in the [split guide](config/zen-r4-split/README.md#build). Or let GitHub build them: see [Automatic builds](#automatic-builds). Add `-p` to each `west build` for a clean rebuild, since the keymap, devicetree and build options changed. Keep `-S zmk-usb-logging` on the left for this round.
-4. Fix any compile errors. This is the first compile, so expect some.
+4. Confirm the local builds finish successfully and check their flash and RAM totals.
 5. Flash **both** halves. The status messages between the halves changed, and an old right half ignores the new ones.
 
 **Check on the keyboard**
@@ -116,11 +126,11 @@ The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate ta
 | `right` | Right half |
 | `right-nice-view` | Right half with the nice!view |
 
-Each run prints the flash and RAM totals in its log and attaches the `.uf2` files under **Artifacts** on the page for that run. The workflow has not run yet, so expect to fix it on its first run.
+Each run prints the flash and RAM totals in its log and attaches the `.uf2` files under **Artifacts** on the page for that run. All four targets passed in [the build for `2ac81ae`](https://github.com/disarmyouwitha/zmk-javelin-steno/actions/runs/43133561440).
 
 ## ZMK Studio
 
-The firmware is prepared for ZMK Studio, though no build in this repository enables it yet and none of this has been tested with Studio.
+The `left-studio` workflow target enables ZMK Studio and compiled successfully at `2ac81ae`. Its Studio behavior still needs hardware testing.
 
 - The typing, steno and Plover modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming those layers in Studio leaves the right display, practice and flash handling working. Reordering should too, since the pinned ZMK keeps a layer's ID when it moves, but that is untested.
 - Practice has no layer of its own. It runs on the steno layer and the `&javpractice` key turns it on and off, so the steno keys are mapped once. A steno layer built from scratch on a new layer still types, but gets no dictionary pre-wake or loading message.
