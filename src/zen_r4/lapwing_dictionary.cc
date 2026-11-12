@@ -89,11 +89,29 @@ struct BaseDictionary {
   StenoCompactMapDictionaryStrokesDefinition strokes[16];
   StenoDictionary *dictionary = nullptr;
 
-  // Loads dictionary `index` of the `count` the image must hold. A null
-  // `translation` skips the lookup check and keeps the structural ones.
+  // Whether `stroke` translates to `translation` in `target`. A null
+  // `translation` skips the lookup.
+  static bool Matches(StenoDictionary *target, const StenoStroke &stroke,
+                      const char *translation) {
+    if (!translation) {
+      return true;
+    }
+    auto result = target->Lookup(StenoDictionaryLookup(&stroke, 1));
+    const bool matches = result.IsValid() && strcmp(result.GetText(), translation) == 0;
+    result.Destroy();
+    return matches;
+  }
+
+  // Loads dictionary `index` of the `count` the image must hold, then looks up
+  // one known entry. The lookup also runs when the dictionary was loaded
+  // earlier, so every start-up and wake reads the flash through the mapping.
   bool Load(uintptr_t address, size_t bytes, const char *name, const StenoStroke &stroke,
             const char *translation, size_t index = 0, size_t count = 1) {
     if (dictionary) {
+      if (!Matches(dictionary, stroke, translation)) {
+        printk("%s native lookup failed\n", name);
+        return false;
+      }
       return true;
     }
     const auto *collection = reinterpret_cast<const uint8_t *>(address);
@@ -125,15 +143,10 @@ struct BaseDictionary {
     if (!map) {
       return false;
     }
-    if (translation) {
-      auto result = map->Lookup(StenoDictionaryLookup(&stroke, 1));
-      const bool matches = result.IsValid() && strcmp(result.GetText(), translation) == 0;
-      result.Destroy();
-      if (!matches) {
-        printk("%s native lookup failed\n", name);
-        delete map;
-        return false;
-      }
+    if (!Matches(map, stroke, translation)) {
+      printk("%s native lookup failed\n", name);
+      delete map;
+      return false;
     }
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
     dictionary = new ReadOnlyBase(*map);
@@ -183,16 +196,16 @@ extern "C" bool plover_verify_native_dictionary(uintptr_t address) {
 
 extern "C" bool extras_verify_native_dictionary(uintptr_t address) {
 #if EXTRAS_BYTES > 0
-  // One known entry is looked up in the two dictionaries that have outlines
-  // without the number key. The other two get the structural checks only.
+  // One entry that only this dictionary holds, so an image whose dictionaries
+  // are in a different order from extras_names fails the check.
   const struct {
     const char *outline;
     const char *translation;
   } checks[EXTRAS_DICTIONARY_COUNT] = {
       {"SP", "{^^}"},      // commands
-      {"S", nullptr},      // numbers
+      {"#E", "{&0}"},      // numbers
       {"O*ERD", "odour"},  // UK additions
-      {"S", nullptr},      // proper nouns
+      {"#ST", "St"},       // proper nouns
   };
   for (size_t i = 0; i < EXTRAS_DICTIONARY_COUNT; i++) {
     // The stroke constructor takes string literals only.

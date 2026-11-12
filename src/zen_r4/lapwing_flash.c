@@ -610,10 +610,19 @@ static bool transfer_image(const struct base_image *image, bool program) {
 }
 #endif /* SERIAL_PROVISIONING */
 
+/* Set when the last prepare_flash failed before it could read the images:
+ * the chip did not answer, or four-line reads did not switch on. Those can
+ * pass on a second try. Blank or mismatched images cannot, so they are not
+ * retried.
+ */
+static bool transient_fault;
+
 static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool quick) {
     *mapping_failed = false;
+    transient_fault = false;
     config->prot_if.readoc = NRF_QSPI_READOC_FASTREAD;
     if (!start_qspi(config)) {
+        transient_fault = true;
         return false;
     }
     /* The raw CRC pass reads every byte of both bases. On one data line it
@@ -624,6 +633,7 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
             images[i].verified = false;
         }
         *mapping_failed = true;
+        transient_fault = true;
         return true;
     }
     for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
@@ -639,6 +649,49 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
     return true;
 }
 
+#ifdef CONFIG_ZMK_SLEEP
+#define BRING_UP_ATTEMPTS 3
+
+/* Takes the rail down for a moment, so the next attempt starts from a chip
+ * that was off. Holds flash_lock through its caller.
+ */
+static void power_cycle_flash(void) {
+    const bool initialized = nrfx_qspi_init_check();
+
+    if (initialized) {
+        (void)reactivate_after_xip();
+    }
+    (void)power_down_flash(initialized);
+    k_msleep(100);
+}
+#else
+#define BRING_UP_ATTEMPTS 1
+
+static void power_cycle_flash(void) {
+}
+#endif
+
+/* A start-up that fails before it reads the images is tried again, a few
+ * times, with a power cycle between. Otherwise one glitch, such as a rail
+ * still settling after a wake, would leave Javelin without dictionaries until
+ * the next reboot.
+ */
+static bool prepare_flash_with_retry(nrfx_qspi_config_t *config, bool *mapping_failed,
+                                     bool quick) {
+    bool qspi_ok = false;
+
+    for (int attempt = 1; attempt <= BRING_UP_ATTEMPTS; attempt++) {
+        qspi_ok = prepare_flash(config, mapping_failed, quick);
+        if (atomic_get(&mapped_ready) || !transient_fault || attempt == BRING_UP_ATTEMPTS) {
+            break;
+        }
+        printk("External flash did not start (attempt %d of %d); trying again\n", attempt,
+               BRING_UP_ATTEMPTS);
+        power_cycle_flash();
+    }
+    return qspi_ok;
+}
+
 /* Start-up checks the chip ID, image headers and native lookups. Both CRC
  * passes run when no full check is on record for these images, such as the
  * first boot after provisioning, and when the quick check fails.
@@ -648,7 +701,7 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
     bool quick = take_wake_trust();
 
     atomic_clear(&checked);
-    bool qspi_ok = prepare_flash(config, mapping_failed, quick);
+    bool qspi_ok = prepare_flash_with_retry(config, mapping_failed, quick);
 
     if (quick && (!qspi_ok || *mapping_failed || !atomic_get(&mapped_ready))) {
         printk("Quick flash check failed; verifying in full\n");
@@ -658,7 +711,7 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
             (void)reactivate_after_xip();
             nrfx_qspi_uninit();
         }
-        qspi_ok = prepare_flash(config, mapping_failed, false);
+        qspi_ok = prepare_flash_with_retry(config, mapping_failed, false);
     }
     if (!quick) {
         if (atomic_get(&mapped_ready)) {
