@@ -677,8 +677,10 @@ static bool prepare_flash(nrfx_qspi_config_t *config, bool *mapping_failed, bool
 #ifdef CONFIG_ZMK_SLEEP
 #define BRING_UP_ATTEMPTS 3
 
-/* Takes the rail down for a moment, so the next attempt starts from a chip
- * that was off. Holds flash_lock through its caller.
+/* Takes the rail down for half a second, so the next attempt starts from a
+ * chip that was off. With the optional 1 uF and 100 k bleed resistor on the
+ * Steno Squid, the rail takes about 0.3 s to fall below 0.3 V. Holds
+ * flash_lock through its caller.
  */
 static void power_cycle_flash(void) {
     const bool initialized = nrfx_qspi_init_check();
@@ -687,7 +689,7 @@ static void power_cycle_flash(void) {
         (void)reactivate_after_xip();
     }
     (void)power_down_flash(initialized);
-    k_msleep(100);
+    k_msleep(500);
 }
 #else
 #define BRING_UP_ATTEMPTS 1
