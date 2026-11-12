@@ -195,9 +195,11 @@ extern "C" bool extras_verify_native_dictionary(uintptr_t address) {
       {"S", nullptr},      // proper nouns
   };
   for (size_t i = 0; i < EXTRAS_DICTIONARY_COUNT; i++) {
-    if (!extras_base[i].Load(address, EXTRAS_BYTES, extras_names[i],
-                             StenoStroke(checks[i].outline), checks[i].translation, i,
-                             EXTRAS_DICTIONARY_COUNT)) {
+    // The stroke constructor takes string literals only.
+    StenoStroke stroke;
+    stroke.Set(checks[i].outline);
+    if (!extras_base[i].Load(address, EXTRAS_BYTES, extras_names[i], stroke,
+                             checks[i].translation, i, EXTRAS_DICTIONARY_COUNT)) {
       return false;
     }
   }
