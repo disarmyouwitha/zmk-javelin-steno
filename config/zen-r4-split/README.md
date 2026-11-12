@@ -131,13 +131,13 @@ The existing website supplies these controls. Firmware support handles listing, 
 
 Plover source: [official main.json at the pinned revision](https://github.com/openstenoproject/plover/blob/8a52c5296c502507f9a46820a4a947ca25f998e6/plover/assets/main.json). Source SHA256: `6570873c7f703ecd39c9870083f643db3475b49462a8db80fe22fe33ac3cfe92`. Compiled padded image SHA256: `6d74757af03ad1769f6f2d587afcc8957a5486b3e31ed3e20f00410c2624e2c4`.
 
-After flashing the dual-base left UF2, program Plover over the diagnostics port, substituting the actual device path:
+After flashing a left UF2 built with the logging port, install the dictionaries over the diagnostics port, substituting the actual device path:
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 \
-  --base plover build/plover/plover-main.bin
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501
 ```
+
+With no other options, `upload.py` installs every image the firmware was built with that is not installed yet (Lapwing Base, Plover Base and the Lapwing extras) from the files under `build/` that the prepare steps wrote. Images already in flash are left alone. `--status` prints the state of each image. `--base lapwing`, `--base plover` or `--base extras` acts on one image alone, with the image path after it if the file is elsewhere.
 
 Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
 
@@ -157,7 +157,7 @@ They rank above the bases, in that order: personal entries first, then the four 
 `prepare_extras.py` downloads the four pinned sources, compiles them into `build/extras/lapwing-extras.bin` (451,088 bytes) and checks every outline. The image lives at `0x500000` in the external flash and is uploaded, verified and repaired as one unit:
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501   --base extras build/extras/lapwing-extras.bin
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base extras
 ```
 
 A firmware built with the extras image needs it in flash. After the first flash of such a build, onboard Javelin shows **No dictionary** until this upload finishes; the Lapwing and Plover bases already in flash are kept. `--verify --base all` checks all three images, and `--repair` works with `--base extras`.
@@ -169,14 +169,13 @@ Eight of the command entries are Plover application commands, such as lookup and
 Both commands need the left build with `-S zmk-usb-logging`.
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base all
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify
 ```
 
 `--verify` reads every byte of the chosen image, or of all of them, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \
-  --repair build/lapwing/lapwing-base.bin
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing --repair
 ```
 
 `--repair` replaces a base that is damaged or holds other data, including one the keyboard still reports as verified. In order, it:

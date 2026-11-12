@@ -138,9 +138,14 @@ static void note_use(void) {
  * Deep sleep leaves a marker tied to the expected images, so the wake that
  * follows can skip the two full CRC passes. Anything else verifies in full.
  */
+/* One value that changes with any of the expected images. */
+static uint32_t images_hash(void) {
+    return LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES ^
+           (EXTRAS_CRC * 131U) ^ (EXTRAS_BYTES * 7U);
+}
+
 static uint8_t trust_marker(void) {
-    uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES ^
-                     (EXTRAS_CRC * 131U) ^ (EXTRAS_BYTES * 7U);
+    uint32_t value = images_hash();
 
     value ^= value >> 16;
     value ^= value >> 8;
@@ -156,8 +161,7 @@ static uint8_t trust_marker(void) {
 #define TRUST_SETTING "lapwing/verified"
 
 static uint32_t image_fingerprint(void) {
-    const uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES ^
-                           (EXTRAS_CRC * 131U) ^ (EXTRAS_BYTES * 7U);
+    const uint32_t value = images_hash();
 
     return value ? value : 0xa5a5a5a5U;
 }
@@ -177,8 +181,10 @@ static int read_trust(const char *key, size_t len, settings_read_cb read_cb, voi
 static bool stored_trust(void) {
     uint32_t value = 0;
 
-    return settings_subsys_init() == 0 &&
-           settings_load_subtree_direct(TRUST_SETTING, read_trust, &value) == 0 &&
+    /* ZMK has set settings up by now. Before that, nothing is read and the
+     * answer is no, which only costs a full check.
+     */
+    return settings_load_subtree_direct(TRUST_SETTING, read_trust, &value) == 0 &&
            value == image_fingerprint();
 }
 
@@ -546,22 +552,33 @@ static bool erase_image(struct base_image *image) {
  */
 static void verify_image(const struct base_image *image) {
     uint32_t crc = 0;
+    uint32_t failed_at = 0;
+    bool read_ok = reactivate_after_xip();
+    /* The dictionaries are out of use while this reads. A Javelin key pressed
+     * meanwhile is dropped at once, instead of blocking the system work queue
+     * on the flash lock until the check ends.
+     */
+    const bool was_mapped = atomic_cas(&mapped_ready, 1, 0);
 
-    if (!reactivate_after_xip()) {
-        reply(image, "VERIFY_READ_FAILED", 0);
-        return;
-    }
-    for (uint32_t offset = 0; offset < image->bytes; offset += CHUNK_BYTES) {
+    for (uint32_t offset = 0; read_ok && offset < image->bytes; offset += CHUNK_BYTES) {
         const size_t size = MIN(CHUNK_BYTES, image->bytes - offset);
 
         if (nrfx_qspi_read(readback, size, image->offset + offset) != NRFX_SUCCESS) {
-            reply(image, "VERIFY_READ_FAILED", offset);
-            return;
+            read_ok = false;
+            failed_at = offset;
+            break;
         }
         crc = crc32_ieee_update(crc, readback, size);
         k_yield();
     }
-    reply(image, crc == image->crc ? "VERIFY_OK" : "VERIFY_MISMATCH", crc);
+    if (was_mapped) {
+        atomic_set(&mapped_ready, 1);
+    }
+    if (!read_ok) {
+        reply(image, "VERIFY_READ_FAILED", failed_at);
+    } else {
+        reply(image, crc == image->crc ? "VERIFY_OK" : "VERIFY_MISMATCH", crc);
+    }
 }
 
 static bool transfer_image(const struct base_image *image, bool program) {
@@ -607,6 +624,14 @@ static bool transfer_image(const struct base_image *image, bool program) {
         return false;
     }
     return true;
+}
+
+/* Writes one image. The saved verification record goes first: from here the
+ * flash holds an image the record no longer describes.
+ */
+static bool transfer_and_program(const struct base_image *image) {
+    clear_trust();
+    return transfer_image(image, false) && transfer_image(image, true);
 }
 #endif /* SERIAL_PROVISIONING */
 
@@ -774,7 +799,7 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
             reply(image, "VERIFIED", image->bytes);
         } else if (command == image->query) {
             reply(image, "UNPROVISIONED", image->bytes);
-        } else if ((clear_trust(), transfer_image(image, false)) && transfer_image(image, true)) {
+        } else if (transfer_and_program(image)) {
             image->verified = read_image_crc(image);
             if (!image->verified) {
                 reply(image, "READBACK_ERROR", 0);
