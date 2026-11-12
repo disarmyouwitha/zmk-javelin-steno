@@ -251,8 +251,19 @@ Javelin Steno now has two parameters. The first is a keyboard usage for the
 Studio key label, and the second selects the physical steno key. The STENO_*
 macros expand to both parameters. Choose the physical identity in the second
 dropdown when changing a steno key; changing the label alone affects its
-appearance. Letter labels, keypad star and keypad hash resolve in Studio's
-current HID table. Left/right identity is shown in the dropdown.
+appearance. Left/right identity is shown in the dropdown.
+
+Number-bar keys carry the **Num Lock** label, which Studio draws as **Num**.
+Studio has no `#` key cap that it can also save: it only offers, and the
+firmware only accepts, keyboard keys up to keypad `=`, and keypad `#` lies
+beyond that. The earlier keypad `#` label displayed, but Studio rejected any
+change to a key that carried it. To turn another key into a number-bar key,
+pick **Num Lock** as its label and a **Number bar** entry in the dropdown.
+
+Plover HID works the same way. `&plv` takes a label and a Plover HID key, the
+`PLV_*` names expand to both, and Studio shows the label on the key and the
+keys by name in the dropdown. This comes from the pinned fork of the Plover
+HID module.
 
 If you saved bindings in Studio before this update, use **Restore stock
 settings** after flashing to load the new parameter format. This replaces

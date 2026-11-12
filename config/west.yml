@@ -19,6 +19,6 @@ manifest:
     # for ZMK Studio (branch studio-key-names).
     - name: zmk-hid-io-plover-hid
       remote: disarmyouwitha
-      revision: 25ca1c55e31781e49499178584520129b9586635
+      revision: 73b112ccab30d2a9bf40609657daef35560575f1
   self:
     path: config
