@@ -110,4 +110,13 @@ These are compilation results pending target-hardware testing. They predate the 
 
 On 2026-11-11 this branch took in everything on `main` up to `ac7a7a8`: the quick start-up flash check, idle flash power-down, dictionary verify and repair, the practice key, layer names on the right display, ZMK Studio with labelled Javelin and Plover HID keys, and the GitHub Actions builds. The locked pin map in [qspi.dtsi](qspi.dtsi), the P0.31 flash and accessory rail, and the vendor board definition are unchanged. `CONFIG_ZMK_STUDIO=n` is gone from `blecorne_left.conf`.
 
-GitHub Actions now also builds `boardsource-left-logging`, `boardsource-left-studio` and `boardsource-right` on each push. None of the merged code has run on Boardsource hardware. Check in particular that a wake from deep sleep takes the quick flash path on this bootloader: it relies on the GPREGRET2 register and on the saved verification record.
+GitHub Actions now also builds `boardsource-left-logging`, `boardsource-left-studio` and `boardsource-right` on each push. It builds the two flash probes as well, `boardsource-probe` and `boardsource-quad`.
+
+Order of use on a new board, all from the **Artifacts** of one workflow run:
+
+1. Measure the header: pin 1, and the voltage and polarity of the switched rail on pin 5.
+2. Left half: `boardsource-probe`, then `boardsource-quad`. Both only read the flash chip.
+3. Right half: `boardsource-right`.
+4. Left half: `boardsource-left-logging`, then upload both base dictionaries with `upload.py`.
+5. Left half: `boardsource-left-studio` for everyday use.
+ None of the merged code has run on Boardsource hardware. Check in particular that a wake from deep sleep takes the quick flash path on this bootloader: it relies on the GPREGRET2 register and on the saved verification record.

@@ -42,6 +42,13 @@ jobs:
             dictionaries: true
           - name: boardsource-right
             boardsource: right
+          # Left-side flash probes for first power-up. They read the flash
+          # chip and write nothing. Run them before the left firmware.
+          - name: boardsource-probe
+            boardsource: probe
+          - name: boardsource-quad
+            boardsource: probe
+            quad: true
     steps:
       - name: Check out this repository
         uses: actions/checkout@v4
@@ -83,6 +90,7 @@ jobs:
         run: |
           repo="$GITHUB_WORKSPACE/repo"
           zen="$repo/config/zen-r4-split"
+          source=zmk/app
           args=("-DZMK_EXTRA_MODULES=$repo")
           case "${{ matrix.boardsource }}" in
             left)
@@ -97,6 +105,18 @@ jobs:
                      "-DBOARD_ROOT=$GITHUB_WORKSPACE/vendor"
                      "-DZMK_CONFIG=$repo/config/boardsource-wireless-corne"
                      "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/right-nice-view.conf")
+              ;;
+            probe)
+              board=blecorne_left
+              source="$repo/tools/zen-r4-qspi"
+              args=("-DBOARD_ROOT=$GITHUB_WORKSPACE/vendor"
+                    "-DDTS_ROOT=$GITHUB_WORKSPACE/ws/zmk/app"
+                    "-DDTC_OVERLAY_FILE=$source/boardsource.overlay"
+                    "-DKCONFIG_ROOT=$source/Kconfig.boardsource"
+                    "-DEXTRA_CONF_FILE=$source/boardsource.conf")
+              if [ "${{ matrix.quad }}" = "true" ]; then
+                args+=("-DQUAD_PROBE=ON")
+              fi
               ;;
             *)
               board=nice_nano//zmk
@@ -115,11 +135,11 @@ jobs:
           if [ -n "${{ matrix.snippet }}" ]; then
             snippet=(-S "${{ matrix.snippet }}")
           fi
-          west build -s zmk/app -d "$GITHUB_WORKSPACE/out" -b "$board" "${snippet[@]}" -- "${args[@]}"
+          west build -s "$source" -d "$GITHUB_WORKSPACE/out" -b "$board" "${snippet[@]}" -- "${args[@]}"
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: out/zephyr/zmk.uf2
+          path: out/zephyr/${{ matrix.boardsource == 'probe' && 'zephyr' || 'zmk' }}.uf2
           if-no-files-found: error
