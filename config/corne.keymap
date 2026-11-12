@@ -99,7 +99,7 @@ CORNE_STENO_SPARE_KEY &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL
             >;
         };
         plover_hid_layer {
-            display-name = "PLOVER HID";
+            display-name = "PloverHID";
             // Voyager geometry; distinct Plover HID indices for every steno key.
             bindings = <
 &plv PLV_NMC &plv PLV_NM  &plv PLV_NM2 &plv PLV_NM3 &plv PLV_NM4 &plv PLV_NM5    &plv PLV_NM6 &plv PLV_NM7 &plv PLV_NM8 &plv PLV_NM9 &plv PLV_NMA &plv PLV_NMB
