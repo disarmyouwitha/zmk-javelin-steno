@@ -10,18 +10,18 @@ Number the connector by the vendor pinout and verify pin 1 on each physical boar
 | --- | --- | --- | --- |
 | 1 | P0.07 | CS# | |
 | 2 | P0.21 | IO0 | |
-| 3 | P0.12 | CLK | MOSI |
-| 4 | P0.23 | IO3 | SCK |
+| 3 | P0.12 | IO3 | MOSI |
+| 4 | P0.23 | IO1 | SCK |
 | 5 | Switched VCC, P0.31 control | 3V | VCC |
 | 6 | GND | G | GND |
-| 7 | P0.19 | IO1 | CS, active high |
+| 7 | P0.19 | CLK | CS, active high |
 | 8 | P0.05 | IO2 | |
 
 The [left QSPI overlay](qspi.dtsi) disables SPI2, uses high drive in both directions, pulls IO2 and IO3 high in the active state, and sets all six pins to low-power inputs with pulls disabled for sleep. The existing QSPI driver owns P0.31, powers up the flash before enabling its signal pins, and removes flash power during deep sleep. The right uses the vendor's SPI2 pinctrl and the standard ZMK external-power driver on P0.31. The pinned vendor devicetree declares SPI2 but has no P0.31 power driver. Both overlays assume **active-high** rail enable pending measurement.
 
-Nordic lists these six signals' GPIOs as general-purpose I/O on the aQFN73. Its recommended SCK pin is P0.19, which this wiring assigns to IO1. Start at the existing 2 MHz and use short leads. If the proposed map fails under load, capture the failed read, voltage, and signal trace before coordinating any remap. [Nordic nRF52840 pin assignments](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/pin.html?contentId=hMpuE~dcsjrrIlIt8ErcrQ)
+The owner locked the Steno Squid pin map on 2026-11-11. Clock uses Nordic’s recommended P0.19 QSPI/SCK pin. IO0 and IO1 use P0.21 and P0.23, which Nordic marks for QSPI. IO2 remains on P0.05, IO3 moves to P0.12, and CS# stays on P0.07. Both active and sleep pinctrl states use this map. Begin hardware tests at the configured 2 MHz. [Nordic nRF52840 pin assignments](https://docs.nordicsemi.com/bundle/ps_nrf52840/page/pin.html)
 
-The Adafruit #5634 schematic routes IO2 and IO3 to separate pads. Check continuity on the actual breakout and confirm neither pad is shorted to VCC. Reversing the breakout edge gives IO0, CLK, IO3, 3V in the order of header pins 2–5. Check pitch, mirrored orientation, clearance, and all eight connections before mounting. [Adafruit breakout pinout](https://learn.adafruit.com/adafruit-qspi-dip-breakout-boards/pinouts) · [Adafruit breakout schematic](https://github.com/adafruit/Adafruit-QSPI-DIP-Breakout-PCB)
+The Adafruit #5634 schematic routes IO2 and IO3 to separate pads. Check continuity on the actual breakout and confirm neither pad is shorted to VCC. Use eight jumper connections to the locked table above for the Adafruit proof of concept. Confirm orientation, pitch and clearance before mounting. [Adafruit breakout pinout](https://learn.adafruit.com/adafruit-qspi-dip-breakout-boards/pinouts) · [Adafruit breakout schematic](https://github.com/adafruit/Adafruit-QSPI-DIP-Breakout-PCB)
 
 ## Build
 
