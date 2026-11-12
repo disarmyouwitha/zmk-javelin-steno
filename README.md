@@ -34,7 +34,7 @@ LEFT and RIGHT now have 30 prompts each. WORDS has 10. The longer runs and nine-
 6. First boot does one full dictionary check and records it. Reboot again: send `W` to the diagnostics port and expect `LAPWING CHECK_QUICK` with a time in milliseconds.
 7. The steno layer shows **Loading...** on the right display until the check finishes, then **Javelin**.
 8. Typing, onboard Javelin and Plover HID still work across both halves.
-9. Practice: hold SYM+NUM and tap the outer right thumb. The key left of the top S turns practice off and on. The outer left thumb returns to typing.
+9. Practice: hold SYM+NUM and tap the outer right thumb. The key left of the Lapwing # key (the one above S) turns practice off and on. The outer left thumb returns to typing.
 10. Browser editor: connect, edit an entry, then try a disconnect mid-command, a reconnect, and a switch between USB and Bluetooth.
 
 **Then try ZMK Studio, on the left half only**

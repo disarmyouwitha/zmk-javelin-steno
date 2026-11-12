@@ -67,7 +67,7 @@ translations without regard to letter case.
 
 Practice runs on the steno layer. From Typing, hold the middle left thumb for
 SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
-the key left of the top S turns practice on or off. Tap either left star by itself to go to the previous
+the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
 Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 30 each.
@@ -75,7 +75,7 @@ Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and R
 **LEFT** and **RIGHT** use the corresponding consonant banks from
 [StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
 Tap the displayed steno key and release it. A leading hyphen indicates a
-right-hand key, such as `-F`. Either left S key counts as `S`.
+right-hand key, such as `-F`. The lower left key is `S`. The key above it is the Lapwing `#` key.
 The hand drills check raw strokes and work with all dictionaries disabled.
 When both base dictionaries are off, **WORDS** uses the verified onboard
 Lapwing Base for outlines that the active personal dictionary does not cover.
@@ -89,7 +89,7 @@ screen uses bold prompts and headings. Correct answers show **CORRECT** for
 and keep the current prompt. After all prompts are answered correctly, the screen shows
 **DONE** and the best streak.
 
-The outer left thumb returns to Typing. The key left of the top S exits to
+The outer left thumb returns to Typing. The key left of the Lapwing # key (the one above S) exits to
 normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
