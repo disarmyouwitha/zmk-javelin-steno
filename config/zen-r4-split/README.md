@@ -135,7 +135,33 @@ python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 \
 python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
 ```
 
-Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It erases the selected base's region first, in 64 KiB blocks, and writes only that region. The other base and the personal dictionary are left alone. If the keyboard reports a base as verified, `upload.py` leaves it as it is; add `--force` to erase and program it again, for example when a base looks damaged. It rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
+Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
+
+### Verify or repair a base dictionary
+
+Both commands need the left build with `-S zmk-usb-logging`.
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base both
+```
+
+`--verify` reads every byte of the chosen base, or of both, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \
+  --repair build/lapwing/lapwing-base.bin
+```
+
+`--repair` replaces a base that is damaged or holds other data, including one the keyboard still reports as verified. In order, it:
+
+1. checks the file's size and CRC against the image the firmware expects, before touching the flash;
+2. asks you to type the base name to confirm (`--yes` skips the question);
+3. takes the dictionaries out of use and removes the saved verification record;
+4. erases that base's 4 KiB sectors, including the last, partly used one;
+5. writes the image, reading back every chunk;
+6. runs the full CRC and native lookup checks, and saves the verification record again once every base passes.
+
+The other base and the personal dictionary at `0xF00000` are never erased. If a repair is interrupted, the base is left unprovisioned and onboard Javelin shows **No dictionary**; run the same command again.
 
 ## Flash and check
 
