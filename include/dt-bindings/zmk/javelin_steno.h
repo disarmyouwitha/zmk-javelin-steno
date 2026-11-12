@@ -1,41 +1,81 @@
-// Steno key indices matching Javelin's StenoKey enum.
-// Use in keymap: &javsteno STENO_S1, &javsteno STENO_TL, etc.
+#pragma once
+#include <dt-bindings/zmk/keys.h>
 
-#define STENO_S1    0
-#define STENO_S2    1
-#define STENO_TL    2
-#define STENO_KL    3
-#define STENO_PL    4
-#define STENO_WL    5
-#define STENO_HL    6
-#define STENO_RL    7
-#define STENO_A     8
-#define STENO_O     9
-#define STENO_STAR1 10
-#define STENO_STAR2 11
-#define STENO_STAR3 12
-#define STENO_STAR4 13
-#define STENO_E     14
-#define STENO_U     15
-#define STENO_FR    16
-#define STENO_RR    17
-#define STENO_PR    18
-#define STENO_BR    19
-#define STENO_LR    20
-#define STENO_GR    21
-#define STENO_TR    22
-#define STENO_SR    23
-#define STENO_DR    24
-#define STENO_ZR    25
-#define STENO_NUM1  26
-#define STENO_NUM2  27
-#define STENO_NUM3  28
-#define STENO_NUM4  29
-#define STENO_NUM5  30
-#define STENO_NUM6  31
-#define STENO_NUM7  32
-#define STENO_NUM8  33
-#define STENO_NUM9  34
-#define STENO_NUM10 35
-#define STENO_NUM11 36
-#define STENO_NUM12 37
+// Studio displays the first parameter as a HID label. The second parameter
+// identifies the physical steno key passed to the Javelin engine.
+#define STENO_ID_S1 0
+#define STENO_S1 S STENO_ID_S1
+#define STENO_ID_S2 1
+#define STENO_S2 S STENO_ID_S2
+#define STENO_ID_TL 2
+#define STENO_TL T STENO_ID_TL
+#define STENO_ID_KL 3
+#define STENO_KL K STENO_ID_KL
+#define STENO_ID_PL 4
+#define STENO_PL P STENO_ID_PL
+#define STENO_ID_WL 5
+#define STENO_WL W STENO_ID_WL
+#define STENO_ID_HL 6
+#define STENO_HL H STENO_ID_HL
+#define STENO_ID_RL 7
+#define STENO_RL R STENO_ID_RL
+#define STENO_ID_A 8
+#define STENO_A A STENO_ID_A
+#define STENO_ID_O 9
+#define STENO_O O STENO_ID_O
+#define STENO_ID_STAR1 10
+#define STENO_STAR1 KP_MULTIPLY STENO_ID_STAR1
+#define STENO_ID_STAR2 11
+#define STENO_STAR2 KP_MULTIPLY STENO_ID_STAR2
+#define STENO_ID_STAR3 12
+#define STENO_STAR3 KP_MULTIPLY STENO_ID_STAR3
+#define STENO_ID_STAR4 13
+#define STENO_STAR4 KP_MULTIPLY STENO_ID_STAR4
+#define STENO_ID_E 14
+#define STENO_E E STENO_ID_E
+#define STENO_ID_U 15
+#define STENO_U U STENO_ID_U
+#define STENO_ID_FR 16
+#define STENO_FR F STENO_ID_FR
+#define STENO_ID_RR 17
+#define STENO_RR R STENO_ID_RR
+#define STENO_ID_PR 18
+#define STENO_PR P STENO_ID_PR
+#define STENO_ID_BR 19
+#define STENO_BR B STENO_ID_BR
+#define STENO_ID_LR 20
+#define STENO_LR L STENO_ID_LR
+#define STENO_ID_GR 21
+#define STENO_GR G STENO_ID_GR
+#define STENO_ID_TR 22
+#define STENO_TR T STENO_ID_TR
+#define STENO_ID_SR 23
+#define STENO_SR S STENO_ID_SR
+#define STENO_ID_DR 24
+#define STENO_DR D STENO_ID_DR
+#define STENO_ID_ZR 25
+#define STENO_ZR Z STENO_ID_ZR
+#define STENO_ID_NUM1 26
+#define STENO_NUM1 KP_NUM STENO_ID_NUM1
+#define STENO_ID_NUM2 27
+#define STENO_NUM2 KP_NUM STENO_ID_NUM2
+#define STENO_ID_NUM3 28
+#define STENO_NUM3 KP_NUM STENO_ID_NUM3
+#define STENO_ID_NUM4 29
+#define STENO_NUM4 KP_NUM STENO_ID_NUM4
+#define STENO_ID_NUM5 30
+#define STENO_NUM5 KP_NUM STENO_ID_NUM5
+#define STENO_ID_NUM6 31
+#define STENO_NUM6 KP_NUM STENO_ID_NUM6
+#define STENO_ID_NUM7 32
+#define STENO_NUM7 KP_NUM STENO_ID_NUM7
+#define STENO_ID_NUM8 33
+#define STENO_NUM8 KP_NUM STENO_ID_NUM8
+#define STENO_ID_NUM9 34
+#define STENO_NUM9 KP_NUM STENO_ID_NUM9
+#define STENO_ID_NUM10 35
+#define STENO_NUM10 KP_NUM STENO_ID_NUM10
+#define STENO_ID_NUM11 36
+#define STENO_NUM11 KP_NUM STENO_ID_NUM11
+#define STENO_ID_NUM12 37
+#define STENO_NUM12 KP_NUM STENO_ID_NUM12

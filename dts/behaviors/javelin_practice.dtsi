@@ -1,0 +1,9 @@
+/ {
+    behaviors {
+        /omit-if-no-ref/ javpractice: javelin_practice {
+            compatible = "zmk,behavior-javelin-practice";
+            display-name = "Steno Practice";
+            #binding-cells = <0>;
+        };
+    };
+};

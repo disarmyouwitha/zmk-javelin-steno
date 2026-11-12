@@ -5,11 +5,14 @@
 #include <behaviors/plover_hid.dtsi>
 #include <dt-bindings/zmk/hid-io/plover_hid.h>
 #include <dt-bindings/zmk/javelin_steno.h>
+#include <dt-bindings/zmk/javelin_steno_layers.h>
 
-#define MAIN 0
-#define SYM_NUM 1
-#define STENO 2
-#define PLOVER_HID 3
+// The firmware recognises these layers by ID. Keep the layer order below in
+// step with javelin_steno_layers.h.
+#define MAIN JAVELIN_LAYER_MAIN
+#define SYM_NUM JAVELIN_LAYER_SYM_NUM
+#define STENO JAVELIN_LAYER_STENO
+#define PLOVER_HID JAVELIN_LAYER_PLOVER_HID
 
 #ifndef CORNE_RIGHT_SYMBOL_THUMBS
 #define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &none
@@ -26,6 +29,11 @@
 #ifndef CORNE_LEFT_SYMBOL_ROW_0
 // Voyager LED positions Q/W/R select or clear host Bluetooth profiles.
 #define CORNE_LEFT_SYMBOL_ROW_0 &kp LG(LA(ESC)) &bt BT_SEL 0 &bt BT_SEL 1 &kp UP &bt BT_CLR &none
+#endif
+
+#ifndef CORNE_STENO_SPARE_KEY
+// The unused key left of the Lapwing # key (the one above S) on the steno layer.
+#define CORNE_STENO_SPARE_KEY &none
 #endif
 
 #ifndef CORNE_LEFT_SYMBOL_ROW_1
@@ -45,7 +53,13 @@
 
 / {
     behaviors {
-        ht: hold_tap {
+        ht: tap_first {
+            compatible = "zmk,behavior-tap-first";
+            display-name = "Tap / Hold";
+            #binding-cells = <2>;
+            bindings = <&ht_impl>;
+        };
+        ht_impl: hold_tap {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "tap-preferred";
@@ -61,11 +75,11 @@
 
         main_layer {
             display-name = "MAIN";
-            // ht parameters: hold first, tap second. Editing shortcuts use Command.
+            // ht parameters: tap first, hold second. Editing shortcuts use Command.
             bindings = <
-&ht ESC TAB  &ht LBKT Q   &ht RBKT W   &ht LBRC E   &ht RBRC R   &ht SQT T       &ht MINUS Y &ht AMPS U &ht STAR I     &ht LG(F) O   &ht LG(LS(N4)) P &kp DEL
-&kp LCTRL    &ht LG(A) A  &ht LG(S) S  &ht LPAR D   &ht RPAR F   &ht DQT G       &ht UNDER H &ht EXCL J &ht HASH K     &ht TILDE L   &ht RET SEMI     &kp RET
-&kp LSHIFT   &ht LG(Z) Z  &ht LG(X) X  &ht LG(C) C  &ht LG(V) V  &ht GRAVE B     &ht EQUAL N &ht AT M   &ht DLLR COMMA &ht CARET DOT &ht BSLH FSLH    &sk LSHIFT
+&ht TAB ESC  &ht Q LBKT   &ht W RBKT   &ht E LBRC   &ht R RBRC   &ht T SQT       &ht Y MINUS &ht U AMPS &ht I STAR     &ht O LG(F)   &ht P LG(LS(N4)) &kp DEL
+&kp LCTRL    &ht A LG(A)  &ht S LG(S)  &ht D LPAR   &ht F RPAR   &ht G DQT       &ht H UNDER &ht J EXCL &ht K HASH     &ht L TILDE   &ht SEMI RET     &kp RET
+&kp LSHIFT   &ht Z LG(Z)  &ht X LG(X)  &ht C LG(C)  &ht V LG(V)  &ht B GRAVE     &ht N EQUAL &ht M AT   &ht COMMA DLLR &ht DOT CARET &ht FSLH BSLH    &sk LSHIFT
                                       CORNE_LEFT_MAIN_THUMBS                CORNE_RIGHT_MAIN_THUMBS
             >;
         };
@@ -81,21 +95,21 @@ CORNE_LEFT_SYMBOL_ROW_1                                                        &
         };
 
         steno_layer {
-            display-name = "STENO";
+            display-name = "Javelin";
             // Onboard Javelin; physical steno positions preserved from the Zen keymap.
             bindings = <
 &javsteno STENO_NUM12 &javsteno STENO_NUM1  &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5    &javsteno STENO_NUM6 &javsteno STENO_NUM7 &javsteno STENO_NUM8 &javsteno STENO_NUM9 &javsteno STENO_NUM10 &javsteno STENO_NUM11
-&none        &javsteno STENO_S1  &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR
+CORNE_STENO_SPARE_KEY &javsteno STENO_NUM1 &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR
 &none        &javsteno STENO_S2 &javsteno STENO_KL  &javsteno STENO_WL  &javsteno STENO_RL  &javsteno STENO_STAR2    &javsteno STENO_STAR4 &javsteno STENO_RR  &javsteno STENO_BR  &javsteno STENO_GR  &javsteno STENO_SR  &javsteno STENO_ZR
                                       &to MAIN &javsteno STENO_A &javsteno STENO_O               &javsteno STENO_E &javsteno STENO_U &to PLOVER_HID
             >;
         };
         plover_hid_layer {
-            display-name = "PLOVER HID";
+            display-name = "PloverHID";
             // Voyager geometry; distinct Plover HID indices for every steno key.
             bindings = <
 &plv PLV_NMC &plv PLV_NM  &plv PLV_NM2 &plv PLV_NM3 &plv PLV_NM4 &plv PLV_NM5    &plv PLV_NM6 &plv PLV_NM7 &plv PLV_NM8 &plv PLV_NM9 &plv PLV_NMA &plv PLV_NMB
-&none        &plv PLV_SL  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST     &plv PLV_ST3 &plv PLV_FR  &plv PLV_PR  &plv PLV_LR  &plv PLV_TR  &plv PLV_DR
+&none        &plv PLV_NM  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST     &plv PLV_ST3 &plv PLV_FR  &plv PLV_PR  &plv PLV_LR  &plv PLV_TR  &plv PLV_DR
 &none        &plv PLV_SL2 &plv PLV_KL  &plv PLV_WL  &plv PLV_RL  &plv PLV_ST2    &plv PLV_ST4 &plv PLV_RR  &plv PLV_BR  &plv PLV_GR  &plv PLV_SR  &plv PLV_ZR
                                       &to MAIN &plv PLV_A &plv PLV_O               &plv PLV_E &plv PLV_U &to STENO
             >;

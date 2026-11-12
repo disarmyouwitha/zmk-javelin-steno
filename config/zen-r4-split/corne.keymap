@@ -1,18 +1,21 @@
 // Give both steno modes direct entry from the right thumb cluster.
 #define CORNE_RIGHT_MAIN_THUMBS &kp SPACE &to STENO &to PLOVER_HID
-#define PRACTICE 4
-#define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &to PRACTICE
+#include <behaviors/javelin_practice.dtsi>
+// SYM+NUM with the outer right thumb starts practice on the steno layer. On
+// that layer, the key left of the Lapwing # key (the one above S) turns practice off and on.
+#define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &javpractice
+#define CORNE_STENO_SPARE_KEY &javpractice
 
 #include "../corne.keymap"
 
 &{/keymap} {
-    practice_layer {
-        display-name = "PRACTICE";
-        bindings = <
-&javsteno STENO_NUM12 &javsteno STENO_NUM1 &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5   &javsteno STENO_NUM6 &javsteno STENO_NUM7 &javsteno STENO_NUM8 &javsteno STENO_NUM9 &javsteno STENO_NUM10 &javsteno STENO_NUM11
-&none &javsteno STENO_S1 &javsteno STENO_TL &javsteno STENO_PL &javsteno STENO_HL &javsteno STENO_STAR1   &javsteno STENO_STAR3 &javsteno STENO_FR &javsteno STENO_PR &javsteno STENO_LR &javsteno STENO_TR &javsteno STENO_DR
-&none &javsteno STENO_S2 &javsteno STENO_KL &javsteno STENO_WL &javsteno STENO_RL &javsteno STENO_STAR2   &javsteno STENO_STAR4 &javsteno STENO_RR &javsteno STENO_BR &javsteno STENO_GR &javsteno STENO_SR &javsteno STENO_ZR
-                        &to MAIN &javsteno STENO_A &javsteno STENO_O   &javsteno STENO_E &javsteno STENO_U &to STENO
-        >;
+    // Spare layers that ZMK Studio can hand out. Builds without Studio ignore
+    // them. Keep them last so the layers before them keep their IDs.
+    extra1 {
+        status = "reserved";
+    };
+
+    extra2 {
+        status = "reserved";
     };
 };

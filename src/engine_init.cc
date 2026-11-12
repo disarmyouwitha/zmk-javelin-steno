@@ -93,6 +93,12 @@ public:
 };
 #endif
 
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+// Versioned ZMK settings record. Preserve selection independently of base images
+// and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
+static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
+#endif
+
 #ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
 K_MUTEX_DEFINE(practice_mutex);
 static atomic_t practice_screen;
@@ -104,6 +110,8 @@ static struct {
   uint8_t round;
   uint8_t streak;
   uint8_t best;
+  int64_t advance_at;
+  zen_r4_practice_drill drill;
   zen_r4_practice_feedback feedback;
   StenoKeyState keys;
   StenoKeyState chord;
@@ -117,8 +125,9 @@ static void practice_publish() {
                (practice.round % 4) |
                (uint32_t(practice.feedback) << 2) |
                (uint32_t(practice.round) << 4) |
-               (uint32_t(practice.streak) << 8) |
-               (uint32_t(practice.best) << 12);
+               (uint32_t(practice.streak) << 9) |
+               (uint32_t(practice.best) << 14) |
+               (uint32_t(practice.drill) << ZEN_R4_PRACTICE_DRILL_SHIFT);
   }
   atomic_set(&practice_screen, snapshot);
   zen_r4_split_status_refresh();
@@ -126,9 +135,10 @@ static void practice_publish() {
 
 static void practice_advance(struct k_work *) {
   k_mutex_lock(&practice_mutex, K_FOREVER);
-  if (practice.active && practice.feedback == ZEN_R4_PRACTICE_CORRECT) {
+  if (practice.active && practice.feedback == ZEN_R4_PRACTICE_CORRECT &&
+      k_uptime_get() >= practice.advance_at) {
     ++practice.round;
-    practice.feedback = practice.round == ZEN_R4_PRACTICE_ROUNDS
+    practice.feedback = practice.round == zen_r4_practice_rounds(practice.drill)
                             ? ZEN_R4_PRACTICE_DONE
                             : ZEN_R4_PRACTICE_PROMPT;
     practice_publish();
@@ -138,6 +148,54 @@ static void practice_advance(struct k_work *) {
 
 K_WORK_DELAYABLE_DEFINE(practice_advance_work, practice_advance);
 
+static const StenoDictionary *practice_fallback_dictionary() {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+  // Use the verified base locally. Never enable a dictionary in the engine
+  // or change the saved selection on behalf of a drill.
+  if (!(dictionary_selection & 6)) {
+    return lapwing_dictionary();
+  }
+#endif
+  return nullptr;
+}
+
+static void practice_refresh_dictionary() {
+  practice.no_dictionary =
+      practice.drill == ZEN_R4_PRACTICE_WORDS &&
+      StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0 &&
+      !practice_fallback_dictionary();
+}
+
+static void practice_switch_drill(int direction) {
+  k_work_cancel_delayable(&practice_advance_work);
+  const int count = ZEN_R4_PRACTICE_DRILL_COUNT;
+  const auto drill = static_cast<zen_r4_practice_drill>((practice.drill + direction + count) % count);
+  practice = {};
+  practice.active = true;
+  practice.drill = drill;
+  practice_refresh_dictionary();
+  practice_publish();
+}
+
+static bool practice_correct(const StenoStroke &stroke) {
+  if (practice.drill != ZEN_R4_PRACTICE_WORDS) {
+    StenoStroke expected;
+    expected.Set(zen_r4_practice_outline(practice.drill, practice.round));
+    return stroke == expected;
+  }
+  const StenoDictionaryLookup lookup(&stroke, 1);
+  auto result = StenoEngine::container.value.GetDictionary().Lookup(lookup);
+  if (!result.IsValid()) {
+    if (const auto *base = practice_fallback_dictionary()) {
+      result = base->Lookup(lookup);
+    }
+  }
+  const bool correct =
+      result.IsValid() && strcasecmp(result.GetText(), zen_r4_practice_words[practice.round % 4]) == 0;
+  result.Destroy();
+  return correct;
+}
+
 extern "C" uint32_t zen_r4_practice_snapshot(void) {
   return uint32_t(atomic_get(&practice_screen));
 }
@@ -145,6 +203,15 @@ extern "C" uint32_t zen_r4_practice_snapshot(void) {
 extern "C" void zen_r4_practice_set_active(bool active) {
   if (active) {
     zmk_javelin_steno_init();
+  } else {
+    // Leaving a layer that never started practice needs no engine access,
+    // so ordinary layer changes do not touch the dictionary flash.
+    k_mutex_lock(&practice_mutex, K_FOREVER);
+    const bool was_active = practice.active;
+    k_mutex_unlock(&practice_mutex);
+    if (!was_active) {
+      return;
+    }
   }
   const JavelinEngineLock engine_lock;
   if (!engine_lock) {
@@ -163,8 +230,7 @@ extern "C" void zen_r4_practice_set_active(bool active) {
     practice = {};
     practice.active = active && processor;
     if (practice.active) {
-      practice.no_dictionary =
-          StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
+      practice_refresh_dictionary();
     }
     practice_publish();
   }
@@ -195,26 +261,22 @@ static bool practice_process_key(int index, bool pressed) {
   practice.keys.Process(static_cast<StenoKey>(index), pressed);
   practice.chord |= practice.keys;
   if (!pressed && practice.keys.IsEmpty() && practice.chord.IsNotEmpty()) {
-    if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
-        practice.feedback != ZEN_R4_PRACTICE_DONE) {
-      const StenoStroke stroke = practice.chord.ToStroke();
-      practice.no_dictionary =
-          StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
-      auto result = StenoEngine::container.value.GetDictionary().Lookup(
-          StenoDictionaryLookup(&stroke, 1));
-      const bool correct =
-          result.IsValid() &&
-          strcasecmp(result.GetText(), zen_r4_practice_words[practice.round % 4]) == 0;
-      result.Destroy();
+    const auto steno_key = static_cast<StenoKey>(index);
+    if (practice.chord == key && steno_key >= StenoKey::STAR1 && steno_key <= StenoKey::STAR4) {
+      practice_switch_drill(steno_key <= StenoKey::STAR2 ? -1 : 1);
+    } else if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
+               practice.feedback != ZEN_R4_PRACTICE_DONE) {
+      practice_refresh_dictionary();
       if (practice.no_dictionary) {
         practice.feedback = ZEN_R4_PRACTICE_PROMPT;
-      } else if (correct) {
+      } else if (practice_correct(practice.chord.ToStroke())) {
         ++practice.streak;
         if (practice.streak > practice.best) {
           practice.best = practice.streak;
         }
         practice.feedback = ZEN_R4_PRACTICE_CORRECT;
-        k_work_reschedule(&practice_advance_work, K_MSEC(250));
+        practice.advance_at = k_uptime_get() + 250;
+        k_work_reschedule(&practice_advance_work, K_TIMEOUT_ABS_MS(practice.advance_at));
       } else {
         practice.streak = 0;
         practice.feedback = ZEN_R4_PRACTICE_INCORRECT;
@@ -230,8 +292,7 @@ static bool practice_process_key(int index, bool pressed) {
 static void practice_dictionary_changed() {
   k_mutex_lock(&practice_mutex, K_FOREVER);
   if (practice.active) {
-    practice.no_dictionary =
-        StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0;
+    practice_refresh_dictionary();
     practice_publish();
   }
   k_mutex_unlock(&practice_mutex);
@@ -239,10 +300,6 @@ static void practice_dictionary_changed() {
 #endif
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-// Versioned ZMK settings record. Preserve selection independently of base images
-// and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
-static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
-
 #ifdef CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT
 static constexpr const char *host_profiles[] = {"Mac U.S.", "Windows U.S. (plain text)"};
 static uint8_t host_profile = 0;
@@ -517,9 +574,26 @@ void zmk_javelin_steno_init(void) {
 }
 
 void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
+  // Steno keys whose press reached the engine. A key held while the flash
+  // becomes ready must not deliver a release without its press. Key events
+  // all arrive on the system work queue, so this needs no lock.
+  static uint64_t delivered_presses;
+  const uint64_t bit =
+      steno_key_index >= 0 && steno_key_index < 64 ? uint64_t(1) << steno_key_index : 0;
+
   const JavelinEngineLock lock;
-  if (!lock || !processor) {
-    return;
+  const bool ready = lock && processor;
+  if (is_press) {
+    if (!ready) {
+      return;
+    }
+    delivered_presses |= bit;
+  } else {
+    const bool was_delivered = !bit || (delivered_presses & bit);
+    delivered_presses &= ~bit;
+    if (!ready || !was_delivered) {
+      return;
+    }
   }
 #ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
   if (practice_process_key(steno_key_index, is_press)) {

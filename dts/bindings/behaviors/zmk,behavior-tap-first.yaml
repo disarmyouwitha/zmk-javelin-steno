@@ -1,0 +1,7 @@
+description: Tap-first parameter adapter for an existing hold-tap behavior
+compatible: "zmk,behavior-tap-first"
+include: two_param.yaml
+properties:
+  bindings:
+    type: phandle
+    required: true

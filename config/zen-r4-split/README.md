@@ -13,8 +13,11 @@ Use the pinned west workspace and Lapwing image from the [standalone left-half g
 ```sh
 repo="$PWD"
 python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
+# This workspace keeps a separate manifest copy.
+cp "$repo/config/west.yml" "$ws/config/west.yml"
 export ZEPHYR_BASE="$ws/zephyr"
 cd "$ws"
+west update
 west build -s zmk/app -d "$repo/build/split-left" -b nice_nano//zmk -S zmk-usb-logging -- \
   -DSHIELD=corne_left "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
@@ -25,7 +28,9 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
-`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`.
+`-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`, followed by how long that check took in milliseconds.
+
+The dictionary flash powers down while idle. To compare battery life with it always on, uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF=n` in `corne_left.conf`. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` on the next line sets the idle period, 30 seconds by default. The flash stays on while the steno layer is selected, including during practice, and the idle period counts from leaving it. Selecting the steno layer starts the flash. An editor command on another layer waits for it to start; the `W` reply shows how long that took.
 
 The right half enters deep sleep after 15 idle minutes on battery. Wake it
 with one of its own keys. The [battery logger](../../tools/zen-r4-battery/README.md)
@@ -51,35 +56,42 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **Plover HID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **PloverHID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
-Practice is a ten-prompt single-stroke drill using CAT, THE, IF and IS in a
-repeating order. The left central owns the
-session and looks up each completed chord through Javelin's active dictionary
-list, including personal overrides. Comparison ignores letter case. Use
-ordinary one-stroke translations for these words. Formatting commands and
-multi-stroke answers are outside this first drill.
+Practice starts in **WORDS**. The left central looks up each completed chord
+through Javelin's active dictionaries, including personal overrides. The
+ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
+translations without regard to letter case.
 
-From Typing, hold the middle left thumb for SYM+NUM and tap the outer right
-thumb, then release both. The right nice!view shows the word, progress and
-current streak. Correct answers show **CORRECT** for 250 ms and advance
-automatically. Mistakes show **RETRY**, reset the streak and retain the
-prompt. After ten correct answers the screen shows **DONE** and
-the best streak. The portrait screen follows the supplied
-[steno drill reference](../../docs/assets/offline-practice-reference.svg),
-scaled to the nice!view's 68×160 pixels, with a stroke hint and progress bar.
-The current version uses larger text with light lettering on a dark background
-and an outlined feedback panel.
+Practice runs on the steno layer. From Typing, hold the middle left thumb for
+SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
+the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
+drill, or either right star to go to the next. The order wraps through
+**WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
+Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 30 each.
 
-If all dictionaries are disabled, the screen shows **ENABLE DICT**
-and **DICT OFF**. Enable Lapwing Base or Plover Base in the browser tools to
-resume. Dictionary changes refresh this warning during the session. Practice
-uses the selected dictionaries and retains personal overrides.
+**LEFT** and **RIGHT** use the corresponding consonant banks from
+[StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
+Tap the displayed steno key and release it. A leading hyphen indicates a
+right-hand key, such as `-F`. The lower left key is `S`. The key above it is the Lapwing `#` key.
+The hand drills check raw strokes and work with all dictionaries disabled.
+When both base dictionaries are off, **WORDS** uses the verified onboard
+Lapwing Base for outlines that the active personal dictionary does not cover.
+This lookup is local to Practice. It requires no computer and leaves saved
+dictionary selections alone. **ENABLE DICT** appears if WORDS has neither a
+usable active dictionary nor an available Lapwing base.
 
-The outer left thumb returns to Typing. The outer right thumb exits to normal
-Javelin. Leave and re-enter Practice to restart. A right-half reboot or
+The right nice!view shows the drill, prompt, progress, and streak. The portrait
+screen uses bold prompts and headings. Correct answers show **CORRECT** for
+250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
+and keep the current prompt. After all prompts are answered correctly, the screen shows
+**DONE** and the best streak.
+
+The outer left thumb returns to Typing. The key left of the Lapwing # key (the one above S) exits to
+normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
+layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
 the session. Both halves can run on battery with the computer off.
 
@@ -91,9 +103,11 @@ dictionary contents and selection intact.
 Build both halves with the nice!view build options above and
 `CONFIG_ZMK_ZEN_R4_PRACTICE=y` on the central, enabled in the split left
 configuration. Hardware validation should cover a mistake followed by a
-correct answer, all ten prompts, entry and exit while a steno key is held,
+correct answer, all prompts, entry and exit while a steno key is held,
 right-half reconnect, and normal typing, onboard Javelin and Plover HID after
-leaving Practice. Confirm the connected host receives no text during the drill,
+leaving Practice. Check both star directions and complete all three drills with
+all dictionaries disabled. Confirm that ordinary Javelin still sends raw steno
+after exiting Practice with that selection. Confirm the connected host receives no text during the drill,
 then repeat with USB disconnected.
 
 ## Select an onboard base dictionary
@@ -125,6 +139,33 @@ python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
 ```
 
 Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
+
+### Verify or repair a base dictionary
+
+Both commands need the left build with `-S zmk-usb-logging`.
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base both
+```
+
+`--verify` reads every byte of the chosen base, or of both, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \
+  --repair build/lapwing/lapwing-base.bin
+```
+
+`--repair` replaces a base that is damaged or holds other data, including one the keyboard still reports as verified. In order, it:
+
+1. checks the file's size and CRC against the image the firmware expects, before touching the flash;
+2. takes the dictionaries out of use and removes the saved verification record;
+3. erases that base's 4 KiB sectors, including the last, partly used one;
+4. writes the image, reading back every chunk;
+5. runs the full CRC and native lookup checks, and saves the verification record again once every base passes.
+
+It never asks a question, so a script or an agent can run it. Passing `--repair` is the confirmation.
+
+The other base and the personal dictionary at `0xF00000` are never erased. If a repair is interrupted, the base is left unprovisioned and onboard Javelin shows **No dictionary**; run the same command again.
 
 ## Flash and check
 
@@ -188,3 +229,44 @@ This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac
 Hardware verification covered switching profiles in Chrome over HID and retaining the selected profile across a USB power cycle. The Mac passed accented typing, repeat, undo, and subsequent ordinary typing. Windows plain text replaced the earlier Alt-code output after application-dependent failures. The [Windows test handoff](../../docs/WINDOWS-HOST-PROFILE-HANDOFF.md) records that earlier investigation.
 
 The Windows plain-text engine regression checks covered accented phrases, consecutive translations, repeat, undo, capitalization, and punctuation. Every checked output used ordinary keys without Alt, keypad, or Num Lock events. The user confirmed the plain-text build works correctly on Windows.
+
+## Latest validation
+
+The user confirmed both-half typing, Javelin KAT, Plover HID, display labels,
+Practice and exit, idle flash power-off, immediate Javelin wake, and all four
+browser-editor checks on the initial boot/idle build. A serial query after
+reboot reported `CHECK_QUICK 53`. Deep sleep with these changes and serial verify/repair remain to be checked
+on hardware. The 30-prompt hand
+drills and nine-character layer-name update compiled and passed host checks;
+they still need an on-keyboard check after flashing both halves.
+
+## Studio key labels
+
+The Tap / Hold adapter accepts the tap key first and hold key second, so
+Studio's key grid displays the tap. It forwards both parameters in the
+standard order to the existing hold-tap implementation, keeping its timing
+and interrupt handling.
+
+Javelin Steno now has two parameters. The first is a keyboard usage for the
+Studio key label, and the second selects the physical steno key. The STENO_*
+macros expand to both parameters. Choose the physical identity in the second
+dropdown when changing a steno key; changing the label alone affects its
+appearance. Left/right identity is shown in the dropdown.
+
+Number-bar keys carry the **Num Lock** label, which Studio draws as **Num**.
+Studio has no `#` key cap that it can also save: it only offers, and the
+firmware only accepts, keyboard keys up to keypad `=`, and keypad `#` lies
+beyond that. The earlier keypad `#` label displayed, but Studio rejected any
+change to a key that carried it. To turn another key into a number-bar key,
+pick **Num Lock** as its label and a **Number bar** entry in the dropdown.
+
+Plover HID works the same way. `&plv` takes a label and a Plover HID key, the
+`PLV_*` names expand to both, and Studio shows the label on the key and the
+keys by name in the dropdown. This comes from the pinned fork of the Plover
+HID module.
+
+If you saved bindings in Studio before this update, use **Restore stock
+settings** after flashing to load the new parameter format. This replaces
+saved keymap edits. The updated grid was verified in the native Studio app,
+and the physical keyboard passed a tap/hold check (`q` and `[`) and a
+Javelin typing check. Bluetooth Studio worked on the earlier Studio build.

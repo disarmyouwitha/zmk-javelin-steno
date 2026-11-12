@@ -8,6 +8,8 @@
 #include <zmk/behavior.h>
 #include <zmk/events/keycode_state_changed.h>
 
+#include <dt-bindings/zmk/javelin_steno.h>
+
 #include "zmk_javelin_steno/zmk_platform_shim.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -21,16 +23,87 @@ void zmk_javelin_steno_process_key(int key, bool pressed) {
 }
 #endif
 
+#if IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+
+/* Lets ZMK Studio offer each steno key by name when assigning this behavior. */
+#define STENO_KEY(_value, _name)                                                                   \
+    { .display_name = _name, .value = _value, .type = BEHAVIOR_PARAMETER_VALUE_TYPE_VALUE }
+
+static const struct behavior_parameter_value_metadata steno_keys[] = {
+    STENO_KEY(STENO_ID_S1, "S- (top)"),
+    STENO_KEY(STENO_ID_S2, "S- (bottom)"),
+    STENO_KEY(STENO_ID_TL, "T-"),
+    STENO_KEY(STENO_ID_KL, "K-"),
+    STENO_KEY(STENO_ID_PL, "P-"),
+    STENO_KEY(STENO_ID_WL, "W-"),
+    STENO_KEY(STENO_ID_HL, "H-"),
+    STENO_KEY(STENO_ID_RL, "R-"),
+    STENO_KEY(STENO_ID_A, "A"),
+    STENO_KEY(STENO_ID_O, "O"),
+    STENO_KEY(STENO_ID_STAR1, "* (left top)"),
+    STENO_KEY(STENO_ID_STAR2, "* (left bottom)"),
+    STENO_KEY(STENO_ID_STAR3, "* (right top)"),
+    STENO_KEY(STENO_ID_STAR4, "* (right bottom)"),
+    STENO_KEY(STENO_ID_E, "E"),
+    STENO_KEY(STENO_ID_U, "U"),
+    STENO_KEY(STENO_ID_FR, "-F"),
+    STENO_KEY(STENO_ID_RR, "-R"),
+    STENO_KEY(STENO_ID_PR, "-P"),
+    STENO_KEY(STENO_ID_BR, "-B"),
+    STENO_KEY(STENO_ID_LR, "-L"),
+    STENO_KEY(STENO_ID_GR, "-G"),
+    STENO_KEY(STENO_ID_TR, "-T"),
+    STENO_KEY(STENO_ID_SR, "-S"),
+    STENO_KEY(STENO_ID_DR, "-D"),
+    STENO_KEY(STENO_ID_ZR, "-Z"),
+    STENO_KEY(STENO_ID_NUM1, "Number bar 1"),
+    STENO_KEY(STENO_ID_NUM2, "Number bar 2"),
+    STENO_KEY(STENO_ID_NUM3, "Number bar 3"),
+    STENO_KEY(STENO_ID_NUM4, "Number bar 4"),
+    STENO_KEY(STENO_ID_NUM5, "Number bar 5"),
+    STENO_KEY(STENO_ID_NUM6, "Number bar 6"),
+    STENO_KEY(STENO_ID_NUM7, "Number bar 7"),
+    STENO_KEY(STENO_ID_NUM8, "Number bar 8"),
+    STENO_KEY(STENO_ID_NUM9, "Number bar 9"),
+    STENO_KEY(STENO_ID_NUM10, "Number bar 10"),
+    STENO_KEY(STENO_ID_NUM11, "Number bar 11"),
+    STENO_KEY(STENO_ID_NUM12, "Number bar 12"),
+};
+
+static const struct behavior_parameter_value_metadata label_key[] = {
+    {.display_name = "Label", .type = BEHAVIOR_PARAMETER_VALUE_TYPE_HID_USAGE},
+};
+
+static const struct behavior_parameter_metadata_set steno_key_set = {
+    .param1_values = label_key,
+    .param1_values_len = ARRAY_SIZE(label_key),
+    .param2_values = steno_keys,
+    .param2_values_len = ARRAY_SIZE(steno_keys),
+};
+
+static const struct behavior_parameter_metadata steno_metadata = {
+    .sets_len = 1,
+    .sets = &steno_key_set,
+};
+
+#endif // IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+
 static int on_keymap_binding_pressed(struct zmk_behavior_binding *binding,
                                      struct zmk_behavior_binding_event event) {
+    if (binding->param2 > STENO_ID_NUM12) {
+        return -EINVAL;
+    }
     zmk_javelin_steno_init();
-    zmk_javelin_steno_process_key((int)binding->param1, true);
+    zmk_javelin_steno_process_key((int)binding->param2, true);
     return ZMK_BEHAVIOR_OPAQUE;
 }
 
 static int on_keymap_binding_released(struct zmk_behavior_binding *binding,
                                       struct zmk_behavior_binding_event event) {
-    zmk_javelin_steno_process_key((int)binding->param1, false);
+    if (binding->param2 > STENO_ID_NUM12) {
+        return -EINVAL;
+    }
+    zmk_javelin_steno_process_key((int)binding->param2, false);
     return ZMK_BEHAVIOR_OPAQUE;
 }
 
@@ -43,6 +116,9 @@ static const struct behavior_driver_api behavior_javelin_steno_driver_api = {
     .locality = BEHAVIOR_LOCALITY_CENTRAL,
     .binding_pressed = on_keymap_binding_pressed,
     .binding_released = on_keymap_binding_released,
+#if IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
+    .parameter_metadata = &steno_metadata,
+#endif // IS_ENABLED(CONFIG_ZMK_BEHAVIOR_METADATA)
 };
 
 #define JAVSTENO_INST(n)                                                    \

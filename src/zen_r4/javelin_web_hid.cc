@@ -101,9 +101,9 @@ public:
             return;
         }
         while (size && hid && zmk_usb_is_hid_ready()) {
-            if (k_sem_take(&transmit_ready, K_SECONDS(2)) != 0) {
-                return;
-            }
+            // A report in flight when USB dropped never completes. After a
+            // timeout, treat the endpoint as free; a busy one rejects the write.
+            (void)k_sem_take(&transmit_ready, K_SECONDS(2));
             memset(&transmit_report, 0, sizeof(transmit_report));
             const size_t count = MIN(size, REPORT_BYTES);
             memcpy(transmit_report.bytes, text, count);
@@ -194,12 +194,22 @@ void hid_worker(void *, void *, void *) {
         if (!zmk_usb_is_hid_ready()) {
             k_sem_give(&transmit_ready);
         }
+        bool partial = false;
         for (auto &buffer : buffers) {
-            if (!buffer.bluetooth && !zmk_usb_is_hid_ready()) {
+            if (buffer.channel == -2) {
+                continue;
+            }
+            if ((!buffer.bluetooth && !zmk_usb_is_hid_ready()) ||
+                k_uptime_get() - buffer.last_packet > 5000) {
                 reset_buffer(buffer);
+            } else {
+                partial = true;
             }
         }
-        if (k_msgq_get(&received_reports, &report, K_MSEC(100)) != 0) {
+        // Sleep until the editor sends something. While a command is half
+        // received, wake ten times a second so a disconnect or a stalled
+        // sender clears it promptly.
+        if (k_msgq_get(&received_reports, &report, partial ? K_MSEC(100) : K_FOREVER) != 0) {
             continue;
         }
         if (report.bluetooth) {

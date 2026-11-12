@@ -76,7 +76,7 @@
             // The first column's -T and E permit one-half Lapwing testing.
             bindings = <
                 &javsteno STENO_NUM12 &javsteno STENO_NUM1 &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5
-                &javsteno STENO_TR    &javsteno STENO_S1   &javsteno STENO_TL   &javsteno STENO_PL   &javsteno STENO_HL   &javsteno STENO_STAR1
+                &javsteno STENO_TR    &javsteno STENO_NUM1  &javsteno STENO_TL   &javsteno STENO_PL   &javsteno STENO_HL   &javsteno STENO_STAR1
                 &javsteno STENO_E     &javsteno STENO_S2   &javsteno STENO_KL   &javsteno STENO_WL   &javsteno STENO_RL   &javsteno STENO_STAR2
                                                                                &to MAIN            &javsteno STENO_A    &javsteno STENO_O
             >;
@@ -86,7 +86,7 @@
             display-name = "PLOVER HID";
             bindings = <
                 &plv PLV_NMC &plv PLV_NM  &plv PLV_NM2 &plv PLV_NM3 &plv PLV_NM4 &plv PLV_NM5
-                &plv PLV_TR  &plv PLV_SL  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST
+                &plv PLV_TR  &plv PLV_NM  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST
                 &plv PLV_E   &plv PLV_SL2 &plv PLV_KL  &plv PLV_WL  &plv PLV_RL  &plv PLV_ST2
                                                         &to MAIN     &plv PLV_A   &plv PLV_O
             >;

@@ -53,7 +53,7 @@ build_left() {
     "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
     "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin"
 }
-build_left boardsource-left
+build_left boardsource-left -S studio-rpc-usb-uart
 build_left boardsource-provision -S zmk-usb-logging
 
 west build -s zmk/app -d "$repo/build/boardsource-right" -b blecorne_right -- \
@@ -82,7 +82,7 @@ build_probe boardsource-quad -DQUAD_PROBE=ON
 | `boardsource-left/zephyr/zmk.uf2` | Everyday left central, including browser HID over USB and Bluetooth. |
 | `boardsource-provision/zephyr/zmk.uf2` | Same left target with USB logging and the serial base-dictionary uploader interface. |
 
-The factory application partition is `0x1000–0xD3FFF`. The settings partition starts at `0xD4000` and the UF2 bootloader starts at `0xF4000`. The vendor board keeps USB HID on the central and uses ADC channel 2 for its battery divider. This port uses the fixed keymap with Studio disabled and leaves battery test logging out.
+The factory application partition is `0x1000–0xD3FFF`. The settings partition starts at `0xD4000` and the UF2 bootloader starts at `0xF4000`. The vendor board keeps USB HID on the central and uses ADC channel 2 for its battery divider. This port shares the split keymap and settings in [zen-r4-split](../zen-r4-split), so ZMK Studio is on and starts unlocked, and battery test logging is left out. The everyday left build adds Studio over USB with the `studio-rpc-usb-uart` snippet; every left build has Studio over Bluetooth.
 
 ## Test on the new pair
 
@@ -104,4 +104,10 @@ The first adapter can leave the WS2812C-2020-V6 unpopulated. The left header use
 
 The four local builds in [locked-pin-map-build.json](locked-pin-map-build.json) record the firmware commit, pinned dependency commits, SDK/compiler version, UF2 size and SHA-256 for left, right, read-only probe and quad probe. The generated devicetrees for the three left-side targets contain SCK P0.19, IO1 P0.23 and IO3 P0.12 in both active and sleep groups. Builds used the pinned workspace and Zephyr SDK 0.16.9.
 
-These are compilation results pending target-hardware testing. The owner wants ZMK Studio enabled. The current baseline still disables it while layer identity, steno parameter metadata and USB endpoint/memory integration are reviewed. This pin-map change leaves that integration as open work.
+These are compilation results pending target-hardware testing. They predate the merge of `main` on 2026-11-11.
+
+## Merged with main
+
+On 2026-11-11 this branch took in everything on `main` up to `ac7a7a8`: the quick start-up flash check, idle flash power-down, dictionary verify and repair, the practice key, layer names on the right display, ZMK Studio with labelled Javelin and Plover HID keys, and the GitHub Actions builds. The locked pin map in [qspi.dtsi](qspi.dtsi), the P0.31 flash and accessory rail, and the vendor board definition are unchanged. `CONFIG_ZMK_STUDIO=n` is gone from `blecorne_left.conf`.
+
+GitHub Actions now also builds `boardsource-left-logging`, `boardsource-left-studio` and `boardsource-right` on each push. None of the merged code has run on Boardsource hardware. Check in particular that a wake from deep sleep takes the quick flash path on this bootloader: it relies on the GPREGRET2 register and on the saved verification record.

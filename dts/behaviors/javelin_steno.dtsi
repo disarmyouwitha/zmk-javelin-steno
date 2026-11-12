@@ -2,7 +2,8 @@
     behaviors {
         /omit-if-no-ref/ javsteno: javelin_steno {
             compatible = "zmk,behavior-javelin-steno";
-            #binding-cells = <1>;
+            display-name = "Javelin Steno";
+            #binding-cells = <2>;
         };
     };
 };
