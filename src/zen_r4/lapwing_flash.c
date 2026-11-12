@@ -34,6 +34,12 @@ BUILD_ASSERT(LAPWING_BYTES <= PLOVER_FLASH_OFFSET);
 BUILD_ASSERT(PLOVER_BYTES % sizeof(uint32_t) == 0);
 BUILD_ASSERT(PLOVER_FLASH_OFFSET + PLOVER_BYTES <= BASE_DICTIONARY_LIMIT);
 #endif
+#if EXTRAS_BYTES > 0
+BUILD_ASSERT(LAPWING_BYTES <= EXTRAS_FLASH_OFFSET);
+BUILD_ASSERT(PLOVER_BYTES == 0 || PLOVER_FLASH_OFFSET + PLOVER_BYTES <= EXTRAS_FLASH_OFFSET);
+BUILD_ASSERT(EXTRAS_BYTES % sizeof(uint32_t) == 0);
+BUILD_ASSERT(EXTRAS_FLASH_OFFSET + EXTRAS_BYTES <= BASE_DICTIONARY_LIMIT);
+#endif
 
 struct base_image {
     const char *name;
@@ -52,12 +58,16 @@ static struct base_image images[] = {
 #if PLOVER_BYTES > 0
     {"PLOVER", PLOVER_FLASH_OFFSET, PLOVER_BYTES, PLOVER_CRC, 'P', 'p', 'e', 'v', 'i'},
 #endif
+#if EXTRAS_BYTES > 0
+    {"EXTRAS", EXTRAS_FLASH_OFFSET, EXTRAS_BYTES, EXTRAS_CRC, 'X', 'x', 'K', 'k', 'n'},
+#endif
 };
 
 /* A repair erases a base in 4 KiB sectors, the last one whole. Each region
  * starts and ends on a sector boundary, so an erase stays inside its base.
  */
 BUILD_ASSERT(PLOVER_FLASH_OFFSET % SECTOR_BYTES == 0);
+BUILD_ASSERT(EXTRAS_FLASH_OFFSET % SECTOR_BYTES == 0);
 BUILD_ASSERT(BASE_DICTIONARY_LIMIT % SECTOR_BYTES == 0);
 
 static bool all_verified(void) {
@@ -129,7 +139,8 @@ static void note_use(void) {
  * follows can skip the two full CRC passes. Anything else verifies in full.
  */
 static uint8_t trust_marker(void) {
-    uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES;
+    uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES ^
+                     (EXTRAS_CRC * 131U) ^ (EXTRAS_BYTES * 7U);
 
     value ^= value >> 16;
     value ^= value >> 8;
@@ -145,7 +156,8 @@ static uint8_t trust_marker(void) {
 #define TRUST_SETTING "lapwing/verified"
 
 static uint32_t image_fingerprint(void) {
-    const uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES;
+    const uint32_t value = LAPWING_CRC ^ LAPWING_BYTES ^ (PLOVER_CRC * 31U) ^ PLOVER_BYTES ^
+                           (EXTRAS_CRC * 131U) ^ (EXTRAS_BYTES * 7U);
 
     return value ? value : 0xa5a5a5a5U;
 }
@@ -445,6 +457,11 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
     }
 #if PLOVER_BYTES > 0
     if (!plover_verify_native_dictionary(XIP_BASE + PLOVER_FLASH_OFFSET)) {
+        return false;
+    }
+#endif
+#if EXTRAS_BYTES > 0
+    if (!extras_verify_native_dictionary(XIP_BASE + EXTRAS_FLASH_OFFSET)) {
         return false;
     }
 #endif

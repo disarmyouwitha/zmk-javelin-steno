@@ -13,6 +13,7 @@ Use the pinned west workspace and Lapwing image from the [standalone left-half g
 ```sh
 repo="$PWD"
 python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
+python3 "$repo/tools/zen-r4-lapwing/prepare_extras.py"
 # This workspace keeps a separate manifest copy.
 cp "$repo/config/west.yml" "$ws/config/west.yml"
 export ZEPHYR_BASE="$ws/zephyr"
@@ -21,7 +22,7 @@ west update
 west build -s zmk/app -d "$repo/build/split-left" -b nice_nano//zmk -S zmk-usb-logging -- \
   -DSHIELD=corne_left "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
   "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
-  "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin" \
+  "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin"   "-DZMK_JAVELIN_EXTRAS_IMAGE=$repo/build/extras/lapwing-extras.bin" \
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
   -DSHIELD=corne_right "-DZMK_CONFIG=$repo/config/zen-r4-split" "-DZMK_EXTRA_MODULES=$repo" \
@@ -140,15 +141,38 @@ python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
 
 Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
 
+### Lapwing extras
+
+A third image holds four smaller Lapwing dictionaries. Each has its own checkbox under **Active Dictionaries** in Javelin Steno Tools, and the keyboard remembers the choices.
+
+| Dictionary | Entries | Starts |
+| --- | ---: | --- |
+| Lapwing Commands | 146 | On |
+| Lapwing Numbers | 117 | On |
+| Lapwing UK Additions | 13,043 | Off |
+| Lapwing Proper Nouns | 15,788 | On |
+
+They rank above the bases, in that order: personal entries first, then the four extras, then Lapwing Base, then Plover Base.
+
+`prepare_extras.py` downloads the four pinned sources, compiles them into `build/extras/lapwing-extras.bin` (451,088 bytes) and checks every outline. The image lives at `0x500000` in the external flash and is uploaded, verified and repaired as one unit:
+
+```sh
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501   --base extras build/extras/lapwing-extras.bin
+```
+
+A firmware built with the extras image needs it in flash. After the first flash of such a build, onboard Javelin shows **No dictionary** until this upload finishes; the Lapwing and Plover bases already in flash are kept. `--verify --base all` checks all three images, and `--repair` works with `--base extras`.
+
+Eight of the command entries are Plover application commands, such as lookup and add translation, and do nothing on the keyboard. The key shortcuts in that dictionary send the keys as written, mostly with Control. The commands and numbers use the number key.
+
 ### Verify or repair a base dictionary
 
 Both commands need the left build with `-S zmk-usb-logging`.
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base both
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base all
 ```
 
-`--verify` reads every byte of the chosen base, or of both, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
+`--verify` reads every byte of the chosen image, or of all of them, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
 
 ```sh
 python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \

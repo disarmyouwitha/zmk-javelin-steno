@@ -96,7 +96,14 @@ public:
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 // Versioned ZMK settings record. Preserve selection independently of base images
 // and personal dictionary snapshots. A fresh keyboard starts with Lapwing.
-static uint8_t dictionary_selection = 3; // personal=1, Lapwing=2, Plover=4
+// personal=1, Lapwing=2, Plover=4, then the Lapwing extras from bit 3 up.
+#define EXTRAS_SELECTION_SHIFT 3
+#define EXTRAS_SELECTION_BIT(index) (uint8_t(1) << (EXTRAS_SELECTION_SHIFT + (index)))
+// Commands, numbers and proper nouns start on. UK additions start off.
+#define EXTRAS_SELECTION_DEFAULT                                                                   \
+  (EXTRAS_SELECTION_BIT(EXTRAS_COMMANDS) | EXTRAS_SELECTION_BIT(EXTRAS_NUMBERS) |                  \
+   EXTRAS_SELECTION_BIT(EXTRAS_PROPER_NOUNS))
+static uint8_t dictionary_selection = 3 | EXTRAS_SELECTION_DEFAULT;
 #endif
 
 #ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
@@ -357,12 +364,19 @@ static int javelin_settings_set(const char *name, size_t length,
   if (strcmp(name, "dictionaries") != 0) {
     return -ENOENT;
   }
+  // Version 1 predates the Lapwing extras and holds the first three bits.
+  // Version 2 holds all seven.
   uint8_t record[2];
-  if (length != sizeof(record) || read(argument, record, sizeof(record)) != sizeof(record) ||
-      record[0] != 1 || (record[1] & ~7)) {
+  if (length != sizeof(record) || read(argument, record, sizeof(record)) != sizeof(record)) {
     return -EINVAL;
   }
-  dictionary_selection = record[1];
+  if (record[0] == 1 && !(record[1] & ~7)) {
+    dictionary_selection = record[1] | EXTRAS_SELECTION_DEFAULT;
+  } else if (record[0] == 2 && !(record[1] & 0x80)) {
+    dictionary_selection = record[1];
+  } else {
+    return -EINVAL;
+  }
   return 0;
 }
 
@@ -383,7 +397,13 @@ static void select_dictionary(void *, const char *line) {
     bit = 2;
   } else if (strcmp(name, "Plover Base") == 0 && plover_dictionary()) {
     bit = 4;
-  } else {
+  }
+  for (size_t i = 0; !bit && i < EXTRAS_DICTIONARY_COUNT; i++) {
+    if (extras_dictionary(i) && strcmp(name, extras_dictionary_name(i)) == 0) {
+      bit = EXTRAS_SELECTION_BIT(i);
+    }
+  }
+  if (!bit) {
     Console::Printf("ERR Unknown dictionary\n\n");
     return;
   }
@@ -397,7 +417,7 @@ static void select_dictionary(void *, const char *line) {
   }
   // Persist before acknowledging or changing the active engine. On failure the
   // previous selection remains active and the browser receives an error.
-  const uint8_t record[] = {1, selected};
+  const uint8_t record[] = {2, selected};
   if (selected != dictionary_selection &&
       settings_save_one("javelin/dictionaries", record, sizeof(record)) != 0) {
     Console::Printf("ERR Unable to save dictionary selection\n\n");
@@ -429,6 +449,16 @@ static bool load_dictionary_collection() {
   }
 #endif
 #ifdef CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
+  // The Lapwing extras rank above the bases, in the order Plover gives them.
+  for (size_t i = 0; i < EXTRAS_DICTIONARY_COUNT; i++) {
+    if (auto *extra = extras_dictionary(i)) {
+#ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
+      entries.Add(StenoDictionaryListEntry(extra, dictionary_selection & EXTRAS_SELECTION_BIT(i)));
+#else
+      entries.Add(StenoDictionaryListEntry(extra, i != EXTRAS_UK_ADDITIONS));
+#endif
+    }
+  }
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
   entries.Add(StenoDictionaryListEntry(lapwing_dictionary(), dictionary_selection & 2));
 #else

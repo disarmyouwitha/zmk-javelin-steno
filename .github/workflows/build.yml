@@ -83,6 +83,7 @@ jobs:
           python3 -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json build/lapwing/lapwing-base.json
           python3 tools/dict_compiler/compile_dict.py build/lapwing/lapwing-base.json --base-addr 0x12000000 -o build/lapwing/lapwing-base.bin
           python3 tools/zen-r4-lapwing/prepare_plover.py
+          python3 tools/zen-r4-lapwing/prepare_extras.py
 
       - name: Build
         working-directory: ws
@@ -129,7 +130,8 @@ jobs:
           esac
           if [ "${{ matrix.dictionaries }}" = "true" ]; then
             args+=("-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin"
-                   "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin")
+                   "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin"
+                   "-DZMK_JAVELIN_EXTRAS_IMAGE=$repo/build/extras/lapwing-extras.bin")
           fi
           snippet=()
           if [ -n "${{ matrix.snippet }}" ]; then

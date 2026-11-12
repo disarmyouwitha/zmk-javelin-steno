@@ -106,6 +106,21 @@ if(CONFIG_ZMK_JAVELIN_STENO)
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${ZMK_JAVELIN_PLOVER_IMAGE}")
       endif()
       target_compile_definitions(app PRIVATE PLOVER_BYTES=${PLOVER_BYTES} PLOVER_CRC=${PLOVER_CRC})
+      # Optional image of the smaller Lapwing dictionaries. Once a build names
+      # it, the firmware needs it in flash before onboard Javelin starts.
+      set(EXTRAS_BYTES 0)
+      set(EXTRAS_CRC 0)
+      if(ZMK_JAVELIN_EXTRAS_IMAGE)
+        file(SIZE "${ZMK_JAVELIN_EXTRAS_IMAGE}" EXTRAS_BYTES)
+        execute_process(
+          COMMAND ${PYTHON_EXECUTABLE} -c
+            "import pathlib,sys,zlib; print(hex(zlib.crc32(pathlib.Path(sys.argv[1]).read_bytes())))"
+            "${ZMK_JAVELIN_EXTRAS_IMAGE}"
+          OUTPUT_VARIABLE EXTRAS_CRC OUTPUT_STRIP_TRAILING_WHITESPACE
+          COMMAND_ERROR_IS_FATAL ANY)
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${ZMK_JAVELIN_EXTRAS_IMAGE}")
+      endif()
+      target_compile_definitions(app PRIVATE EXTRAS_BYTES=${EXTRAS_BYTES} EXTRAS_CRC=${EXTRAS_CRC})
     endif()
 
     # Core engine sources
@@ -321,7 +336,8 @@ if(CONFIG_ZMK_JAVELIN_STENO)
       zephyr_library_sources("${LAPWING_SRC}/lapwing_dictionary.cc")
       zephyr_library_include_directories(
         "${JAVELIN_SRC_DIR}/dictionary" "${QSPI_SRC}" "${LAPWING_SRC}")
-      zephyr_library_compile_definitions(LAPWING_BYTES=${LAPWING_BYTES} PLOVER_BYTES=${PLOVER_BYTES})
+      zephyr_library_compile_definitions(LAPWING_BYTES=${LAPWING_BYTES} PLOVER_BYTES=${PLOVER_BYTES}
+        EXTRAS_BYTES=${EXTRAS_BYTES})
       if(CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY)
         zephyr_library_sources("${LAPWING_SRC}/user_dictionary_store.cc" "${LAPWING_SRC}/javelin_web_hid.cc")
         if(CONFIG_ZMK_JAVELIN_STENO_BLE_HID)

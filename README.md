@@ -90,9 +90,10 @@ This project implements the W25Q128 flash integration on the left half, includin
 | --- | ---: | ---: |
 | Lapwing Base | 114,885 | 1,700,488 bytes |
 | Plover Base | 147,424 | 2,178,864 bytes |
+| Lapwing extras: commands, numbers, UK additions and proper nouns, each with its own checkbox | 29,094 | 451,088 bytes |
 | Personal dictionary | Varies | 16 KiB of entry data, backed by two CRC-checked snapshots |
 
-Lapwing is active by default. Enable **Plover Base** and disable **Lapwing Base** in the browser to use Plover's base for onboard translation. The keyboard remembers the selection. When enabled, personal entries take priority over both bases. If both bases are active, Lapwing wins on overlapping outlines.
+Lapwing is active by default, with its commands, numbers and proper nouns. UK additions start off. See [Lapwing extras](config/zen-r4-split/README.md#lapwing-extras) for the upload this needs. Enable **Plover Base** and disable **Lapwing Base** in the browser to use Plover's base for onboard translation. The keyboard remembers the selection. When enabled, personal entries take priority over both bases. If both bases are active, Lapwing wins on overlapping outlines.
 
 ## Edit dictionaries in the browser
 

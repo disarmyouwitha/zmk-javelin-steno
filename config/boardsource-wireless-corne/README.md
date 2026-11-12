@@ -39,6 +39,7 @@ vendor="$repo/build/boardsource-upstream"
 git clone https://github.com/boardsource/wireless-corne_zmk_config "$vendor"
 git -C "$vendor" checkout --detach 2158104902e164c317e35f53dfa0ca1e36e1a751
 python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
+python3 "$repo/tools/zen-r4-lapwing/prepare_extras.py"
 export ZEPHYR_BASE="$ws/zephyr"
 zephyr_cmake="$ZEPHYR_BASE/share/zephyr-package/cmake"
 cd "$ws"
@@ -51,7 +52,8 @@ build_left() {
     "-DZMK_CONFIG=$target" "-DZMK_EXTRA_MODULES=$repo" \
     "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/corne_left.conf" \
     "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
-    "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin"
+    "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin" \
+    "-DZMK_JAVELIN_EXTRAS_IMAGE=$repo/build/extras/lapwing-extras.bin"
 }
 build_left boardsource-left -S studio-rpc-usb-uart
 build_left boardsource-provision -S zmk-usb-logging
@@ -92,7 +94,7 @@ The factory application partition is `0x1000–0xD3FFF`. The settings partition 
 4. **Check quad reads.** Use the separate quad probe only after the rail and JEDEC checks. It compares standard SPI and quad reads over the first 64 KiB. Use a spare, independently preloaded reference chip with data exercising both bit states on all four lanes and look for a pass with lane mask `0xf`. An all-`FF` comparison is inconclusive. This build may temporarily set and restore the flash's volatile Quad Enable bit. It leaves the flash array alone.
 5. **Test mapped reads and the split.** A reference flash with both expected bases lets you test Javelin before any provisioning through the keyboard. Flash the matching right UF2 and the provisioning left UF2. Use [upload.py](../../tools/zen-r4-lapwing/upload.py) with the serial port alone for a read-only status query and look for `MAPPED`. Confirm ordinary typing on both halves, onboard `KAT` → “cat” with host Plover closed, raw Plover HID strokes, and nice!view mode and Practice updates. If you have only a blank flash, complete the electrical checks first and return to dictionary-dependent checks after initial provisioning.
 6. **Test wireless and sleep.** Pair **Boardsource Corne Steno** and unplug USB. Test ordinary typing, Plover HID, onboard Javelin, and Javelin Steno Tools **Connect via HID**. Let both halves reach deep sleep. Check that the left rail turns off, wake each half with one of its own keys, and check display and split reconnection, flash verification, and onboard output. Use the left provisioning console command `W` to distinguish `CHECK_QUICK` from `CHECK_FULL`. Check right display rail behavior and battery readings independently.
-7. **Provision and test persistence.** Once the power and read checks pass, use the [existing dual-base provisioning procedure](../zen-r4-split/README.md#flash-regions-and-initial-plover-provisioning) with the Boardsource provisioning UF2 and its serial device. Send the Lapwing image to `--base lapwing` and the Plover image to `--base plover`. Check for `MAPPED` after both bases verify. Switch bases in the browser, save a temporary personal edit, reboot, verify persistence, and remove the test entry. Switch to the everyday left UF2 and repeat the HID and wake checks.
+7. **Provision and test persistence.** Once the power and read checks pass, use the [existing dual-base provisioning procedure](../zen-r4-split/README.md#flash-regions-and-initial-plover-provisioning) with the Boardsource provisioning UF2 and its serial device. Send the Lapwing image to `--base lapwing`, the [Lapwing extras](../zen-r4-split/README.md#lapwing-extras) image to `--base extras`, and the Plover image to `--base plover`. Check for `MAPPED` after both bases verify. Switch bases in the browser, save a temporary personal edit, reboot, verify persistence, and remove the test entry. Switch to the everyday left UF2 and repeat the HID and wake checks.
 
 Compilation and generated pin/partition checks cover the firmware configuration. On-device boot and recovery, rail polarity and voltage, connector fit, all flash reads and writes, battery calibration, Bluetooth, nice!view behavior, and sleep/wake on the Boardsource pair still need physical verification.
 
@@ -117,6 +119,6 @@ Order of use on a new board, all from the **Artifacts** of one workflow run:
 1. Measure the header: pin 1, and the voltage and polarity of the switched rail on pin 5.
 2. Left half: `boardsource-probe`, then `boardsource-quad`. Both only read the flash chip.
 3. Right half: `boardsource-right`.
-4. Left half: `boardsource-left-logging`, then upload both base dictionaries with `upload.py`.
+4. Left half: `boardsource-left-logging`, then upload all three images with `upload.py`: `--base lapwing`, `--base plover` and `--base extras`. Onboard Javelin starts once all three verify.
 5. Left half: `boardsource-left-studio` for everyday use.
  None of the merged code has run on Boardsource hardware. Check in particular that a wake from deep sleep takes the quick flash path on this bootloader: it relies on the GPREGRET2 register and on the saved verification record.

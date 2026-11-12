@@ -9,7 +9,7 @@ import zlib
 from compile_dict import parse_outline
 
 
-def verify(source, blob, base):
+def verify(source, blob, base, index=0, count=1):
     def word(offset):
         return struct.unpack_from("<I", blob, offset)[0]
 
@@ -19,9 +19,9 @@ def verify(source, blob, base):
         return value
 
     assert len(blob) % 4 == 0
-    assert blob[:4] == b"JSC4" and word(4) == 1
+    assert blob[:4] == b"JSC4" and word(4) == count and index < count
     assert word(32) == word(pointer(12) + word(8)), "Timestamp mismatch"
-    definition = pointer(36)
+    definition = pointer(36 + 4 * index)
     maximum = blob[definition + 1]
     assert 0 < maximum <= 16
     text = pointer(definition + 8)
@@ -65,8 +65,13 @@ def main():
     parser.add_argument("source", type=Path)
     parser.add_argument("image", type=Path)
     parser.add_argument("--base-addr", type=lambda value: int(value, 0), required=True)
+    parser.add_argument("--index", type=int, default=0,
+                        help="Which dictionary of the image to check")
+    parser.add_argument("--count", type=int, default=1,
+                        help="How many dictionaries the image must hold")
     args = parser.parse_args()
-    count = verify(json.loads(args.source.read_text()), args.image.read_bytes(), args.base_addr)
+    count = verify(json.loads(args.source.read_text(encoding="utf-8")), args.image.read_bytes(),
+                   args.base_addr, args.index, args.count)
     print(f"PASS: {count:,} outlines match the mapped binary")
 
 
