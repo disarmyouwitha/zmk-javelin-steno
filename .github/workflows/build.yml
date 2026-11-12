@@ -25,7 +25,6 @@ jobs:
             shield: corne_left
             snippet: studio-rpc-usb-uart
             dictionaries: true
-            extra: -DCONFIG_ZMK_STUDIO=y
           - name: right
             shield: corne_right
           - name: right-nice-view
