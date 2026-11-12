@@ -155,11 +155,12 @@ python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \
 `--repair` replaces a base that is damaged or holds other data, including one the keyboard still reports as verified. In order, it:
 
 1. checks the file's size and CRC against the image the firmware expects, before touching the flash;
-2. asks you to type the base name to confirm (`--yes` skips the question);
-3. takes the dictionaries out of use and removes the saved verification record;
-4. erases that base's 4 KiB sectors, including the last, partly used one;
-5. writes the image, reading back every chunk;
-6. runs the full CRC and native lookup checks, and saves the verification record again once every base passes.
+2. takes the dictionaries out of use and removes the saved verification record;
+3. erases that base's 4 KiB sectors, including the last, partly used one;
+4. writes the image, reading back every chunk;
+5. runs the full CRC and native lookup checks, and saves the verification record again once every base passes.
+
+It never asks a question, so a script or an agent can run it. Passing `--repair` is the confirmation.
 
 The other base and the personal dictionary at `0xF00000` are never erased. If a repair is interrupted, the base is left unprovisioned and onboard Javelin shows **No dictionary**; run the same command again.
 

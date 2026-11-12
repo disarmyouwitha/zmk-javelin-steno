@@ -116,7 +116,7 @@ def verify(port, base):
     return False
 
 
-def repair(port, image, base, assume_yes):
+def repair(port, image, base):
     # Check the replacement before touching the flash.
     size, crc = expected_image(port, base)
     if len(image) != size or zlib.crc32(image) != crc:
@@ -125,12 +125,6 @@ def repair(port, image, base, assume_yes):
             f"with CRC32 {crc:08x}; the file has {len(image):,} bytes with CRC32 "
             f"{zlib.crc32(image):08x}. Nothing was erased.")
     print(f"{base} image matches the firmware: {size:,} bytes, CRC32 {crc:08x}")
-    if not assume_yes:
-        answer = input(f"Erase the {base} base dictionary on the keyboard and write it again? "
-                       f"Type {base} to continue: ")
-        if answer.strip().upper() != base:
-            print("Cancelled. Nothing was erased.")
-            return
     print("Erasing", flush=True)
     port.write(COMMANDS[base]["erase"])
     while True:
@@ -155,8 +149,6 @@ def main():
                              "keyboard reports it as verified or cannot load it")
     parser.add_argument("--verify", action="store_true",
                         help="Read the whole base and check its CRC. Writes nothing")
-    parser.add_argument("--yes", action="store_true",
-                        help="With --repair, erase without asking for confirmation")
     args = parser.parse_args()
     if args.verify and (args.repair or args.image):
         parser.error("--verify takes no image and cannot be combined with --repair")
@@ -178,7 +170,7 @@ def main():
             sys.exit(0 if all(results) else 1)
 
         if args.repair:
-            repair(port, image, base, args.yes)
+            repair(port, image, base)
             return
 
         state, size = query(port, base)
