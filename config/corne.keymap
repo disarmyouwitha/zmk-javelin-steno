@@ -53,7 +53,13 @@
 
 / {
     behaviors {
-        ht: hold_tap {
+        ht: tap_first {
+            compatible = "zmk,behavior-tap-first";
+            display-name = "Tap / Hold";
+            #binding-cells = <2>;
+            bindings = <&ht_impl>;
+        };
+        ht_impl: hold_tap {
             compatible = "zmk,behavior-hold-tap";
             #binding-cells = <2>;
             flavor = "tap-preferred";
@@ -69,11 +75,11 @@
 
         main_layer {
             display-name = "MAIN";
-            // ht parameters: hold first, tap second. Editing shortcuts use Command.
+            // ht parameters: tap first, hold second. Editing shortcuts use Command.
             bindings = <
-&ht ESC TAB  &ht LBKT Q   &ht RBKT W   &ht LBRC E   &ht RBRC R   &ht SQT T       &ht MINUS Y &ht AMPS U &ht STAR I     &ht LG(F) O   &ht LG(LS(N4)) P &kp DEL
-&kp LCTRL    &ht LG(A) A  &ht LG(S) S  &ht LPAR D   &ht RPAR F   &ht DQT G       &ht UNDER H &ht EXCL J &ht HASH K     &ht TILDE L   &ht RET SEMI     &kp RET
-&kp LSHIFT   &ht LG(Z) Z  &ht LG(X) X  &ht LG(C) C  &ht LG(V) V  &ht GRAVE B     &ht EQUAL N &ht AT M   &ht DLLR COMMA &ht CARET DOT &ht BSLH FSLH    &sk LSHIFT
+&ht TAB ESC  &ht Q LBKT   &ht W RBKT   &ht E LBRC   &ht R RBRC   &ht T SQT       &ht Y MINUS &ht U AMPS &ht I STAR     &ht O LG(F)   &ht P LG(LS(N4)) &kp DEL
+&kp LCTRL    &ht A LG(A)  &ht S LG(S)  &ht D LPAR   &ht F RPAR   &ht G DQT       &ht H UNDER &ht J EXCL &ht K HASH     &ht L TILDE   &ht SEMI RET     &kp RET
+&kp LSHIFT   &ht Z LG(Z)  &ht X LG(X)  &ht C LG(C)  &ht V LG(V)  &ht B GRAVE     &ht N EQUAL &ht M AT   &ht COMMA DLLR &ht DOT CARET &ht FSLH BSLH    &sk LSHIFT
                                       CORNE_LEFT_MAIN_THUMBS                CORNE_RIGHT_MAIN_THUMBS
             >;
         };

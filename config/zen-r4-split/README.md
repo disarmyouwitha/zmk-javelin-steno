@@ -239,3 +239,23 @@ reboot reported `CHECK_QUICK 53`. Deep sleep with these changes, Studio, and
 serial verify/repair remain to be checked on hardware. The 30-prompt hand
 drills and nine-character layer-name update compiled and passed host checks;
 they still need an on-keyboard check after flashing both halves.
+
+## Studio key-label experiment
+
+The Tap / Hold adapter accepts the tap key first and hold key second, so
+Studio's key grid displays the tap. It forwards both parameters in the
+standard order to the existing hold-tap implementation, keeping its timing
+and interrupt handling.
+
+Javelin Steno now has two parameters. The first is a keyboard usage for the
+Studio key label, and the second selects the physical steno key. The STENO_*
+macros expand to both parameters. Choose the physical identity in the second
+dropdown when changing a steno key; changing the label alone affects its
+appearance. Letter labels, keypad star and keypad hash resolve in Studio's
+current HID table. Left/right identity is shown in the dropdown.
+
+For this experiment, restore the newly compiled stock keymap in Studio after
+flashing. This replaces saved bindings with the new parameter format. The
+firmware adapter passed press/release forwarding and metadata checks, and
+both halves compiled. Bluetooth Studio was confirmed working on the earlier
+Studio build by the user.

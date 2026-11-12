@@ -12,6 +12,8 @@ endif()
 
 if(CONFIG_ZMK_JAVELIN_STENO)
 
+  target_sources(app PRIVATE src/behaviors/behavior_tap_first.c)
+
   zephyr_include_directories(include)
   target_sources(app PRIVATE src/behaviors/behavior_javelin_steno.c)
 
