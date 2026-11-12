@@ -15,6 +15,8 @@ CHUNK_BYTES = 512
 COMMANDS = {
     "LAPWING": {"query": b"?", "program": b"L", "erase": b"E", "verify": b"V", "info": b"I"},
     "PLOVER": {"query": b"p", "program": b"P", "erase": b"e", "verify": b"v", "info": b"i"},
+    # One image holding the Lapwing commands, numbers, UK additions and proper nouns.
+    "EXTRAS": {"query": b"x", "program": b"X", "erase": b"K", "verify": b"k", "info": b"n"},
 }
 
 
@@ -97,7 +99,7 @@ def program(port, image, base):
     transfer(port, image, "Program and read back", base)
     if response(port, 90, base) not in (("MAPPED", size), ("VERIFIED", size)):
         raise RuntimeError("Device did not verify the mapped dictionary")
-    print("Dictionary verified. Query status for MAPPED once both bases are provisioned.")
+    print("Dictionary verified. Query status for MAPPED once every image is provisioned.")
 
 
 def verify(port, base):
@@ -142,8 +144,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("port", help="USB CDC device path")
     parser.add_argument("image", type=Path, nargs="?", help="Mapped JSC4 image to program")
-    parser.add_argument("--base", choices=("lapwing", "plover", "both"), default="lapwing",
-                        help="Base dictionary to act on. 'both' is for --verify only")
+    parser.add_argument("--base", choices=("lapwing", "plover", "extras", "all", "both"),
+                        default="lapwing",
+                        help="Dictionary image to act on. 'extras' is the Lapwing commands, "
+                             "numbers, UK additions and proper nouns. 'all' is for --verify "
+                             "only; 'both' is its older name")
     parser.add_argument("--repair", action="store_true",
                         help="Erase this base and write the image again, even if the "
                              "keyboard reports it as verified or cannot load it")
@@ -154,8 +159,8 @@ def main():
         parser.error("--verify takes no image and cannot be combined with --repair")
     if args.repair and not args.image:
         parser.error("--repair needs the image to write")
-    if args.base == "both" and not args.verify:
-        parser.error("--base both is for --verify only")
+    if args.base in ("all", "both") and not args.verify:
+        parser.error("--base all is for --verify only")
     base = args.base.upper()
     image = args.image.read_bytes() if args.image else None
     if image is not None and (image[:4] != b"JSC4" or len(image) % 4):
@@ -163,10 +168,19 @@ def main():
 
     with Serial(args.port, 115200, timeout=0.25, write_timeout=5, exclusive=True) as port:
         if args.verify:
-            bases = ["LAPWING", "PLOVER"] if base == "BOTH" else [base]
+            bases = list(COMMANDS) if base in ("ALL", "BOTH") else [base]
             # Wait out the boot log before the long read.
             expected_image(port, bases[0])
-            results = [verify(port, name) for name in bases]
+            results = []
+            for name in bases:
+                if len(bases) > 1 and name != bases[0]:
+                    # A firmware built without this image stays silent.
+                    try:
+                        expected_image(port, name)
+                    except TimeoutError:
+                        print(f"{name}: not part of this firmware, skipped")
+                        continue
+                results.append(verify(port, name))
             sys.exit(0 if all(results) else 1)
 
         if args.repair:

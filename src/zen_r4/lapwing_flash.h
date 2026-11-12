@@ -5,6 +5,9 @@
 
 // Independent base regions. Personal snapshots start at 0xF00000.
 #define PLOVER_FLASH_OFFSET 0x200000U
+// One image holding the smaller Lapwing dictionaries, each with its own
+// checkbox in the browser.
+#define EXTRAS_FLASH_OFFSET 0x500000U
 #define BASE_DICTIONARY_LIMIT 0xF00000U
 
 #ifdef __cplusplus
@@ -14,6 +17,7 @@ extern "C" {
 uintptr_t lapwing_mapped_address(void);
 bool lapwing_verify_native_dictionary(uintptr_t address);
 bool plover_verify_native_dictionary(uintptr_t address);
+bool extras_verify_native_dictionary(uintptr_t address);
 
 enum lapwing_flash_state {
     LAPWING_FLASH_LOADING,     /* Still being checked after a boot or wake. */

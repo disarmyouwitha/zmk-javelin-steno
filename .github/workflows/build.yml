@@ -59,6 +59,7 @@ jobs:
           python3 tools/dict_compiler/compile_dict.py build/lapwing/lapwing-base.json \
             --base-addr 0x12000000 -o build/lapwing/lapwing-base.bin
           python3 tools/zen-r4-lapwing/prepare_plover.py
+          python3 tools/zen-r4-lapwing/prepare_extras.py
 
       - name: Build
         working-directory: ws
@@ -70,7 +71,8 @@ jobs:
                 "-DZMK_EXTRA_MODULES=$repo")
           if [ "${{ matrix.dictionaries }}" = "true" ]; then
             args+=("-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin"
-                   "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin")
+                   "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin"
+                   "-DZMK_JAVELIN_EXTRAS_IMAGE=$repo/build/extras/lapwing-extras.bin")
           fi
           if [ "${{ matrix.nice_view }}" = "true" ]; then
             args+=("-DEXTRA_CONF_FILE=$repo/config/zen-r4-split/right-nice-view.conf"

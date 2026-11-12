@@ -12,6 +12,15 @@ static constexpr uintptr_t image_start = DT_REG_ADDR_BY_NAME(DT_NODELABEL(qspi),
 static constexpr uintptr_t image_end = image_start + LAPWING_BYTES;
 static StenoDictionary *dictionary;
 static StenoDictionary *plover;
+static StenoDictionary *extras[EXTRAS_DICTIONARY_COUNT];
+// The image stores them in this order. tools/zen-r4-lapwing/prepare_extras.py
+// must compile them in the same order.
+static const char *const extras_names[EXTRAS_DICTIONARY_COUNT] = {
+    "Lapwing Commands",
+    "Lapwing Numbers",
+    "Lapwing UK Additions",
+    "Lapwing Proper Nouns",
+};
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 class ReadOnlyBase final : public StenoDictionary {
@@ -38,6 +47,14 @@ StenoDictionary *plover_dictionary() {
   return lapwing_mapped_address() ? plover : nullptr;
 }
 
+const char *extras_dictionary_name(size_t index) {
+  return index < EXTRAS_DICTIONARY_COUNT ? extras_names[index] : nullptr;
+}
+
+StenoDictionary *extras_dictionary(size_t index) {
+  return index < EXTRAS_DICTIONARY_COUNT && lapwing_mapped_address() ? extras[index] : nullptr;
+}
+
 StenoDictionaryLookupResult lapwing_copy_lookup_text(const uint8_t *text) {
   // Return RAM strings so the engine can tokenize them with ordinary byte loads.
   char buffer[128];
@@ -47,6 +64,12 @@ StenoDictionaryLookupResult lapwing_copy_lookup_text(const uint8_t *text) {
   if (address >= image_start + PLOVER_FLASH_OFFSET &&
       address < image_start + PLOVER_FLASH_OFFSET + PLOVER_BYTES) {
     end = image_start + PLOVER_FLASH_OFFSET + PLOVER_BYTES;
+  }
+#endif
+#if EXTRAS_BYTES > 0
+  if (address >= image_start + EXTRAS_FLASH_OFFSET &&
+      address < image_start + EXTRAS_FLASH_OFFSET + EXTRAS_BYTES) {
+    end = image_start + EXTRAS_FLASH_OFFSET + EXTRAS_BYTES;
   }
 #endif
   for (size_t i = 0; i < sizeof(buffer) && address >= image_start && address < end;
@@ -66,18 +89,22 @@ struct BaseDictionary {
   StenoCompactMapDictionaryStrokesDefinition strokes[16];
   StenoDictionary *dictionary = nullptr;
 
+  // Loads dictionary `index` of the `count` the image must hold. A null
+  // `translation` skips the lookup check and keeps the structural ones.
   bool Load(uintptr_t address, size_t bytes, const char *name, const StenoStroke &stroke,
-            const char *translation) {
+            const char *translation, size_t index = 0, size_t count = 1) {
     if (dictionary) {
       return true;
     }
     const auto *collection = reinterpret_cast<const uint8_t *>(address);
     if (xip_load_word(collection) != STENO_MAP_DICTIONARY_COLLECTION_MAGIC ||
-        xip_load_word(collection + offsetof(StenoDictionaryCollection, dictionaryCount)) != 1) {
+        xip_load_word(collection + offsetof(StenoDictionaryCollection, dictionaryCount)) !=
+            count ||
+        index >= count) {
       return false;
     }
-    const auto definition_address =
-        xip_load_word(collection + offsetof(StenoDictionaryCollection, dictionaries));
+    const auto definition_address = xip_load_word(
+        collection + offsetof(StenoDictionaryCollection, dictionaries) + index * sizeof(uint32_t));
     if (definition_address % 4 || definition_address < address ||
         definition_address + sizeof(definition) > address + bytes) {
       return false;
@@ -98,13 +125,15 @@ struct BaseDictionary {
     if (!map) {
       return false;
     }
-    auto result = map->Lookup(StenoDictionaryLookup(&stroke, 1));
-    const bool matches = result.IsValid() && strcmp(result.GetText(), translation) == 0;
-    result.Destroy();
-    if (!matches) {
-      printk("%s native lookup failed\n", name);
-      delete map;
-      return false;
+    if (translation) {
+      auto result = map->Lookup(StenoDictionaryLookup(&stroke, 1));
+      const bool matches = result.IsValid() && strcmp(result.GetText(), translation) == 0;
+      result.Destroy();
+      if (!matches) {
+        printk("%s native lookup failed\n", name);
+        delete map;
+        return false;
+      }
     }
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
     dictionary = new ReadOnlyBase(*map);
@@ -118,6 +147,9 @@ struct BaseDictionary {
 BaseDictionary lapwing_base;
 #if PLOVER_BYTES > 0
 BaseDictionary plover_base;
+#endif
+#if EXTRAS_BYTES > 0
+BaseDictionary extras_base[EXTRAS_DICTIONARY_COUNT];
 #endif
 } // namespace
 
@@ -143,6 +175,35 @@ extern "C" bool plover_verify_native_dictionary(uintptr_t address) {
     return false;
   }
   plover = plover_base.dictionary;
+  return true;
+#else
+  return false;
+#endif
+}
+
+extern "C" bool extras_verify_native_dictionary(uintptr_t address) {
+#if EXTRAS_BYTES > 0
+  // One known entry is looked up in the two dictionaries that have outlines
+  // without the number key. The other two get the structural checks only.
+  const struct {
+    const char *outline;
+    const char *translation;
+  } checks[EXTRAS_DICTIONARY_COUNT] = {
+      {"SP", "{^^}"},      // commands
+      {"S", nullptr},      // numbers
+      {"O*ERD", "odour"},  // UK additions
+      {"S", nullptr},      // proper nouns
+  };
+  for (size_t i = 0; i < EXTRAS_DICTIONARY_COUNT; i++) {
+    if (!extras_base[i].Load(address, EXTRAS_BYTES, extras_names[i],
+                             StenoStroke(checks[i].outline), checks[i].translation, i,
+                             EXTRAS_DICTIONARY_COUNT)) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < EXTRAS_DICTIONARY_COUNT; i++) {
+    extras[i] = extras_base[i].dictionary;
+  }
   return true;
 #else
   return false;
