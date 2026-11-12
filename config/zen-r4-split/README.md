@@ -31,6 +31,16 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
 
 `-S zmk-usb-logging` on the left build adds the diagnostics serial port that `upload.py` uses to write and check the base dictionaries. Once both bases are provisioned, leave the snippet out for everyday use. The bases still load and the browser editor runs over HID. Send `W` to the diagnostics port to read the most recent flash check path, `CHECK_QUICK` or `CHECK_FULL`, followed by how long that check took in milliseconds.
 
+The logging build also answers three more commands on the diagnostics port. `python tools/zen-r4-lapwing/upload.py <port> --diag status|log|clear` sends them and prints the reply without prompting.
+
+- `S` (`--diag status`) prints the build commit and time, uptime, reset cause, the flash state (mapped, checked, suspended, idle power-down, steno hold), the chip ID, the last check path and time, whether the saved verification record is present, each image's verified state, the counters below, and wake timing.
+- `D` (`--diag log`) prints the boot log kept in RAM, about 1 KiB of the flash lifecycle lines with boot number and uptime. It survives a soft reset, so a line printed before you opened the port is still there. It is empty after a power loss.
+- `Z` (`--diag clear`) clears that log and the counters.
+
+Counters saved across reboots, with this boot's count in brackets: boots, start-up retries, rail power cycles, quick checks that fell back to a full check, bring-ups with no dictionaries, serial erases and serial writes. They are written to settings five seconds or more after boot, at most every two seconds, and only when something changed, so they do not wear the settings flash. Wake timing is since boot only: for each idle or resume wake it records how long passed from the request to a mapped flash, with the check path and time. A line `Wake from idle: ready N ms after the request` also goes to the log.
+
+If `retries` and `power cycles` stay at 0 after days of use, the retry logic never ran. A non-zero `bring-ups with no dictionaries` means the flash failed to start even after the retries.
+
 The dictionary flash powers down while idle. To compare battery life with it always on, uncomment `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF=n` in `corne_left.conf`. `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS` on the next line sets the idle period, 30 seconds by default. The flash stays on while the steno layer is selected, including during practice, and the idle period counts from leaving it. Selecting the steno layer starts the flash. An editor command on another layer waits for it to start; the `W` reply shows how long that took.
 
 The right half enters deep sleep after 15 idle minutes on battery. Wake it

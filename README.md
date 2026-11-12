@@ -159,6 +159,7 @@ These exist for bring-up and battery testing. Before calling the firmware finish
 | Item | Where | Current state |
 | --- | --- | --- |
 | `W` serial query: last flash check path and its time in milliseconds | `src/zen_r4/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
+| Diagnostics: boot log kept across a soft reset, `S` status, `D` log dump, `Z` clear, fault counters saved in settings, wake timing, `upload.py --diag` | `src/zen_r4/diag.c`, `src/zen_r4/diag.h`, the `diag_*()` calls in `src/zen_r4/lapwing_flash.c` | Behind `CONFIG_ZMK_JAVELIN_DIAG`, default on, only in builds with `-S zmk-usb-logging`. To remove for good, delete the two files and the calls |
 | Battery and activity logger, its `B` serial export and host script | `src/zen_r4/battery_log.c`, `tools/zen-r4-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
 | 128 KiB internal flash partition reserved for the battery log | `config/zen-r4-split/corne_left.overlay` | Always reserved, even with the logger off |
 | Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | On by default. Once battery testing settles it, remove the option or keep it as a plain setting |

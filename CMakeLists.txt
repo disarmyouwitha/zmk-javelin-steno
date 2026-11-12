@@ -89,6 +89,25 @@ if(CONFIG_ZMK_JAVELIN_STENO)
         COMMAND_ERROR_IS_FATAL ANY)
       set(JAVELIN_COMPACT_MAP_SRC "${PATCHED_COMPACT_MAP}")
       target_sources(app PRIVATE "${LAPWING_SRC}/lapwing_flash.c" "${QSPI_SRC}/quad.c")
+      if(CONFIG_ZMK_JAVELIN_DIAG)
+        # Build id shown by the S command: the CI commit, else git describe.
+        set(JAVELIN_BUILD_ID "unknown")
+        if(DEFINED ENV{GITHUB_SHA})
+          string(SUBSTRING "$ENV{GITHUB_SHA}" 0 7 JAVELIN_BUILD_ID)
+        else()
+          execute_process(
+            COMMAND git -C "${CMAKE_CURRENT_LIST_DIR}" describe --always --dirty
+            OUTPUT_VARIABLE JAVELIN_GIT_ID OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET RESULT_VARIABLE JAVELIN_GIT_RC)
+          if(JAVELIN_GIT_RC EQUAL 0 AND JAVELIN_GIT_ID)
+            set(JAVELIN_BUILD_ID "${JAVELIN_GIT_ID}")
+          endif()
+        endif()
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/diag_build_id.h"
+          "#define JAVELIN_BUILD_ID \"${JAVELIN_BUILD_ID}\"\n")
+        target_include_directories(app PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+        target_sources(app PRIVATE "${LAPWING_SRC}/diag.c")
+      endif()
       target_sources_ifdef(CONFIG_ZMK_JAVELIN_BATTERY_LOG app PRIVATE "${LAPWING_SRC}/battery_log.c")
       target_include_directories(app PRIVATE "${QSPI_SRC}")
       target_compile_definitions(app PRIVATE LAPWING_BYTES=${LAPWING_BYTES} LAPWING_CRC=${LAPWING_CRC})

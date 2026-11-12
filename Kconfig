@@ -32,6 +32,18 @@ config ZMK_JAVELIN_STENO_SERIAL_PROVISIONING
       to get it. Everyday builds can leave the snippet out: the bases already
       in flash still load, and the browser editor runs over HID.
 
+config ZMK_JAVELIN_DIAG
+    bool "Diagnostics on the logging serial port"
+    depends on ZMK_JAVELIN_STENO_SERIAL_PROVISIONING
+    select HWINFO
+    default y
+    help
+      Adds a boot log that survives a soft reset, a status command, fault
+      counters saved across reboots, and wake timing for the external flash.
+      Serial commands: S status, D dump the boot log, Z clear log and counters.
+      It compiles in only with the logging snippet. Turn it off, or delete
+      src/zen_r4/diag.c and the diag_*() calls, once debugging is done.
+
 config ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER
     int "External flash clock divider (32 MHz / n)"
     depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
