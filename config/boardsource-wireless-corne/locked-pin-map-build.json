@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-11",
+  "firmware_commit": "a25dd26729d33ba5ea49304af2feb6def947894d",
+  "branch": "steno-squid/locked-pin-map",
+  "build_method": "local west builds, no GitHub Actions",
+  "SDK": "Zephyr SDK 0.16.9",
+  "compiler": "arm-zephyr-eabi-gcc (Zephyr SDK 0.16.9) 12.2.0",
+  "dependencies": {
+    "zmk": "4dd95d7840eb3d5a3f59bb29fbf1ab054715ef85",
+    "zephyr": "10ba6d0cb38bc3d258775d27982f707599320085",
+    "javelin-steno": "22726675b2dcf3b8b6ba1e20898f25e324b2260a"
+  },
+  "hardware_tested": false,
+  "studio_status": "Current baseline left config disables Studio; owner requests enabling it after the documented integration fixes. This pin-map build does not implement those fixes.",
+  "artifacts": {
+    "left": {
+      "path": "build/locked-left/zephyr/zmk.uf2",
+      "sha256": "9535264cb2e8a52fd372cbfdcb2416fea45ca9b78e6b78af7ec2448d1648be6e",
+      "bytes": 857088
+    },
+    "right": {
+      "path": "build/locked-right/zephyr/zmk.uf2",
+      "sha256": "a94bc855f57bd98e00383484ef78b49332a03d29ca4cba345d78ea82ae70b5c9",
+      "bytes": 752640
+    },
+    "probe": {
+      "path": "build/locked-probe/zephyr/zephyr.uf2",
+      "sha256": "06293e27724e3af00c9fb9a83bb9fd6cc66b34223842d42891dfebaeb0733929",
+      "bytes": 96768
+    },
+    "quad": {
+      "path": "build/locked-quad/zephyr/zephyr.uf2",
+      "sha256": "f4f975d4f3a23d3fede6597e6464c19b21a66e04f4b443a0f12bdd36b34b31c3",
+      "bytes": 99840
+    }
+  }
+}

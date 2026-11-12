@@ -99,3 +99,9 @@ Compilation and generated pin/partition checks cover the firmware configuration.
 ## Steno Squid LED
 
 The first adapter can leave the WS2812C-2020-V6 unpopulated. The left header uses all six signal pins for QSPI, and P0.31 controls the shared accessory rail. Keep the LED data off the flash signals. An independently powered or locally controlled LED could provide standalone effects, with its own power budget and voltage requirements. For firmware-controlled effects, a future board revision can expose a dedicated data pin and an appropriate LED supply. A simple rail indicator could instead use a low-current LED and resistor, at the cost of extra current whenever flash power is on.
+
+## Locked-map local build evidence
+
+The four local builds in [locked-pin-map-build.json](locked-pin-map-build.json) record the firmware commit, pinned dependency commits, SDK/compiler version, UF2 size and SHA-256 for left, right, read-only probe and quad probe. The generated devicetrees for the three left-side targets contain SCK P0.19, IO1 P0.23 and IO3 P0.12 in both active and sleep groups. Builds used the pinned workspace and Zephyr SDK 0.16.9.
+
+These are compilation results pending target-hardware testing. The owner wants ZMK Studio enabled. The current baseline still disables it while layer identity, steno parameter metadata and USB endpoint/memory integration are reviewed. This pin-map change leaves that integration as open work.
