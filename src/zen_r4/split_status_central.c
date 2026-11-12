@@ -103,7 +103,7 @@ static void pack_layer_name(const char *name, struct zmk_behavior_binding *bindi
         packed |= (uint64_t)(c >= ' ' && c < 0x7f ? c : '?') << (7 * i);
     }
     binding->param1 = (uint32_t)packed;
-    binding->param2 = (uint32_t)(packed >> 32) << 8 | ZEN_R4_LAYER_NAME_PROTOCOL;
+    binding->param2 = (uint32_t)(packed >> 32) | ZEN_R4_LAYER_NAME_PROTOCOL;
 }
 
 static void send_status(struct k_work *work) {

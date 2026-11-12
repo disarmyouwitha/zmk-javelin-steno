@@ -56,7 +56,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **Plover HID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **PloverHID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -70,7 +70,7 @@ SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
 the key left of the top S turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
-Switching starts a fresh ten-prompt run with a new streak.
+Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 30 each.
 
 **LEFT** and **RIGHT** use the corresponding consonant banks from
 [StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
@@ -86,7 +86,7 @@ usable active dictionary nor an available Lapwing base.
 The right nice!view shows the drill, prompt, progress, and streak. The portrait
 screen uses bold prompts and headings. Correct answers show **CORRECT** for
 250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
-and keep the current prompt. After ten correct answers the screen shows
+and keep the current prompt. After all prompts are answered correctly, the screen shows
 **DONE** and the best streak.
 
 The outer left thumb returns to Typing. The key left of the top S exits to
@@ -103,7 +103,7 @@ dictionary contents and selection intact.
 Build both halves with the nice!view build options above and
 `CONFIG_ZMK_ZEN_R4_PRACTICE=y` on the central, enabled in the split left
 configuration. Hardware validation should cover a mistake followed by a
-correct answer, all ten prompts, entry and exit while a steno key is held,
+correct answer, all prompts, entry and exit while a steno key is held,
 right-half reconnect, and normal typing, onboard Javelin and Plover HID after
 leaving Practice. Check both star directions and complete all three drills with
 all dictionaries disabled. Confirm that ordinary Javelin still sends raw steno
@@ -229,3 +229,13 @@ This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac
 Hardware verification covered switching profiles in Chrome over HID and retaining the selected profile across a USB power cycle. The Mac passed accented typing, repeat, undo, and subsequent ordinary typing. Windows plain text replaced the earlier Alt-code output after application-dependent failures. The [Windows test handoff](../../docs/WINDOWS-HOST-PROFILE-HANDOFF.md) records that earlier investigation.
 
 The Windows plain-text engine regression checks covered accented phrases, consecutive translations, repeat, undo, capitalization, and punctuation. Every checked output used ordinary keys without Alt, keypad, or Num Lock events. The user confirmed the plain-text build works correctly on Windows.
+
+## Latest validation
+
+The user confirmed both-half typing, Javelin KAT, Plover HID, display labels,
+Practice and exit, idle flash power-off, immediate Javelin wake, and all four
+browser-editor checks on the initial boot/idle build. A serial query after
+reboot reported `CHECK_QUICK 53`. Deep sleep with these changes, Studio, and
+serial verify/repair remain to be checked on hardware. The 30-prompt hand
+drills and nine-character layer-name update compiled and passed host checks;
+they still need an on-keyboard check after flashing both halves.

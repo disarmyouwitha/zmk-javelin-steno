@@ -2,9 +2,11 @@
 
 This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javelin-steno) on the keyboard. The tested full-dictionary build pairs a handwired Zen R4 left half with a Corne Ultralight right half. Both use nice!nano v2 controllers. The right half sends key positions to the left over Bluetooth, and the left connects to the computer over USB or Bluetooth. Normal typing, Plover HID, and onboard Javelin have all passed Bluetooth testing on a Mac with the left half powered by battery.
 
-## To do on the first build of `claude/boot-speed-and-flash-idle`
+## Validation of `claude/boot-speed-and-flash-idle`
 
-GitHub Actions successfully built all four targets at `2ac81ae`. The hardware checks below remain to be completed. Work through them in order and delete this section once they pass.
+Both local builds and all four GitHub Actions targets compiled. The user confirmed typing on both halves, Javelin KAT, Plover HID, mode labels, Practice and exit, idle flash shutdown, immediate Javelin wake, and all four browser-editor checks. The reboot diagnostic reported `CHECK_QUICK 53` (53 ms). Deep sleep with this branch, Studio operation, and the new serial verify/repair commands still need hardware testing.
+
+LEFT and RIGHT now have 30 prompts each. WORDS has 10. The longer runs and nine-character layer names passed host behavior and rendering checks and compiled for both halves. These follow-up changes still need flashing and on-keyboard testing.
 
 **Get the code**
 
@@ -27,7 +29,7 @@ GitHub Actions successfully built all four targets at `2ac81ae`. The hardware ch
 4. Confirm the local builds finish successfully and check their flash and RAM totals.
 5. Flash **both** halves. The status messages between the halves changed, and an old right half ignores the new ones.
 
-**Check on the keyboard**
+**Keyboard regression checklist**
 
 6. First boot does one full dictionary check and records it. Reboot again: send `W` to the diagnostics port and expect `LAPWING CHECK_QUICK` with a time in milliseconds.
 7. The steno layer shows **Loading...** on the right display until the check finishes, then **Javelin**.
@@ -134,7 +136,7 @@ The `left-studio` workflow target enables ZMK Studio and compiled successfully a
 
 - The typing, steno and Plover modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming those layers in Studio leaves the right display, practice and flash handling working. Reordering should too, since the pinned ZMK keeps a layer's ID when it moves, but that is untested.
 - Practice has no layer of its own. It runs on the steno layer and the `&javpractice` key turns it on and off, so the steno keys are mapped once. A steno layer built from scratch on a new layer still types, but gets no dictionary pre-wake or loading message.
-- A layer renamed in Studio shows its new name on the right display, cut to 8 characters, and so does a layer added in Studio. **Loading...** and **No dictionary** still take over on the steno layer. A layer that keeps its keymap name shows the built-in label such as **Typing** or **Javelin**, and so does a layer with no name. A rename shows after the next layer change. Both halves need this firmware.
+- A layer renamed in Studio shows its new name on the right display, cut to 9 characters, and so does a layer added in Studio. **Loading...** and **No dictionary** still take over on the steno layer. A layer that keeps its keymap name shows the built-in label such as **Typing** or **Javelin**, and so does a layer with no name. A rename shows after the next layer change. Both halves need this firmware.
 - The split keymap reserves two spare layers, `extra1` and `extra2`, for Studio to hand out. Builds without Studio ignore them.
 - Studio starts unlocked: `corne_left.conf` sets `CONFIG_ZMK_STUDIO_LOCKING=n`, so no unlock key is needed. To try Studio on the left half, build with `-S studio-rpc-usb-uart` in place of `-S zmk-usb-logging` and add `-DCONFIG_ZMK_STUDIO=y`.
 - The `&javsteno` behavior lists its 38 steno keys by name, so Studio can assign them.

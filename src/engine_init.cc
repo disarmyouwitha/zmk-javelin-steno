@@ -125,8 +125,8 @@ static void practice_publish() {
                (practice.round % 4) |
                (uint32_t(practice.feedback) << 2) |
                (uint32_t(practice.round) << 4) |
-               (uint32_t(practice.streak) << 8) |
-               (uint32_t(practice.best) << 12) |
+               (uint32_t(practice.streak) << 9) |
+               (uint32_t(practice.best) << 14) |
                (uint32_t(practice.drill) << ZEN_R4_PRACTICE_DRILL_SHIFT);
   }
   atomic_set(&practice_screen, snapshot);
@@ -138,7 +138,7 @@ static void practice_advance(struct k_work *) {
   if (practice.active && practice.feedback == ZEN_R4_PRACTICE_CORRECT &&
       k_uptime_get() >= practice.advance_at) {
     ++practice.round;
-    practice.feedback = practice.round == ZEN_R4_PRACTICE_ROUNDS
+    practice.feedback = practice.round == zen_r4_practice_rounds(practice.drill)
                             ? ZEN_R4_PRACTICE_DONE
                             : ZEN_R4_PRACTICE_PROMPT;
     practice_publish();
