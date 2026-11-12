@@ -235,12 +235,12 @@ The Windows plain-text engine regression checks covered accented phrases, consec
 The user confirmed both-half typing, Javelin KAT, Plover HID, display labels,
 Practice and exit, idle flash power-off, immediate Javelin wake, and all four
 browser-editor checks on the initial boot/idle build. A serial query after
-reboot reported `CHECK_QUICK 53`. Deep sleep with these changes, Studio, and
-serial verify/repair remain to be checked on hardware. The 30-prompt hand
+reboot reported `CHECK_QUICK 53`. Deep sleep with these changes and serial verify/repair remain to be checked
+on hardware. The 30-prompt hand
 drills and nine-character layer-name update compiled and passed host checks;
 they still need an on-keyboard check after flashing both halves.
 
-## Studio key-label experiment
+## Studio key labels
 
 The Tap / Hold adapter accepts the tap key first and hold key second, so
 Studio's key grid displays the tap. It forwards both parameters in the
@@ -254,8 +254,8 @@ dropdown when changing a steno key; changing the label alone affects its
 appearance. Letter labels, keypad star and keypad hash resolve in Studio's
 current HID table. Left/right identity is shown in the dropdown.
 
-For this experiment, restore the newly compiled stock keymap in Studio after
-flashing. This replaces saved bindings with the new parameter format. The
-firmware adapter passed press/release forwarding and metadata checks, and
-both halves compiled. Bluetooth Studio was confirmed working on the earlier
-Studio build by the user.
+If you saved bindings in Studio before this update, use **Restore stock
+settings** after flashing to load the new parameter format. This replaces
+saved keymap edits. The updated grid was verified in the native Studio app,
+and the physical keyboard passed a tap/hold check (`q` and `[`) and a
+Javelin typing check. Bluetooth Studio worked on the earlier Studio build.

@@ -4,7 +4,7 @@ This ZMK module runs the [Javelin steno engine](https://github.com/jthlim/javeli
 
 ## Validation of `claude/boot-speed-and-flash-idle`
 
-Both local builds and all four GitHub Actions targets compiled. The user confirmed typing on both halves, Javelin KAT, Plover HID, mode labels, Practice and exit, idle flash shutdown, immediate Javelin wake, and all four browser-editor checks. The reboot diagnostic reported `CHECK_QUICK 53` (53 ms). Deep sleep with this branch, Studio operation, and the new serial verify/repair commands still need hardware testing.
+Both local builds and all four GitHub Actions targets compiled. The user confirmed typing on both halves, Javelin KAT, Plover HID, mode labels, Practice and exit, idle flash shutdown, immediate Javelin wake, and all four browser-editor checks. The reboot diagnostic reported `CHECK_QUICK 53` (53 ms). Deep sleep with this branch and the new serial verify/repair commands still need hardware testing.
 
 LEFT and RIGHT now have 30 prompts each. WORDS has 10. The longer runs and nine-character layer names passed host behavior and rendering checks and compiled for both halves. These follow-up changes still need flashing and on-keyboard testing.
 
@@ -124,7 +124,7 @@ The earlier [Corne test profile](docs/CORNE-PLOVER-HID-TEST.md) is a separate ta
 | Build | What it is |
 | --- | --- |
 | `left-logging` | Left half with the diagnostics serial port, for provisioning |
-| `left-studio` | Left half with ZMK Studio over USB |
+| `left-studio` | Left half with ZMK Studio over USB and Bluetooth |
 | `right` | Right half |
 | `right-nice-view` | Right half with the nice!view |
 
@@ -132,23 +132,22 @@ Each run prints the flash and RAM totals in its log and attaches the `.uf2` file
 
 ## ZMK Studio
 
-The `left-studio` workflow target enables ZMK Studio and compiled successfully at `2ac81ae`. Its Studio behavior still needs hardware testing.
+The `left-studio` workflow target enables ZMK Studio over USB and Bluetooth. USB keymap reads and key labels were verified on the updated build. Bluetooth editing and renames on the right display were verified on the earlier Studio build.
 
 - The typing, steno and Plover modes are recognised by layer ID, defined in [`javelin_steno_layers.h`](include/dt-bindings/zmk/javelin_steno_layers.h). Renaming those layers in Studio leaves the right display, practice and flash handling working. Reordering should too, since the pinned ZMK keeps a layer's ID when it moves, but that is untested.
 - Practice has no layer of its own. It runs on the steno layer and the `&javpractice` key turns it on and off, so the steno keys are mapped once. A steno layer built from scratch on a new layer still types, but gets no dictionary pre-wake or loading message.
 - A layer renamed in Studio shows its new name on the right display, cut to 9 characters, and so does a layer added in Studio. **Loading...** and **No dictionary** still take over on the steno layer. A layer that keeps its keymap name shows the built-in label such as **Typing** or **Javelin**, and so does a layer with no name. A rename shows after the next layer change. Both halves need this firmware.
 - The split keymap reserves two spare layers, `extra1` and `extra2`, for Studio to hand out. Builds without Studio ignore them.
 - Studio starts unlocked: `corne_left.conf` sets `CONFIG_ZMK_STUDIO_LOCKING=n`, so no unlock key is needed. To try Studio on the left half, build with `-S studio-rpc-usb-uart` in place of `-S zmk-usb-logging` and add `-DCONFIG_ZMK_STUDIO=y`.
-- The `&javsteno` behavior lists its 38 steno keys by name, so Studio can assign them.
+- The typing layer shows tap actions in the Studio grid. Javelin uses a visible key label and a separate dropdown for each of its 38 physical steno keys. See the [split guide](config/zen-r4-split/README.md#studio-key-labels) for the keymap update steps.
 - The build fails if the keymap's layer order no longer matches `javelin_steno_layers.h`.
 
 ### Studio checks still to run on hardware
 
-- The custom `&ht` hold-tap shows its hold and tap keys.
-- `&javsteno` offers the named steno keys, and `&plv` the named Plover HID keys.
+- Confirm the named Plover HID keys can be reassigned in Studio.
 - Editing a typing key leaves Javelin, Plover HID and practice working.
 - Studio's USB serial port works alongside the browser dictionary editor. Studio and the logging port used for provisioning are separate builds.
-- A saved Studio keymap survives a reboot, and **Restore stock settings** brings back the keymap file.
+- Confirm a saved Studio binding survives a reboot.
 - Renaming and reordering layers keeps the right display and practice correct.
 - Browser editor: disconnect mid-command, reconnect, switch between USB and Bluetooth, and resume editing.
 
