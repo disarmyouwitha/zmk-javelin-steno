@@ -147,7 +147,7 @@ jobs:
             snippet=(-S "${{ matrix.snippet }}")
           fi
           set -o pipefail
-          west build -s "$source" -d "$GITHUB_WORKSPACE/out" -b "$board" "${snippet[@]}" -- "${args[@]}" \n            2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+          west build -s "$source" -d "$GITHUB_WORKSPACE/out" -b "$board" "${snippet[@]}" -- "${args[@]}" 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       # The linker prints how full the internal flash and RAM are. Post it on
       # the run page so growth is visible on every push.
