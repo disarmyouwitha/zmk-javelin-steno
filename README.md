@@ -34,7 +34,7 @@ LEFT and RIGHT now have 30 prompts each. WORDS has 10. The longer runs and nine-
 6. First boot does one full dictionary check and records it. Reboot again: send `W` to the diagnostics port and expect `LAPWING CHECK_QUICK` with a time in milliseconds.
 7. The steno layer shows **Loading...** on the right display until the check finishes, then **Javelin**.
 8. Typing, onboard Javelin and Plover HID still work across both halves.
-9. Practice: hold SYM+NUM and tap the outer right thumb. The key left of the Lapwing # key (the one above S) turns practice off and on. The outer left thumb returns to typing.
+9. Practice: hold Arrows+Numpad and tap the outer right thumb. The key left of the Lapwing # key (the one above S) turns practice off and on. The outer left thumb returns to typing.
 10. Browser editor: connect, edit an entry, then try a disconnect mid-command, a reconnect, and a switch between USB and Bluetooth.
 
 **Then try ZMK Studio, on the left half only**
@@ -64,7 +64,7 @@ LEFT and RIGHT now have 30 prompts each. WORDS has 10. The longer runs and nine-
 | Plover HID | The keyboard sends raw steno strokes to Plover on the computer over USB or Bluetooth. Plover uses its own dictionaries. |
 | Javelin browser HID | Over USB or Bluetooth, Javelin Steno Tools can edit and export the onboard personal dictionary, switch active dictionaries, and select a host output profile. Wireless connection was verified in Chrome on macOS. |
 
-From normal typing, the right thumbs are **Space**, **onboard Javelin**, and **Plover HID**, left to right. The middle left thumb holds **SYM+NUM**. In either steno mode, the outer left thumb returns to typing.
+From normal typing, the right thumbs are **Space**, **onboard Javelin**, and **Plover HID**, left to right. The middle left thumb holds **Arrows+Numpad**. In either steno mode, the outer left thumb returns to typing.
 
 Both halves passed normal typing, cross-half Javelin chords, and host Plover HID, including split reconnection after a full reboot. Browser edits and base selection were also verified across a reboot. Onboard tests covered repeating a translation with the number bar, undoing the repeat with star, spelling **hoping** from `HOEP / -G`, and typing **ça va** on a Mac. Spelling and repeat run on the keyboard.
 
@@ -72,9 +72,9 @@ Both halves passed normal typing, cross-half Javelin chords, and host Plover HID
 
 The battery-powered left half passed normal typing, Plover HID strokes, and onboard Javelin output including **ça va ça va** over Bluetooth on macOS. The same Bluetooth connection also supports the Javelin browser editor. Explicit repeat/undo and a full power-cycle/reconnect test over the host Bluetooth connection remain to be checked. Windows Bluetooth has not yet been verified.
 
-From typing mode, hold the middle left thumb (**SYM+NUM**) and tap **Q** for host profile 0 or **W** for profile 1. Pair **Zen R4 Split** in the computer's Bluetooth settings. Disconnect USB to test Bluetooth output, since ZMK normally prefers USB when it is connected. The tested Mac pairing is saved to profile 0.
+From typing mode, hold the middle left thumb (**Arrows+Numpad**) and tap **Q** for host profile 0 or **W** for profile 1. Pair **Zen R4 Split** in the computer's Bluetooth settings. Disconnect USB to test Bluetooth output, since ZMK normally prefers USB when it is connected. The tested Mac pairing is saved to profile 0.
 
-**SYM+NUM + R** clears the selected host profile's pairing. During bring-up, the Mac initially showed the keyboard as **SETTINGS RESET**, and pairing failed until an old bond in profile 0 was cleared. It then paired successfully and appeared as **Zen R4 Split**. Clearing a different empty profile did not resolve that stale bond. See the [Bluetooth test notes](docs/BLUETOOTH-BATTERY-TEST.md) for the observed sequence and remaining checks.
+**Arrows+Numpad + R** clears the selected host profile's pairing. During bring-up, the Mac initially showed the keyboard as **SETTINGS RESET**, and pairing failed until an old bond in profile 0 was cleared. It then paired successfully and appeared as **Zen R4 Split**. Clearing a different empty profile did not resolve that stale bond. See the [Bluetooth test notes](docs/BLUETOOTH-BATTERY-TEST.md) for the observed sequence and remaining checks.
 
 ## Deep sleep on battery
 
