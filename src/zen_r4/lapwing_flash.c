@@ -1,5 +1,6 @@
 #include "lapwing_flash.h"
 #include "quad.h"
+#include "diag.h"
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
 #include "battery_log.h"
 #endif
@@ -94,6 +95,8 @@ static uint32_t last_check_ms;
 static atomic_t mapped_ready;
 /* Set once a bring-up attempt has finished, whatever its result. */
 static atomic_t checked;
+/* The last chip ID read, for the status command. */
+static uint8_t last_jedec[3] __maybe_unused;
 
 /* Called whenever the dictionaries become usable or a bring-up gives up.
  * Runs on the flash worker with the flash lock held: only submit work.
@@ -217,6 +220,13 @@ static bool take_wake_trust(void) {
 }
 
 static void request_restart(void) {
+    if (flash_suspended) {
+#if IDLE_OFF
+        diag_wake_requested(atomic_get(&idle_off) != 0);
+#else
+        diag_wake_requested(false);
+#endif
+    }
     atomic_set(&restart_requested, 1);
     k_sem_give(&restart_wake);
 }
@@ -383,6 +393,7 @@ void lapwing_flash_hold(bool hold) {
 
 static bool start_qspi(nrfx_qspi_config_t *config) {
     if (!gpio_is_ready_dt(&power) || gpio_pin_configure_dt(&power, GPIO_OUTPUT_ACTIVE) != 0) {
+        diag_log("QSPI start failed: flash power pin\n");
         return false;
     }
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
@@ -392,6 +403,7 @@ static bool start_qspi(nrfx_qspi_config_t *config) {
     if (pinctrl_apply_state(PINCTRL_DT_DEV_CONFIG_GET(QSPI_NODE), PINCTRL_STATE_DEFAULT) != 0 ||
         nrfx_qspi_init(config, NULL, NULL) != NRFX_SUCCESS ||
         nrfx_qspi_activate(true) != NRFX_SUCCESS) {
+        diag_log("QSPI start failed: pins, init or activate\n");
         return false;
     }
 
@@ -400,9 +412,11 @@ static bool start_qspi(nrfx_qspi_config_t *config) {
     };
     uint8_t id[3];
     if (nrfx_qspi_cinstr_xfer(&read_id, NULL, id) != NRFX_SUCCESS) {
+        diag_log("QSPI start failed: JEDEC read\n");
         return false;
     }
-    printk("Lapwing JEDEC ID: %02x %02x %02x\n", id[0], id[1], id[2]);
+    memcpy(last_jedec, id, sizeof(last_jedec));
+    diag_log("Lapwing JEDEC ID: %02x %02x %02x\n", id[0], id[1], id[2]);
     return id[0] == 0xef && id[1] == 0x40 && id[2] == 0x18;
 }
 
@@ -454,7 +468,7 @@ static bool enable_verified_mapping(nrfx_qspi_config_t *config, bool quick) {
             k_yield();
         }
         if (crc != image->crc) {
-            printk("%s mapped CRC mismatch: %08x\n", image->name, crc);
+            diag_log("%s mapped CRC mismatch: %08x\n", image->name, crc);
             return false;
         }
     }
@@ -689,6 +703,7 @@ static void power_cycle_flash(void) {
         (void)reactivate_after_xip();
     }
     (void)power_down_flash(initialized);
+    diag_note(DIAG_POWER_CYCLE);
     k_msleep(500);
 }
 #else
@@ -712,8 +727,9 @@ static bool prepare_flash_with_retry(nrfx_qspi_config_t *config, bool *mapping_f
         if (atomic_get(&mapped_ready) || !transient_fault || attempt == BRING_UP_ATTEMPTS) {
             break;
         }
-        printk("External flash did not start (attempt %d of %d); trying again\n", attempt,
-               BRING_UP_ATTEMPTS);
+        diag_note(DIAG_RETRY);
+        diag_log("External flash did not start (attempt %d of %d); trying again\n", attempt,
+                 BRING_UP_ATTEMPTS);
         power_cycle_flash();
     }
     return qspi_ok;
@@ -731,7 +747,8 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
     bool qspi_ok = prepare_flash_with_retry(config, mapping_failed, quick);
 
     if (quick && (!qspi_ok || *mapping_failed || !atomic_get(&mapped_ready))) {
-        printk("Quick flash check failed; verifying in full\n");
+        diag_note(DIAG_QUICK_FALLBACK);
+        diag_log("Quick flash check failed; verifying in full\n");
         quick = false;
         trusted = false;
         if (nrfx_qspi_init_check()) {
@@ -747,9 +764,13 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
             clear_trust();
         }
     }
-    printk("External flash %s after %s check in %d ms\n",
-           atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full",
-           (int)(k_uptime_get() - started));
+    diag_note(quick ? DIAG_QUICK_CHECK : DIAG_FULL_CHECK);
+    if (!atomic_get(&mapped_ready)) {
+        diag_note(DIAG_UNAVAILABLE);
+    }
+    diag_log("External flash %s after %s check in %d ms\n",
+             atomic_get(&mapped_ready) ? "mapped" : "unavailable", quick ? "quick" : "full",
+             (int)(k_uptime_get() - started));
     atomic_set(&checked, 1);
     lapwing_flash_ready_changed();
 #if SERIAL_PROVISIONING
@@ -760,6 +781,42 @@ static bool bring_up_flash(nrfx_qspi_config_t *config, bool *mapping_failed) {
 }
 
 #if SERIAL_PROVISIONING
+
+#ifdef CONFIG_ZMK_JAVELIN_DIAG
+/* The S command: the flash lifecycle state, then the counters. */
+static void print_flash_status(void) {
+    int suspended = 0;
+    int idle = 0;
+    int holding = 0;
+#ifdef CONFIG_ZMK_SLEEP
+    suspended = flash_suspended;
+#endif
+#if IDLE_OFF
+    idle = atomic_get(&idle_off) != 0;
+    holding = atomic_get(&held) != 0;
+#endif
+    diag_printf(console, "FLASH mapped=%d checked=%d suspended=%d idle_off=%d steno_hold=%d",
+                (int)(atomic_get(&mapped_ready) != 0), (int)(atomic_get(&checked) != 0),
+                suspended, idle, holding);
+    diag_printf(console, "FLASH jedec=%02x %02x %02x (expected ef 40 18)", last_jedec[0],
+                last_jedec[1], last_jedec[2]);
+    diag_printf(console, "FLASH last check %s %u ms, trusted since power loss=%d, saved record=%d",
+                last_check_quick ? "quick" : "full", last_check_ms, (int)trusted,
+                (int)stored_trust());
+#if IDLE_OFF
+    diag_printf(console, "FLASH idle power-down on, after %u s",
+                (uint32_t)CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_SECONDS);
+#else
+    diag_printf(console, "FLASH idle power-down off");
+#endif
+    for (size_t i = 0; i < ARRAY_SIZE(images); i++) {
+        diag_printf(console, "IMAGE %s verified=%d bytes=%u crc=%08x", images[i].name,
+                    (int)images[i].verified, images[i].bytes, images[i].crc);
+    }
+    diag_print_status(console);
+    diag_printf(console, "END");
+}
+#endif
 
 static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qspi_ok,
                            bool *mapping_failed) {
@@ -782,6 +839,7 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
             if (!qspi_ok) {
                 reply(image, "QSPI_ERROR", 0);
             } else if (erase_image(image)) {
+                diag_note(DIAG_ERASE);
                 *mapping_failed = false;
                 reply(image, "ERASED", image->bytes);
             } else {
@@ -802,6 +860,7 @@ static void handle_command(uint8_t command, nrfx_qspi_config_t *config, bool qsp
         } else if (command == image->query) {
             reply(image, "UNPROVISIONED", image->bytes);
         } else if (transfer_and_program(image)) {
+            diag_note(DIAG_PROGRAM);
             image->verified = read_image_crc(image);
             if (!image->verified) {
                 reply(image, "READBACK_ERROR", 0);
@@ -836,6 +895,9 @@ static void lapwing_worker(void *a, void *b, void *c) {
     config.phy_if.sck_freq =
         (nrf_qspi_frequency_t)(CONFIG_ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER - 1);
 
+    diag_note(DIAG_BOOT);
+    diag_log("Flash worker started\n");
+
     bool mapping_failed = false;
 #ifdef CONFIG_ZMK_SLEEP
     bool qspi_ok = false;
@@ -857,6 +919,10 @@ static void lapwing_worker(void *a, void *b, void *c) {
                 note_use();
                 atomic_clear(&idle_off);
 #endif
+#if SERIAL_PROVISIONING
+                diag_wake_ready(atomic_get(&mapped_ready) != 0, last_check_quick,
+                                last_check_ms);
+#endif
             }
             k_mutex_unlock(&flash_lock);
         }
@@ -871,7 +937,8 @@ static void lapwing_worker(void *a, void *b, void *c) {
                 flash_is_idle(initialized)) {
                 if (power_down_flash(initialized) == 0) {
                     atomic_set(&idle_off, 1);
-                    printk("External flash powered down while idle\n");
+                    diag_note(DIAG_IDLE_DOWN);
+                    diag_log("External flash powered down while idle\n");
                 } else {
                     request_restart();
                 }
@@ -882,12 +949,27 @@ static void lapwing_worker(void *a, void *b, void *c) {
 #endif
 #if SERIAL_PROVISIONING
         uint8_t command;
+        diag_tick();
         if (uart_poll_in(console, &command) == 0) {
             if (command == 'W') {
                 reply(&images[0], last_check_quick ? "CHECK_QUICK" : "CHECK_FULL",
                       last_check_ms);
                 continue;
             }
+#ifdef CONFIG_ZMK_JAVELIN_DIAG
+            if (command == 'S') {
+                print_flash_status();
+                continue;
+            }
+            if (command == 'D') {
+                diag_dump_log(console);
+                continue;
+            }
+            if (command == 'Z') {
+                diag_clear(console);
+                continue;
+            }
+#endif
 #ifdef CONFIG_ZMK_JAVELIN_BATTERY_LOG
             if (command == 'B') {
                 zen_battery_log_export(console);
