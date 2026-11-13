@@ -74,7 +74,7 @@
         compatible = "zmk,keymap";
 
         main_layer {
-            display-name = "QWERTY";
+            display-name = "Qwerty";
             // ht parameters: tap first, hold second. Editing shortcuts use Command.
             bindings = <
 &ht TAB ESC  &ht Q LBKT   &ht W RBKT   &ht E LBRC   &ht R RBRC   &ht T SQT       &ht Y MINUS &ht U AMPS &ht I STAR     &ht O LG(F)   &ht P LG(LS(N4)) &kp DEL

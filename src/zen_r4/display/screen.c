@@ -135,8 +135,8 @@ lv_obj_t *zen_r4_screen_create(void) {
         bool bold;
     } samples[] = {
         {5, &lv_font_montserrat_20, "Plover", false},
-        {44, &lv_font_montserrat_16, "QWERTY", false},
-        {77, &lv_font_montserrat_16, "QWERTY", true},
+        {44, &lv_font_montserrat_16, "Qwerty", false},
+        {77, &lv_font_montserrat_16, "Qwerty", true},
         {110, &lv_font_montserrat_16, "Plover\nHID", true},
     };
     for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); i++) {
@@ -185,7 +185,7 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
 #endif
     static const char *const mode_names[] = {
         [ZEN_R4_MODE_UNKNOWN] = "Waiting\nFor Left",
-        [ZEN_R4_MODE_TYPING] = "QWERTY",
+        [ZEN_R4_MODE_TYPING] = "Qwerty",
         [ZEN_R4_MODE_SYMBOLS] = "SYM+NUM",
         [ZEN_R4_MODE_JAVELIN] = "Javelin",
         [ZEN_R4_MODE_PLOVER] = "PloverHID",

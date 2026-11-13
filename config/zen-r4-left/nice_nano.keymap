@@ -52,7 +52,7 @@
         compatible = "zmk,keymap";
 
         main_layer {
-            display-name = "QWERTY";
+            display-name = "Qwerty";
             bindings = <
                 &ht ESC TAB &ht LBKT Q  &ht RBKT W  &ht LBRC E  &ht RBRC R &ht SQT T
                 &kp LCTRL   &ht LG(A) A &ht LG(S) S &ht LPAR D  &ht RPAR F &ht DQT G
