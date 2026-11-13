@@ -94,3 +94,8 @@ config ZMK_ZEN_R4_SPLIT_STATUS
 config ZMK_ZEN_R4_PRACTICE
     bool "Offline single-stroke practice on the right nice!view"
     depends on ZMK_ZEN_R4_SPLIT_STATUS && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
+
+config ZMK_ZEN_R4_FONT_SAMPLER
+    bool "Show a font sampler on the right nice!view"
+    select LV_FONT_MONTSERRAT_20
+    depends on ZMK_ZEN_R4_SPLIT_STATUS && !ZMK_SPLIT_ROLE_CENTRAL

@@ -1,4 +1,9 @@
-"""Provision, check, verify or repair the Zen R4 dictionaries over USB serial."""
+"""Install, check, verify or repair the dictionary images over USB serial.
+
+With no options it installs every image the firmware knows that is not
+installed yet, from the files under build/. Name one image with --base to
+act on it alone; --repair and --verify are the usual reasons to.
+"""
 
 import argparse
 from pathlib import Path
@@ -11,6 +16,13 @@ from serial import Serial
 
 
 CHUNK_BYTES = 512
+REPO = Path(__file__).resolve().parents[2]
+# Where the prepare scripts and the Lapwing build instructions write each image.
+DEFAULT_IMAGES = {
+    "LAPWING": REPO / "build" / "lapwing" / "lapwing-base.bin",
+    "PLOVER": REPO / "build" / "plover" / "plover-main.bin",
+    "EXTRAS": REPO / "build" / "extras" / "lapwing-extras.bin",
+}
 # Serial command letters understood by the firmware, by base.
 COMMANDS = {
     "LAPWING": {"query": b"?", "program": b"L", "erase": b"E", "verify": b"V", "info": b"I"},
@@ -46,10 +58,10 @@ def response(port, timeout=30, base="LAPWING"):
     raise TimeoutError("No dictionary reply on USB serial")
 
 
-def ask(port, base, command, expected):
-    """Send a command and return the value of its first reply, which must be `expected`."""
+def ask(port, base, command, expected, drain=True):
+    """Send a command and return its first reply, which must be `expected`."""
     # The initial ZMK boot log can fill the CDC transmit buffer before DTR.
-    for _ in range(4):
+    for attempt in range(4):
         port.write(COMMANDS[base][command])
         try:
             state, value = response(port, 2, base)
@@ -57,6 +69,11 @@ def ask(port, base, command, expected):
             continue
         if expected is not None and state != expected:
             raise RuntimeError(f"Unexpected reply {state}")
+        if drain and attempt:
+            # An earlier attempt may still be answered. Drop its reply, or the
+            # next command would read it as its own.
+            time.sleep(0.5)
+            port.reset_input_buffer()
         return state, value
     raise TimeoutError("The firmware did not answer. It may predate this command.")
 
@@ -67,7 +84,7 @@ def query(port, base="LAPWING"):
 
 def expected_image(port, base):
     """The size and CRC32 of the image this firmware was built for."""
-    _, size = ask(port, base, "info", "SIZE")
+    _, size = ask(port, base, "info", "SIZE", drain=False)
     state, crc = response(port, 2, base)
     if state != "CRC":
         raise RuntimeError(f"Unexpected reply {state}")
@@ -140,65 +157,137 @@ def repair(port, image, base):
     program(port, image, base)
 
 
+def read_image(path):
+    """A JSC4 image file, or an error that says how to build it."""
+    if not path.is_file():
+        raise SystemExit(f"{path} not found. Build it with the matching prepare script first.")
+    image = path.read_bytes()
+    if image[:4] != b"JSC4" or len(image) % 4:
+        raise SystemExit(f"{path} is not a word-aligned JSC4 image")
+    return image
+
+
+def present(port, name):
+    """The size and CRC32 the firmware expects for `name`, or None if this firmware has no such image."""
+    try:
+        return expected_image(port, name)
+    except TimeoutError:
+        return None
+
+
+def check_matches_firmware(image, name, size, crc, path):
+    if len(image) != size or zlib.crc32(image) != crc:
+        raise SystemExit(
+            f"{path} is not the {name} image this firmware was built for. It expects "
+            f"{size:,} bytes with CRC32 {crc:08x}; the file has {len(image):,} bytes with "
+            f"CRC32 {zlib.crc32(image):08x}. Rebuild the image, or flash the firmware that "
+            "was built with it.")
+
+
+def upload_all(port, paths):
+    """Install every image the firmware knows that is not installed yet."""
+    seen = 0
+    for name in COMMANDS:
+        expected = present(port, name)
+        if expected is None:
+            print(f"{name}: not part of this firmware, skipped")
+            continue
+        seen += 1
+        size, crc = expected
+        state, _ = query(port, name)
+        if state in ("MAPPED", "VERIFIED"):
+            print(f"{name}: already installed")
+            continue
+        if state != "UNPROVISIONED":
+            raise SystemExit(f"{name}: unexpected starting state {state}. "
+                             f"Run with --repair --base {name.lower()} to erase and write it.")
+        image = read_image(paths[name])
+        check_matches_firmware(image, name, size, crc, paths[name])
+        print(f"{name} image: {size:,} bytes, CRC32 {crc:08x}", flush=True)
+        program(port, image, name)
+    if not seen:
+        raise SystemExit("The firmware reported no dictionary images")
+
+
+def status(port):
+    seen = 0
+    for name in COMMANDS:
+        if present(port, name) is None:
+            continue
+        seen += 1
+        state, size = query(port, name)
+        print(f"{name}: {state}, {size:,} bytes")
+    if not seen:
+        raise SystemExit("The firmware reported no dictionary images")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("port", help="USB CDC device path")
-    parser.add_argument("image", type=Path, nargs="?", help="Mapped JSC4 image to program")
-    parser.add_argument("--base", choices=("lapwing", "plover", "extras", "all", "both"),
-                        default="lapwing",
-                        help="Dictionary image to act on. 'extras' is the Lapwing commands, "
-                             "numbers, UK additions and proper nouns. 'all' is for --verify "
-                             "only; 'both' is its older name")
+    parser.add_argument("image", type=Path, nargs="?",
+                        help="JSC4 image for a single --base. Default: the file under build/ "
+                             "that the prepare script wrote")
+    parser.add_argument("--base", choices=("lapwing", "plover", "extras", "all"),
+                        help="Image to act on. With no --base, an upload installs every "
+                             "image that is not installed yet and --verify checks all of "
+                             "them. --repair needs one image")
     parser.add_argument("--repair", action="store_true",
-                        help="Erase this base and write the image again, even if the "
-                             "keyboard reports it as verified or cannot load it")
+                        help="Erase this image and write it again, even if the keyboard "
+                             "reports it as verified or cannot load it")
     parser.add_argument("--verify", action="store_true",
-                        help="Read the whole base and check its CRC. Writes nothing")
+                        help="Read the whole image and check its CRC. Writes nothing")
+    parser.add_argument("--status", action="store_true",
+                        help="Print the state of every image and exit")
     args = parser.parse_args()
-    if args.verify and (args.repair or args.image):
-        parser.error("--verify takes no image and cannot be combined with --repair")
-    if args.repair and not args.image:
-        parser.error("--repair needs the image to write")
-    if args.base in ("all", "both") and not args.verify:
-        parser.error("--base all is for --verify only")
-    base = args.base.upper()
-    image = args.image.read_bytes() if args.image else None
-    if image is not None and (image[:4] != b"JSC4" or len(image) % 4):
-        parser.error("Expected a word-aligned JSC4 image")
+    base = (args.base or "all").upper()
+    if sum([args.repair, args.verify, args.status]) > 1:
+        parser.error("Use only one of --repair, --verify and --status")
+    if args.repair and base == "ALL":
+        parser.error("--repair needs --base lapwing, plover or extras")
+    if args.image and base == "ALL":
+        parser.error("An image path goes with a single --base")
+    if args.image and (args.verify or args.status):
+        parser.error("--verify and --status take no image")
+
+    paths = dict(DEFAULT_IMAGES)
+    if args.image:
+        paths[base] = args.image
 
     with Serial(args.port, 115200, timeout=0.25, write_timeout=5, exclusive=True) as port:
+        if args.status:
+            status(port)
+            return
+
         if args.verify:
-            bases = list(COMMANDS) if base in ("ALL", "BOTH") else [base]
+            bases = list(COMMANDS) if base == "ALL" else [base]
             # Wait out the boot log before the long read.
             expected_image(port, bases[0])
             results = []
             for name in bases:
-                if len(bases) > 1 and name != bases[0]:
+                if len(bases) > 1 and name != bases[0] and present(port, name) is None:
                     # A firmware built without this image stays silent.
-                    try:
-                        expected_image(port, name)
-                    except TimeoutError:
-                        print(f"{name}: not part of this firmware, skipped")
-                        continue
+                    print(f"{name}: not part of this firmware, skipped")
+                    continue
                 results.append(verify(port, name))
             sys.exit(0 if all(results) else 1)
 
         if args.repair:
-            repair(port, image, base)
+            repair(port, read_image(paths[base]), base)
+            return
+
+        if base == "ALL":
+            upload_all(port, paths)
             return
 
         state, size = query(port, base)
-        if image is None:
-            print(f"{state}: {size:,} bytes")
-            return
-
+        image = read_image(paths[base])
         if size != len(image):
-            raise RuntimeError(f"Firmware expects {size:,} bytes")
+            raise SystemExit(f"Firmware expects {size:,} bytes")
         if state in ("MAPPED", "VERIFIED"):
             print("Dictionary is already verified. Use --repair to erase and write it again.")
             return
         if state != "UNPROVISIONED":
-            raise RuntimeError(f"Unexpected starting state {state}")
+            raise SystemExit(f"Unexpected starting state {state}")
 
         print(f"{base} image: {len(image):,} bytes, CRC32 {zlib.crc32(image):08x}", flush=True)
         program(port, image, base)

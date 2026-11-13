@@ -53,10 +53,10 @@ Copy `build/zen-r4-left/zephyr/zmk.uf2` onto the left nice!nano's `NICENANO` dri
 
 ```sh
 python3 "$repo/tools/zen-r4-lapwing/upload.py" /dev/cu.usbmodem14501 \
-  "$repo/build/lapwing/lapwing-base.bin"
+  --base lapwing "$repo/build/lapwing/lapwing-base.bin"
 ```
 
-The uploader checks for conflicting existing bits before programming, verifies each programmed chunk by readback, and checks the entire image again through quad memory-mapped reads. The firmware also checks native one- and two-stroke lookups. On a later boot it verifies the existing image and opens it automatically. Omit the image argument to query status without writing. The uploader can retry an interrupted upload of the same image. It has no erase command.
+The uploader checks for conflicting existing bits before programming, verifies each programmed chunk by readback, and checks the entire image again through quad memory-mapped reads. The firmware also checks native one- and two-stroke lookups. On a later boot it verifies the existing image and opens it automatically. Use `--status` to query status without writing. The uploader can retry an interrupted upload of the same image. It has no erase command.
 
 ## Physical USB checks
 

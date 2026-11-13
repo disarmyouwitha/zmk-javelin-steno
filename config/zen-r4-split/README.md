@@ -2,7 +2,7 @@
 
 The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
-The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for SYM+NUM, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
+The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Arrows+Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
 
 In either steno mode, the middle right thumb chords U, the outer right thumb switches steno modes, and the outer left thumb returns to MAIN.
 
@@ -41,8 +41,45 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 ### Right-half nice!view
 
-The normal mode and battery screens use a horizontal layout with dark text on
-a light background. Practice uses a portrait layout.
+The right nice!view uses a 68 × 160 portrait layout for status and Practice,
+with dark text on a light background. The Sharp driver still receives native
+160-pixel rows. The right-half LVGL flush callback rotates the grayscale rendering buffer
+and thresholds it into one-bit pixels for the panel.
+
+| Right nice!view build | Flash | RAM |
+| --- | ---: | ---: |
+| Original dual-canvas layout | 378,656 B | 75,360 B |
+| Portrait status and Practice widgets | 388,064 B | 54,608 B |
+| Bold portrait widgets with grayscale text rendering | 430,872 B | 64,064 B |
+| Portrait widgets with USB squid animation | 443,248 B | 64,072 B |
+| Squid with typing, sleep, reconnect and completion effects | 466,720 B | 64,072 B |
+
+The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
+panel buffer. A right-half test pattern verified the rotation and polarity
+on the physical panel.
+
+The 48 × 48 squid sits above the mode label and reacts to right-half
+keypresses. In Practice it appears at completion and celebrates once.
+The right half draws its frames from internal flash. On battery, the animation
+timer pauses between reactions. While the right half has USB power, the squid
+bobs and blinks through eight frames with sparkles rising above it. The sparkles
+hide when the upper mode label needs that space. This indicates USB
+power, including when the battery is full. Typing and completion celebrations
+take priority, and the timer pauses while Practice hides the squid.
+Right-hand typing sends a 420 ms puff above the pet. Further keypresses let
+the current rise-and-pop sequence finish before triggering another one. On battery, idle shows a
+static sleep bubble with the animation timer paused. Split reconnection plays
+a greeting after the first mode update, and a completed Practice run adds
+confetti around its headings. These effects run locally on the right half. The user verified the reactions
+on the nice!view, including the reconnect greeting and revised typing timing.
+The footer pairs a rounded battery icon inspired
+by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
+with the right half's battery percentage.
+
+Mode names use boldened, borderless dark text below the squid, choosing 20 or
+16 pixels to fit. PloverHID appears as **Plover** and **HID** on two lines.
+The disconnected message shows **Waiting** above the squid and **For Left** below. The completion screen gives the score and best
+streak separate lines beneath the celebration.
 
 For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above. The overlay sets display chip select to D0 (P0.08) to match the Ultralight PCB.
 
@@ -57,7 +94,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **PloverHID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Qwerty** after connection, **Arrows+Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -66,12 +103,12 @@ through Javelin's active dictionaries, including personal overrides. The
 ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
-Practice runs on the steno layer. From Typing, hold the middle left thumb for
-SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
+Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
+Arrows+Numpad and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
-Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 30 each.
+Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
 
 **LEFT** and **RIGHT** use the corresponding consonant banks from
 [StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
@@ -84,13 +121,13 @@ This lookup is local to Practice. It requires no computer and leaves saved
 dictionary selections alone. **ENABLE DICT** appears if WORDS has neither a
 usable active dictionary nor an available Lapwing base.
 
-The right nice!view shows the drill, prompt, progress, and streak. The portrait
-screen uses bold prompts and headings. Correct answers show **CORRECT** for
+The right nice!view shows the drill, a large prompt, progress, and streak.
+Correct answers show **CORRECT** for
 250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
 and keep the current prompt. After all prompts are answered correctly, the screen shows
 **DONE** and the best streak.
 
-The outer left thumb returns to Typing. The key left of the Lapwing # key (the one above S) exits to
+The outer left thumb returns to Qwerty. The key left of the Lapwing # key (the one above S) exits to
 normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
@@ -131,13 +168,13 @@ The existing website supplies these controls. Firmware support handles listing, 
 
 Plover source: [official main.json at the pinned revision](https://github.com/openstenoproject/plover/blob/8a52c5296c502507f9a46820a4a947ca25f998e6/plover/assets/main.json). Source SHA256: `6570873c7f703ecd39c9870083f643db3475b49462a8db80fe22fe33ac3cfe92`. Compiled padded image SHA256: `6d74757af03ad1769f6f2d587afcc8957a5486b3e31ed3e20f00410c2624e2c4`.
 
-After flashing the dual-base left UF2, program Plover over the diagnostics port, substituting the actual device path:
+After flashing a left UF2 built with the logging port, install the dictionaries over the diagnostics port, substituting the actual device path:
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 \
-  --base plover build/plover/plover-main.bin
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base plover
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501
 ```
+
+With no other options, `upload.py` installs every image the firmware was built with that is not installed yet (Lapwing Base, Plover Base and the Lapwing extras) from the files under `build/` that the prepare steps wrote. Images already in flash are left alone. `--status` prints the state of each image. `--base lapwing`, `--base plover` or `--base extras` acts on one image alone, with the image path after it if the file is elsewhere.
 
 Provisioning checks the complete transfer before programming, verifies each programmed page, then checks the complete raw and mapped CRCs and native Javelin lookups. It writes only the selected base's region, performs no erases, and rejects conflicting pre-existing bits. Existing Lapwing and personal snapshots remain in place. The dual-base build starts onboard Javelin after both configured bases verify. `VERIFIED` means that base is intact but another configured base still needs provisioning. `MAPPED` means both bases passed and are available to Javelin. Only the left half needs updating for this feature.
 
@@ -157,7 +194,7 @@ They rank above the bases, in that order: personal entries first, then the four 
 `prepare_extras.py` downloads the four pinned sources, compiles them into `build/extras/lapwing-extras.bin` (451,088 bytes) and checks every outline. The image lives at `0x500000` in the external flash and is uploaded, verified and repaired as one unit:
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501   --base extras build/extras/lapwing-extras.bin
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base extras
 ```
 
 A firmware built with the extras image needs it in flash. After the first flash of such a build, onboard Javelin shows **No dictionary** until this upload finishes; the Lapwing and Plover bases already in flash are kept. `--verify --base all` checks all three images, and `--repair` works with `--base extras`.
@@ -169,14 +206,13 @@ Eight of the command entries are Plover application commands, such as lookup and
 Both commands need the left build with `-S zmk-usb-logging`.
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify --base all
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --verify
 ```
 
 `--verify` reads every byte of the chosen image, or of all of them, and compares the CRC with the image the firmware was built for. It writes and erases nothing, and it works when a dictionary cannot load. It prints `OK`, a CRC mismatch, or the offset of a read error, and exits with status 1 if any base fails.
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing \
-  --repair build/lapwing/lapwing-base.bin
+python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501 --base lapwing --repair
 ```
 
 `--repair` replaces a base that is damaged or holds other data, including one the keyboard still reports as verified. In order, it:

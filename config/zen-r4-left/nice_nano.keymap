@@ -52,7 +52,7 @@
         compatible = "zmk,keymap";
 
         main_layer {
-            display-name = "MAIN";
+            display-name = "Qwerty";
             bindings = <
                 &ht ESC TAB &ht LBKT Q  &ht RBKT W  &ht LBRC E  &ht RBRC R &ht SQT T
                 &kp LCTRL   &ht LG(A) A &ht LG(S) S &ht LPAR D  &ht RPAR F &ht DQT G
@@ -62,7 +62,7 @@
         };
 
         sym_num_layer {
-            display-name = "SYM+NUM";
+            display-name = "Arrows+Numpad";
             bindings = <
                 &kp LG(LA(ESC)) &kp N1 &kp N2   &kp UP    &kp N3    &kp N4
                 &none          &none  &kp LEFT &kp DOWN  &kp RIGHT &kp RET
