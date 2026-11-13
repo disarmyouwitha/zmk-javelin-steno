@@ -11,7 +11,7 @@ ZMK handles the keyboard, Bluetooth, power management, and keymap editing. Javel
 | Mode | Output |
 | --- | --- |
 | **Qwerty** | Ordinary keyboard input through ZMK. |
-| **Arrows+Numpad** | Arrow keys, a number pad, and Bluetooth controls. Hold the middle left thumb to use it. |
+| **Numpad** | Arrow keys, a number pad, and Bluetooth controls. Hold the middle left thumb to use it. |
 | **Javelin** | Onboard dictionary translation, including spelling rules, repeat, and undo. Works with Plover closed. |
 | **PloverHID** | Raw steno strokes sent to Plover on the computer, using Plover's dictionaries. |
 
@@ -54,7 +54,7 @@ ZMK Studio edits the keymap over Bluetooth. The **left-studio** build also suppo
 
 Tap/hold bindings display their tap keys. Javelin and Plover HID bindings have separate parameters for the visible key label and the actual steno key. Change the steno identity to change what a key sends.
 
-Saved Studio keymaps take precedence over the source keymap. To load updated defaults, use **Restore stock settings**, which replaces saved keymap edits. Renamed layers appear on the nice!view after a layer change, with up to nine characters sent across the split. [Studio](https://zmk.studio/) · [Binding details](config/zen-r4-split/README.md#studio-key-labels)
+Saved Studio keymaps take precedence over the source keymap. To load updated defaults, use **Restore stock settings**, which replaces saved keymap edits. Renamed layers appear on the nice!view after a layer change. Only the first nine characters are sent across the split, and only plain ASCII: any other character, such as an accented letter, shows as `?`. [Studio](https://zmk.studio/) · [Binding details](config/zen-r4-split/README.md#studio-key-labels)
 
 ## Portrait nice!view and squid
 
@@ -66,7 +66,7 @@ Sprites live in the right controller's internal flash, and animations run locall
 
 ## Offline Practice
 
-Hold the middle left thumb for Arrows+Numpad, tap the outer right thumb, then release both.
+Hold the middle left thumb for Numpad, tap the outer right thumb, then release both.
 
 | Drill | Prompts | Checks |
 | --- | ---: | --- |
@@ -82,7 +82,7 @@ Practice works with the computer off and consumes its strokes before host output
 
 ## Bluetooth and power
 
-From Qwerty, hold Arrows+Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **Zen R4 Split** in the computer's Bluetooth settings. USB is normally preferred while connected.
+From Qwerty, hold Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **Zen R4 Split** in the computer's Bluetooth settings. USB is normally preferred while connected.
 
 Typing, onboard Javelin, Plover HID, and dictionary editing have been verified over Bluetooth on macOS. The Windows plain-text output profile has been tested on Windows; Windows Bluetooth remains unverified.
 
@@ -147,11 +147,11 @@ keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
 
 ### Qwerty
 
-![Qwerty layer with tap and hold actions](docs/keymap/qwerty-291efc8e1dc7.svg)
+![Qwerty layer with tap and hold actions](docs/keymap/qwerty-43f131fbe217.svg)
 
-### Arrows+Numpad
+### Numpad
 
-![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/arrows-numpad-ca56e4818432.svg)
+![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/numpad-30b734edf269.svg)
 
 ### Javelin
 

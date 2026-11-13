@@ -20,12 +20,12 @@ LAYERS = [
         "qwerty",
         "Qwerty",
         "0",
-        "Hold middle left thumb for Arrows+Numpad · Right thumbs: Space, Javelin, PloverHID",
+        "Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, PloverHID",
     ),
     (
         "sym_num_layer",
-        "arrows-numpad",
-        "Arrows+Numpad",
+        "numpad",
+        "Numpad",
         "1",
         "Release middle left thumb to return · Outer right thumb starts Practice",
     ),
@@ -216,7 +216,7 @@ def label(binding, index, layers):
     if kind == "&to":
         return key_name(parts[1]), "tap to switch", "layer"
     if kind == "&mo" and parts[1] == "SYM_NUM":
-        return "Arrows+", "hold Numpad", "layer"
+        return "Numpad", "hold", "layer"
     if kind == "&sk":
         return "Shift", "sticky", "plain"
     if kind == "&bt":

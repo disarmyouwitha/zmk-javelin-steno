@@ -60,17 +60,14 @@ static void set_mode_label(lv_obj_t *label, const char *text) {
     if (strcmp(text, lv_label_get_text(label)) != 0) {
         const lv_font_t *font = strchr(text, '\n') ? &lv_font_montserrat_16 :
                                 fit_mode_font(text, strlen(text));
-        lv_obj_set_style_text_letter_space(label,
-                                           strcmp(text, "Arrows+\nNumpad") == 0 ? -2 : 0, 0);
         lv_obj_set_style_text_font(label, font ? font : &lv_font_montserrat_12, 0);
         lv_label_set_text(label, text);
     }
 }
 
 static void show_mode(const char *title) {
-    if (strcmp(title, "PloverHID") == 0 || strcmp(title, "Arrows+Numpad") == 0) {
-        set_mode_label(mode_below, strcmp(title, "PloverHID") == 0 ? "Plover\nHID" :
-                                                                  "Arrows+\nNumpad");
+    if (strcmp(title, "PloverHID") == 0) {
+        set_mode_label(mode_below, "Plover\nHID");
         lv_obj_add_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
         return;
     }
@@ -92,7 +89,15 @@ static void show_mode(const char *title) {
             snprintf(lines, sizeof(lines), "%.*s\n%s", (int)split, title,
                      title + split + (title[split] == ' '));
             if (strcmp(lines, lv_label_get_text(mode_below)) != 0) {
-                lv_obj_set_style_text_font(mode_below, &lv_font_montserrat_16, 0);
+                /* Each half must fit the width. Drop to the 12 px font if not. */
+                const size_t rest = length - split - (title[split] == ' ');
+                const lv_font_t *font =
+                    lv_text_get_width(title, split, &lv_font_montserrat_16, 0) <= MODE_TEXT_WIDTH &&
+                            lv_text_get_width(title + split + (title[split] == ' '), rest,
+                                              &lv_font_montserrat_16, 0) <= MODE_TEXT_WIDTH
+                        ? &lv_font_montserrat_16
+                        : &lv_font_montserrat_12;
+                lv_obj_set_style_text_font(mode_below, font, 0);
                 lv_label_set_text(mode_below, lines);
             }
         }
@@ -189,10 +194,10 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
     static const char *const mode_names[] = {
         [ZEN_R4_MODE_UNKNOWN] = "Waiting\nFor Left",
         [ZEN_R4_MODE_TYPING] = "Qwerty",
-        [ZEN_R4_MODE_SYMBOLS] = "Arrows+Numpad",
+        [ZEN_R4_MODE_SYMBOLS] = "Numpad",
         [ZEN_R4_MODE_JAVELIN] = "Javelin",
         [ZEN_R4_MODE_PLOVER] = "PloverHID",
-        [ZEN_R4_MODE_LOADING] = "Loading...",
+        [ZEN_R4_MODE_LOADING] = "Loading",
         [ZEN_R4_MODE_NO_DICTIONARY] = "No Dict",
     };
     char battery[8];

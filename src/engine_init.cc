@@ -130,8 +130,19 @@ static unsigned practice_prompt() {
   return practice.drill == ZEN_R4_PRACTICE_WORDS ? practice.round % 4 : practice.hand_prompt;
 }
 
-static void practice_draw_hand_prompt() {
-  practice.hand_prompt = sys_rand32_get() % zen_r4_practice_prompt_count(practice.drill);
+// Draws the next hand-drill prompt. After the first, it never repeats the
+// one just shown, which would look as if nothing had happened.
+static void practice_draw_hand_prompt(bool avoid_previous) {
+  const unsigned count = zen_r4_practice_prompt_count(practice.drill);
+  if (avoid_previous && count > 1) {
+    unsigned next = sys_rand32_get() % (count - 1);
+    if (next >= practice.hand_prompt) {
+      ++next;
+    }
+    practice.hand_prompt = next;
+  } else {
+    practice.hand_prompt = sys_rand32_get() % count;
+  }
 }
 
 static void practice_publish() {
@@ -159,7 +170,7 @@ static void practice_advance(struct k_work *) {
                             ? ZEN_R4_PRACTICE_DONE
                             : ZEN_R4_PRACTICE_PROMPT;
     if (practice.feedback == ZEN_R4_PRACTICE_PROMPT && practice.drill != ZEN_R4_PRACTICE_WORDS) {
-      practice_draw_hand_prompt();
+      practice_draw_hand_prompt(true);
     }
     practice_publish();
   }
@@ -194,7 +205,7 @@ static void practice_switch_drill(int direction) {
   practice.active = true;
   practice.drill = drill;
   if (drill != ZEN_R4_PRACTICE_WORDS) {
-    practice_draw_hand_prompt();
+    practice_draw_hand_prompt(false);
   }
   practice_refresh_dictionary();
   practice_publish();

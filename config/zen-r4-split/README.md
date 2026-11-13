@@ -2,7 +2,7 @@
 
 The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
-The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Arrows+Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
+The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
 
 In either steno mode, the middle right thumb chords U, the outer right thumb switches steno modes, and the outer left thumb returns to MAIN.
 
@@ -104,7 +104,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Qwerty** after connection, **Arrows+Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Qwerty** after connection, **Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -114,7 +114,7 @@ ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
 Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
-Arrows+Numpad and tap the outer right thumb, then release both. On the steno layer,
+Numpad and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.

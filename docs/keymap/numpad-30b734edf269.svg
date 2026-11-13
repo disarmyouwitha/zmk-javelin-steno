@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="540" viewBox="0 0 1120 540" role="img" aria-labelledby="title desc">
-<title id="title">ZMK + Javelin — Arrows+Numpad layer 1</title>
+<title id="title">ZMK + Javelin — Numpad layer 1</title>
 <desc id="desc">42-key split layout. For dual-action keys, tap is above the divider and hold is below. Thumb keys appear at the bottom. Disabled keys have a dash.</desc>
 <style>
 .bg{fill:#f6f7fb}.key{fill:#fff;stroke:#d5d9e4;stroke-width:1.2}.line{stroke:#e5e7ef;stroke-width:1}
@@ -10,7 +10,7 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 @media(prefers-color-scheme:dark){.bg{fill:#151922}.key{fill:#222936;stroke:#414b5e}.line{stroke:#414b5e}text{fill:#ecf0f7}.subtitle,.side,.meta,.footer{fill:#b3bdcd}.compact{font-size:14px}.hold{fill:#c2aaff}.disabled .key{fill:#1b202b;stroke:#303746}.disabled text{fill:#77849a}.layer .key{fill:#35294e;stroke:#71578e}.steno .key{fill:#203448;stroke:#3f617c}}
 </style>
 <rect class="bg" width="1120" height="540" rx="16"/>
-<text x="32" y="37" class="title">Arrows+Numpad  /  1</text>
+<text x="32" y="37" class="title">Numpad  /  1</text>
 <text x="32" y="69" class="subtitle">ZEN R4 / CORNE SPLIT     ·     DEFAULT KEYMAP</text>
 <text x="735" y="37" class="subtitle">Dual-action keys: tap above · hold below</text>
 <text x="735" y="64" class="subtitle">⌘ Command     ⌥ Option     ⇧ Shift</text>
@@ -75,9 +75,9 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <g class="plain" data-key-index="36"><title>⌘</title><rect class="key" x="275" y="412" width="72" height="76" rx="8"/>
 <text x="311" y="450" class="">⌘</text>
 </g>
-<g class="layer" data-key-index="37"><title>Arrows+ / hold Numpad</title><rect class="key" x="356" y="412" width="72" height="76" rx="8"/>
-<text x="392" y="437" class="compact">Arrows+</text>
-<text x="392" y="469" class="meta">hold Numpad</text>
+<g class="layer" data-key-index="37"><title>Numpad / hold</title><rect class="key" x="356" y="412" width="72" height="76" rx="8"/>
+<text x="392" y="437" class="">Numpad</text>
+<text x="392" y="469" class="meta">hold</text>
 </g>
 <g class="plain" data-key-index="38"><title>Bksp</title><rect class="key" x="437" y="412" width="72" height="76" rx="8"/>
 <text x="473" y="450" class="">Bksp</text>
