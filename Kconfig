@@ -44,6 +44,17 @@ config ZMK_JAVELIN_DIAG
       It compiles in only with the logging snippet. Turn it off, or delete
       src/zen_r4/diag.c and the diag_*() calls, once debugging is done.
 
+config ZMK_JAVELIN_DIAG_RAIL_SENSE_PIN
+    int "Port 0 pin that the R rail test reads"
+    depends on ZMK_JAVELIN_DIAG
+    range 0 31
+    default 7
+    help
+      The R serial command switches the flash rail and reads this pin to see
+      the rail rise and fall. Use the pin that the 10 k pull-up on the Steno
+      Squid ties to the switched rail, which is chip select. The locked
+      Boardsource map has it on P0.07. A handwired board may differ.
+
 config ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER
     int "External flash clock divider (32 MHz / n)"
     depends on ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
