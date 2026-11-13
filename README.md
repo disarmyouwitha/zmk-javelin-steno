@@ -101,7 +101,7 @@ GitHub Actions builds these UF2 artifacts from the pinned dependencies:
 | **right-nice-view** | Right-half firmware with the portrait display, squid, and Practice UI. |
 | **right** | Right-half firmware without the display. |
 
-Download artifacts from a successful run. Double-tap RESET on the intended controller and copy its UF2 to the **NICENANO** drive. Install matching left and right firmware when updating Practice or split-display features. [Firmware builds](https://github.com/disarmyouwitha/zmk-javelin-steno/actions/workflows/build.yml)
+Download artifacts from a successful run. Double-tap RESET on the intended controller and copy its UF2 to the **NICENANO** drive. Install matching left and right firmware when updating Practice or split-display features. [Firmware builds](https://github.com/disarmyouwitha/StenoSquid/actions/workflows/build.yml)
 
 For a new keyboard, prepare the dictionary images using the build guides, flash **left-logging**, and install them through its diagnostics port using Python with the `pyserial` package. Substitute the actual serial device path:
 
@@ -122,8 +122,21 @@ The `upload.py` tests run against a fake keyboard, with no hardware or pyserial:
 
 ## Planned work
 
-- **Daily-use features: to do.** This is live last stroke and translation on the nice!view, with a hint when a shorter outline exists, plus a WPM and accuracy counter. I still need to check whether the engine exposes the data these need. That check is the first step.
-- **Battery:** once a board is running, use the diagnostics counters to settle the idle power-down default.
+### Daily-use features (to do)
+
+- Live last stroke and translation on the nice!view, with a hint when a shorter outline exists, plus a WPM counter. I still need to check whether the engine exposes the data these need. That check is the first step.
+- The typing animation listens for local right-half keypresses, not every stroke made on both halves. That is reasonable for the first version, but eventually the central could report completed steno strokes so the pet reacts to actual translations in Javelin mode.
+
+Keep the typing reaction exactly as it is for now. It is a major part of the charm.
+
+### Battery
+
+Once a board is running, use the diagnostics counters to settle the idle power-down default. If the right half's battery life is disappointing, optimize the pet in this order:
+
+1. Cap battery-powered animation frequency, perhaps 4 to 5 FPS.
+2. Shorten the typing animation from four frames to two or three.
+3. Investigate partial-region flushing, but only if the Sharp driver and rotation adapter can support it cleanly.
+4. Measure the right-half power draw with the pet enabled versus disabled.
 
 ## Debug and test code to remove or gate
 
