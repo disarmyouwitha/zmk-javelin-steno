@@ -1,0 +1,14 @@
+#pragma once
+
+#include <lvgl.h>
+
+enum pet_state {
+    PET_IDLE,
+    PET_TYPING,
+    PET_LEVEL_UP,
+    PET_SLEEP,
+};
+
+void zen_r4_pet_create(lv_obj_t *parent);
+void zen_r4_pet_set_state(enum pet_state state);
+void zen_r4_pet_set_visible(bool visible);

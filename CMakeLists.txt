@@ -2,7 +2,13 @@ if(CONFIG_ZMK_ZEN_R4_SPLIT_STATUS)
   if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     target_sources(app PRIVATE src/zen_r4/split_status_central.c)
   else()
-    target_sources(app PRIVATE src/zen_r4/split_status_display.c)
+    target_sources(app PRIVATE
+      src/zen_r4/split_status_display.c
+      src/zen_r4/display/portrait.c
+      src/zen_r4/display/pet_widget.c
+      src/zen_r4/display/screen.c
+      src/zen_r4/display/practice_widget.c
+    )
   endif()
 endif()
 

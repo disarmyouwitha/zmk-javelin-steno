@@ -41,8 +41,31 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 ### Right-half nice!view
 
-The normal mode and battery screens use a horizontal layout with dark text on
-a light background. Practice uses a portrait layout.
+The right nice!view uses a 68 × 160 portrait layout for status and Practice,
+with dark text on a light background. The Sharp driver still receives native
+160-pixel rows. The right-half LVGL flush callback rotates and packs the
+one-bit pixels for the panel.
+
+| Right nice!view build | Flash | RAM |
+| --- | ---: | ---: |
+| Original dual-canvas layout | 378,656 B | 75,360 B |
+| Portrait status and Practice widgets | 388,064 B | 54,608 B |
+| Portrait widgets with large squid pet | 408,856 B | 54,632 B |
+
+The portrait renderer uses 2,808 B for its LVGL draw buffer and packed panel
+buffer. A right-half test pattern verified the orientation, polarity and
+white-on-black bitmap text on the physical panel.
+
+The 48 × 48 squid sits below the mode label and reacts to right-half
+keypresses. In Practice it appears at completion and celebrates once.
+The right half draws its frames from internal flash, and the animation timer
+pauses between reactions. The footer pairs a rounded battery icon inspired
+by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
+with the right half's battery percentage.
+
+Mode names use white bitmap text in black badges. Names wider than one badge
+continue below the squid. The completion screen gives the score and best
+streak separate lines beneath the celebration.
 
 For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above. The overlay sets display chip select to D0 (P0.08) to match the Ultralight PCB.
 
@@ -84,8 +107,8 @@ This lookup is local to Practice. It requires no computer and leaves saved
 dictionary selections alone. **ENABLE DICT** appears if WORDS has neither a
 usable active dictionary nor an available Lapwing base.
 
-The right nice!view shows the drill, prompt, progress, and streak. The portrait
-screen uses bold prompts and headings. Correct answers show **CORRECT** for
+The right nice!view shows the drill, a large prompt, progress, and streak.
+Correct answers show **CORRECT** for
 250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
 and keep the current prompt. After all prompts are answered correctly, the screen shows
 **DONE** and the best streak.
