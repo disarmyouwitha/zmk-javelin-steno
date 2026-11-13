@@ -72,6 +72,10 @@ void zen_r4_pet_create(lv_obj_t *parent) {
 }
 
 void zen_r4_pet_set_state(enum pet_state next) {
+    if (!pet_image) {
+        return;
+    }
+
     if (next == PET_TYPING && state != PET_IDLE && state != PET_TYPING) {
         return;
     }

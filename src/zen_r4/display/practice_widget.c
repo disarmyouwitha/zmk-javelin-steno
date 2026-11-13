@@ -43,20 +43,21 @@ void zen_r4_practice_widget_update(uint32_t practice) {
     if (last_practice == practice) {
         return;
     }
-    const unsigned feedback = (practice >> 2) & 3;
+    const unsigned feedback = zen_r4_practice_feedback_value(practice);
     last_practice = practice;
-    const unsigned round = (practice >> 4) & 31;
-    const unsigned streak = (practice >> 9) & 31;
-    const unsigned best = (practice >> 14) & 31;
+    const unsigned round = zen_r4_practice_counter(practice, ZEN_R4_PRACTICE_ROUND_SHIFT);
+    const unsigned streak = zen_r4_practice_counter(practice, ZEN_R4_PRACTICE_STREAK_SHIFT);
+    const unsigned best = zen_r4_practice_counter(practice, ZEN_R4_PRACTICE_BEST_SHIFT);
     const enum zen_r4_practice_drill drill =
         (practice & ZEN_R4_PRACTICE_DRILL_MASK) >> ZEN_R4_PRACTICE_DRILL_SHIFT;
-    const unsigned total = zen_r4_practice_rounds(drill);
+    const unsigned total = (practice & ZEN_R4_PRACTICE_LEGACY) && drill != ZEN_R4_PRACTICE_WORDS
+                               ? 30 : zen_r4_practice_rounds(drill);
     const bool words = drill == ZEN_R4_PRACTICE_WORDS;
     const bool done = feedback == ZEN_R4_PRACTICE_DONE;
     const bool no_dictionary = (practice & ZEN_R4_PRACTICE_NO_DICTIONARY) != 0;
     const unsigned completed = round + (feedback == ZEN_R4_PRACTICE_CORRECT);
-    const char *outline = zen_r4_practice_outline(drill, round);
-    const char *prompt = words ? zen_r4_practice_words[practice & 3] : outline;
+    const char *outline = zen_r4_practice_outline(drill, practice & ZEN_R4_PRACTICE_PROMPT_MASK);
+    const char *prompt = words ? zen_r4_practice_words[practice & ZEN_R4_PRACTICE_PROMPT_MASK] : outline;
     char progress[32];
 
     lv_label_set_text_static(drill_label, drill_names[drill]);

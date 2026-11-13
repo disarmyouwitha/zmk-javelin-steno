@@ -66,21 +66,37 @@ static void queue_refresh(void) {
 
 static int status_received(struct zmk_behavior_binding *binding,
                            struct zmk_behavior_binding_event event) {
-    if (binding->param2 == ZEN_R4_PRACTICE_PROTOCOL) {
-        uint32_t value = binding->param1;
-        unsigned round = (value >> 4) & 31;
-        unsigned feedback = (value >> 2) & 3;
-        unsigned drill = (value & ZEN_R4_PRACTICE_DRILL_MASK) >> ZEN_R4_PRACTICE_DRILL_SHIFT;
-        unsigned total = zen_r4_practice_rounds(drill);
-        if (!(value & ZEN_R4_PRACTICE_ACTIVE) ||
-            (value & ~(ZEN_R4_PRACTICE_ACTIVE | ZEN_R4_PRACTICE_NO_DICTIONARY |
-                       ZEN_R4_PRACTICE_DRILL_MASK | 0x7ffffu)) ||
-            (value & ZEN_R4_PRACTICE_DRILL_MASK) >=
-                (ZEN_R4_PRACTICE_DRILL_COUNT << ZEN_R4_PRACTICE_DRILL_SHIFT) ||
-            round > total ||
-            ((round == total) != (feedback == ZEN_R4_PRACTICE_DONE)) ||
-            ((value >> 9) & 31) > total ||
-            ((value >> 14) & 31) > total) {
+    if (binding->param2 == ZEN_R4_PRACTICE_PROTOCOL ||
+        binding->param2 == ZEN_R4_PRACTICE_LEGACY_PROTOCOL) {
+        const uint32_t raw = binding->param1;
+        const bool legacy = binding->param2 == ZEN_R4_PRACTICE_LEGACY_PROTOCOL;
+        const unsigned drill = (raw >> (legacy ? 20 : ZEN_R4_PRACTICE_DRILL_SHIFT)) & 3u;
+        const uint32_t allowed = ZEN_R4_PRACTICE_ACTIVE | (legacy ? 0x3fffffu : 0x7ffffffu);
+        if (!(raw & ZEN_R4_PRACTICE_ACTIVE) || (raw & ~allowed) ||
+            drill >= ZEN_R4_PRACTICE_DRILL_COUNT) {
+            return -EINVAL;
+        }
+        uint32_t value = raw;
+        if (legacy) {
+            const unsigned round = (raw >> 4) & 31;
+            const unsigned prompt = drill == ZEN_R4_PRACTICE_WORDS ? raw & 3u :
+                                    round % zen_r4_practice_prompt_count(drill);
+            value = ZEN_R4_PRACTICE_ACTIVE | ZEN_R4_PRACTICE_LEGACY | prompt |
+                    (((raw >> 2) & 3u) << ZEN_R4_PRACTICE_FEEDBACK_SHIFT) |
+                    (round << ZEN_R4_PRACTICE_ROUND_SHIFT) |
+                    (((raw >> 9) & 31u) << ZEN_R4_PRACTICE_STREAK_SHIFT) |
+                    (((raw >> 14) & 31u) << ZEN_R4_PRACTICE_BEST_SHIFT) |
+                    (drill << ZEN_R4_PRACTICE_DRILL_SHIFT) |
+                    ((raw & (1u << 19)) ? ZEN_R4_PRACTICE_NO_DICTIONARY : 0);
+        }
+        const unsigned total = legacy && drill != ZEN_R4_PRACTICE_WORDS ? 30 :
+                               zen_r4_practice_rounds(drill);
+        const unsigned round = zen_r4_practice_counter(value, ZEN_R4_PRACTICE_ROUND_SHIFT);
+        if (round > total ||
+            ((round == total) != (zen_r4_practice_feedback_value(value) == ZEN_R4_PRACTICE_DONE)) ||
+            zen_r4_practice_counter(value, ZEN_R4_PRACTICE_STREAK_SHIFT) > total ||
+            zen_r4_practice_counter(value, ZEN_R4_PRACTICE_BEST_SHIFT) > total ||
+            (value & ZEN_R4_PRACTICE_PROMPT_MASK) >= zen_r4_practice_prompt_count(drill)) {
             return -EINVAL;
         }
         atomic_set(&practice_screen, value);

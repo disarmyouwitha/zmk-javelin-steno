@@ -43,28 +43,29 @@ The Plover image argument is optional for older Lapwing-only builds. The prepara
 
 The right nice!view uses a 68 × 160 portrait layout for status and Practice,
 with dark text on a light background. The Sharp driver still receives native
-160-pixel rows. The right-half LVGL flush callback rotates and packs the
-one-bit pixels for the panel.
+160-pixel rows. The right-half LVGL flush callback rotates the grayscale rendering buffer
+and thresholds it into one-bit pixels for the panel.
 
 | Right nice!view build | Flash | RAM |
 | --- | ---: | ---: |
 | Original dual-canvas layout | 378,656 B | 75,360 B |
 | Portrait status and Practice widgets | 388,064 B | 54,608 B |
-| Portrait widgets with large squid pet | 408,856 B | 54,632 B |
+| Bold portrait widgets with grayscale text rendering | 430,872 B | 64,064 B |
 
-The portrait renderer uses 2,808 B for its LVGL draw buffer and packed panel
-buffer. A right-half test pattern verified the orientation, polarity and
-white-on-black bitmap text on the physical panel.
+The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
+panel buffer. A right-half test pattern verified the rotation and polarity
+on the physical panel.
 
-The 48 × 48 squid sits below the mode label and reacts to right-half
+The 48 × 48 squid sits above the mode label and reacts to right-half
 keypresses. In Practice it appears at completion and celebrates once.
 The right half draws its frames from internal flash, and the animation timer
 pauses between reactions. The footer pairs a rounded battery icon inspired
 by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
 with the right half's battery percentage.
 
-Mode names use white bitmap text in black badges. Names wider than one badge
-continue below the squid. The completion screen gives the score and best
+Mode names use boldened, borderless dark text below the squid, choosing 20 or
+16 pixels to fit. PloverHID appears as **Plover** and **HID** on two lines.
+The disconnected message shows **Waiting** above the squid and **For Left** below. The completion screen gives the score and best
 streak separate lines beneath the celebration.
 
 For a Corne Ultralight right half with a nice!view fitted to its display socket, use this right-half build with the left-half build above. The overlay sets display chip select to D0 (P0.08) to match the Ultralight PCB.
@@ -94,7 +95,7 @@ SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
-Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 30 each.
+Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
 
 **LEFT** and **RIGHT** use the corresponding consonant banks from
 [StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).

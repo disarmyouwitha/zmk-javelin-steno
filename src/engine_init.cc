@@ -27,6 +27,7 @@
 #include "stroke.h"
 #ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
 #include "zen_r4/split_status.h"
+#include <zephyr/random/random.h>
 #include <new>
 #include <strings.h>
 #include <zephyr/sys/atomic.h>
@@ -115,6 +116,7 @@ static struct {
   bool ignore_chord;
   bool no_dictionary;
   uint8_t round;
+  uint8_t hand_prompt;
   uint8_t streak;
   uint8_t best;
   int64_t advance_at;
@@ -124,16 +126,24 @@ static struct {
   StenoKeyState chord;
 } practice;
 
+static unsigned practice_prompt() {
+  return practice.drill == ZEN_R4_PRACTICE_WORDS ? practice.round % 4 : practice.hand_prompt;
+}
+
+static void practice_draw_hand_prompt() {
+  practice.hand_prompt = sys_rand32_get() % zen_r4_practice_prompt_count(practice.drill);
+}
+
 static void practice_publish() {
   uint32_t snapshot = 0;
   if (practice.active) {
     snapshot = ZEN_R4_PRACTICE_ACTIVE |
                (practice.no_dictionary ? ZEN_R4_PRACTICE_NO_DICTIONARY : 0) |
-               (practice.round % 4) |
-               (uint32_t(practice.feedback) << 2) |
-               (uint32_t(practice.round) << 4) |
-               (uint32_t(practice.streak) << 9) |
-               (uint32_t(practice.best) << 14) |
+               practice_prompt() |
+               (uint32_t(practice.feedback) << ZEN_R4_PRACTICE_FEEDBACK_SHIFT) |
+               (uint32_t(practice.round) << ZEN_R4_PRACTICE_ROUND_SHIFT) |
+               (uint32_t(practice.streak) << ZEN_R4_PRACTICE_STREAK_SHIFT) |
+               (uint32_t(practice.best) << ZEN_R4_PRACTICE_BEST_SHIFT) |
                (uint32_t(practice.drill) << ZEN_R4_PRACTICE_DRILL_SHIFT);
   }
   atomic_set(&practice_screen, snapshot);
@@ -148,6 +158,9 @@ static void practice_advance(struct k_work *) {
     practice.feedback = practice.round == zen_r4_practice_rounds(practice.drill)
                             ? ZEN_R4_PRACTICE_DONE
                             : ZEN_R4_PRACTICE_PROMPT;
+    if (practice.feedback == ZEN_R4_PRACTICE_PROMPT && practice.drill != ZEN_R4_PRACTICE_WORDS) {
+      practice_draw_hand_prompt();
+    }
     practice_publish();
   }
   k_mutex_unlock(&practice_mutex);
@@ -180,6 +193,9 @@ static void practice_switch_drill(int direction) {
   practice = {};
   practice.active = true;
   practice.drill = drill;
+  if (drill != ZEN_R4_PRACTICE_WORDS) {
+    practice_draw_hand_prompt();
+  }
   practice_refresh_dictionary();
   practice_publish();
 }
@@ -187,7 +203,7 @@ static void practice_switch_drill(int direction) {
 static bool practice_correct(const StenoStroke &stroke) {
   if (practice.drill != ZEN_R4_PRACTICE_WORDS) {
     StenoStroke expected;
-    expected.Set(zen_r4_practice_outline(practice.drill, practice.round));
+    expected.Set(zen_r4_practice_outline(practice.drill, practice_prompt()));
     return stroke == expected;
   }
   const StenoDictionaryLookup lookup(&stroke, 1);
@@ -198,7 +214,7 @@ static bool practice_correct(const StenoStroke &stroke) {
     }
   }
   const bool correct =
-      result.IsValid() && strcasecmp(result.GetText(), zen_r4_practice_words[practice.round % 4]) == 0;
+      result.IsValid() && strcasecmp(result.GetText(), zen_r4_practice_words[practice_prompt()]) == 0;
   result.Destroy();
   return correct;
 }

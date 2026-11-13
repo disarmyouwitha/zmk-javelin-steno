@@ -9,11 +9,25 @@
 
 static lv_obj_t *status_page;
 static lv_obj_t *practice_page;
-static lv_obj_t *mode_label;
-static lv_obj_t *mode_continuation;
+static lv_obj_t *mode_below;
+static lv_obj_t *mode_above;
 static lv_obj_t *battery_label;
 static lv_obj_t *battery_bar;
 static bool was_done;
+
+static void draw_bold_text(lv_event_t *event) {
+    lv_obj_t *label = lv_event_get_target_obj(event);
+    lv_draw_label_dsc_t descriptor;
+    lv_draw_label_dsc_init(&descriptor);
+    lv_obj_init_draw_label_dsc(label, LV_PART_MAIN, &descriptor);
+    descriptor.text = lv_label_get_text(label);
+    descriptor.text_local = true;
+    lv_area_t area;
+    lv_obj_get_content_coords(label, &area);
+    area.x1++;
+    area.x2++;
+    lv_draw_label(lv_event_get_layer(event), &descriptor, &area);
+}
 
 lv_obj_t *zen_r4_display_label(lv_obj_t *parent, int y, const lv_font_t *font) {
     lv_obj_t *label = lv_label_create(parent);
@@ -23,71 +37,71 @@ lv_obj_t *zen_r4_display_label(lv_obj_t *parent, int y, const lv_font_t *font) {
     lv_obj_set_style_text_font(label, font, 0);
     lv_obj_set_style_text_color(label, lv_color_black(), 0);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_add_event_cb(label, draw_bold_text, LV_EVENT_DRAW_MAIN_END, NULL);
     return label;
 }
 
-#define MODE_LABEL_WIDTH 66
-#define MODE_TEXT_WIDTH (MODE_LABEL_WIDTH - 4)
+#define MODE_TEXT_WIDTH 67
 
-static lv_obj_t *mode_badge(lv_obj_t *parent, int y) {
-    /* The 1-bit font keeps the white glyphs crisp on a black badge. */
-    lv_obj_t *label = zen_r4_display_label(parent, y, &lv_font_unscii_8);
-    lv_obj_set_x(label, 1);
-    lv_obj_set_width(label, MODE_LABEL_WIDTH);
-    lv_obj_set_style_pad_hor(label, 2, 0);
-    lv_obj_set_style_pad_ver(label, 4, 0);
-    lv_obj_set_style_bg_color(label, lv_color_black(), 0);
-    lv_obj_set_style_bg_opa(label, LV_OPA_COVER, 0);
-    lv_obj_set_style_text_color(label, lv_color_white(), 0);
-    lv_obj_set_style_radius(label, 2, 0);
-    return label;
+static const lv_font_t *const mode_fonts[] = {
+    &lv_font_montserrat_20, &lv_font_montserrat_16,
+};
+
+static const lv_font_t *fit_mode_font(const char *text, size_t length) {
+    for (size_t i = 0; i < sizeof(mode_fonts) / sizeof(mode_fonts[0]); i++) {
+        if (lv_text_get_width(text, length, mode_fonts[i], 0) <= MODE_TEXT_WIDTH) {
+            return mode_fonts[i];
+        }
+    }
+    return NULL;
 }
 
-static void set_badge(lv_obj_t *label, const char *text) {
+static void set_mode_label(lv_obj_t *label, const char *text) {
     if (strcmp(text, lv_label_get_text(label)) != 0) {
+        const lv_font_t *font = strchr(text, '\n') ? &lv_font_montserrat_16 :
+                                fit_mode_font(text, strlen(text));
+        lv_obj_set_style_text_font(label, font ? font : &lv_font_montserrat_12, 0);
         lv_label_set_text(label, text);
     }
 }
 
-static bool fits_on_both_badges(const char *title, size_t split, size_t length) {
-    return title[split] == ' ' &&
-           lv_text_get_width(title, split, &lv_font_unscii_8, 0) <= MODE_TEXT_WIDTH &&
-           lv_text_get_width(title + split + 1, length - split - 1, &lv_font_unscii_8, 0) <=
-               MODE_TEXT_WIDTH;
-}
-
 static void show_mode(const char *title) {
-    const lv_font_t *font = &lv_font_unscii_8;
-    size_t length = strlen(title);
+    if (strcmp(title, "PloverHID") == 0) {
+        set_mode_label(mode_below, "Plover\nHID");
+        lv_obj_add_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
     const char *separator = strchr(title, '\n');
-    if (!separator && lv_text_get_width(title, length, font, 0) <= MODE_TEXT_WIDTH) {
-        set_badge(mode_label, title);
-        lv_obj_add_flag(mode_continuation, LV_OBJ_FLAG_HIDDEN);
+    if (!separator) {
+        const size_t length = strlen(title);
+        if (fit_mode_font(title, length)) {
+            set_mode_label(mode_below, title);
+        } else {
+            /* The left half sends at most nine ASCII characters. Fit a
+             * wide name on two lines below the pet, preferring a space.
+             */
+            size_t split = length / 2;
+            const char *space = strchr(title, ' ');
+            if (space && space - title >= 3 && space - title <= 6 && space[1]) {
+                split = space - title;
+            }
+            char lines[ZEN_R4_LAYER_NAME_CHARS + 2];
+            snprintf(lines, sizeof(lines), "%.*s\n%s", (int)split, title,
+                     title + split + (title[split] == ' '));
+            if (strcmp(lines, lv_label_get_text(mode_below)) != 0) {
+                lv_obj_set_style_text_font(mode_below, &lv_font_montserrat_16, 0);
+                lv_label_set_text(mode_below, lines);
+            }
+        }
+        lv_obj_add_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
         return;
     }
 
-    /* Prefer the word break closest to the middle. Unbroken custom names
-     * split at the midpoint, so all nine characters stay visible.
-     */
-    if (!separator) {
-        for (size_t distance = 0; distance < length / 2; distance++) {
-            size_t middle = length / 2;
-            if (fits_on_both_badges(title, middle - distance, length)) {
-                separator = title + middle - distance;
-                break;
-            }
-            if (fits_on_both_badges(title, middle + distance, length)) {
-                separator = title + middle + distance;
-                break;
-            }
-        }
-    }
-    size_t split = separator ? (size_t)(separator - title) : length / 2;
     char first[ZEN_R4_LAYER_NAME_CHARS + 1];
-    snprintf(first, sizeof(first), "%.*s", (int)split, title);
-    set_badge(mode_label, first);
-    set_badge(mode_continuation, title + split + (separator != NULL));
-    lv_obj_remove_flag(mode_continuation, LV_OBJ_FLAG_HIDDEN);
+    snprintf(first, sizeof(first), "%.*s", (int)(separator - title), title);
+    set_mode_label(mode_above, first);
+    set_mode_label(mode_below, separator + 1);
+    lv_obj_remove_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
 }
 
 lv_obj_t *zen_r4_display_bar(lv_obj_t *parent, int x, int y, int width, int height) {
@@ -113,12 +127,37 @@ lv_obj_t *zen_r4_screen_create(void) {
     lv_obj_set_style_bg_color(screen, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
 
+#ifdef CONFIG_ZMK_ZEN_R4_FONT_SAMPLER
+    static const struct {
+        int y;
+        const lv_font_t *font;
+        const char *text;
+        bool bold;
+    } samples[] = {
+        {5, &lv_font_montserrat_20, "Plover", false},
+        {44, &lv_font_montserrat_16, "Typing", false},
+        {77, &lv_font_montserrat_16, "Typing", true},
+        {110, &lv_font_montserrat_16, "Plover\nHID", true},
+    };
+    for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); i++) {
+        lv_obj_t *label = zen_r4_display_label(screen, samples[i].y, samples[i].font);
+        lv_label_set_text_static(label, samples[i].text);
+        if (samples[i].bold) {
+            /* A one-pixel overstrike thickens strokes without changing advance. */
+            lv_obj_t *overstrike = zen_r4_display_label(screen, samples[i].y, samples[i].font);
+            lv_obj_set_x(overstrike, 1);
+            lv_label_set_text_static(overstrike, samples[i].text);
+        }
+    }
+    return screen;
+#endif
+
     status_page = lv_obj_create(screen);
     lv_obj_remove_style_all(status_page);
     lv_obj_remove_flag(status_page, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(status_page, 68, 135);
-    mode_label = mode_badge(status_page, 17);
-    mode_continuation = mode_badge(status_page, 108);
+    lv_obj_set_size(status_page, 68, 140);
+    mode_above = zen_r4_display_label(status_page, 17, &lv_font_montserrat_16);
+    mode_below = zen_r4_display_label(status_page, 99, &lv_font_montserrat_16);
     practice_page = zen_r4_practice_widget_create(screen);
 
     /* Rounded case and side terminal inspired by nice!view Elemental. */
@@ -136,10 +175,14 @@ lv_obj_t *zen_r4_screen_create(void) {
     lv_obj_set_width(battery_label, 30);
     lv_obj_set_style_text_align(battery_label, LV_TEXT_ALIGN_RIGHT, 0);
     zen_r4_pet_create(screen);
+
     return screen;
 }
 
 void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practice, unsigned charge) {
+#ifdef CONFIG_ZMK_ZEN_R4_FONT_SAMPLER
+    return;
+#endif
     static const char *const mode_names[] = {
         [ZEN_R4_MODE_UNKNOWN] = "Waiting\nFor Left",
         [ZEN_R4_MODE_TYPING] = "Typing",
@@ -157,7 +200,7 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
     }
 
     const bool practicing = (practice & ZEN_R4_PRACTICE_ACTIVE) != 0;
-    const bool done = practicing && ((practice >> 2) & 3) == ZEN_R4_PRACTICE_DONE;
+    const bool done = practicing && zen_r4_practice_feedback_value(practice) == ZEN_R4_PRACTICE_DONE;
     zen_r4_pet_set_visible(!practicing || done);
     if (practicing) {
         lv_obj_add_flag(status_page, LV_OBJ_FLAG_HIDDEN);
