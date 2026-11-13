@@ -1,6 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include <stdint.h>
+#include <zephyr/toolchain.h>
 
 #define ZEN_R4_STATUS_BEHAVIOR "zrst"
 #define ZEN_R4_STATUS_PROTOCOL 1
@@ -24,6 +25,8 @@
 /* Local flag used by the receiver for old 30-prompt hand drills. */
 #define ZEN_R4_PRACTICE_LEGACY (1u << 30)
 #define ZEN_R4_PRACTICE_ROUNDS 50
+BUILD_ASSERT(ZEN_R4_PRACTICE_ROUNDS <= ZEN_R4_PRACTICE_COUNTER_MASK,
+             "A practice counter field cannot hold the round count");
 
 enum zen_r4_practice_drill {
     ZEN_R4_PRACTICE_WORDS,

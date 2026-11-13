@@ -2,7 +2,7 @@
 
 The handwired Zen R4 left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
-The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Arrows+Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
+The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
 
 In either steno mode, the middle right thumb chords U, the outer right thumb switches steno modes, and the outer left thumb returns to MAIN.
 
@@ -33,9 +33,11 @@ west build -s zmk/app -d "$repo/build/split-right" -b nice_nano//zmk -- \
 
 The logging build also answers three more commands on the diagnostics port. `python tools/zen-r4-lapwing/upload.py <port> --diag status|log|clear` sends them and prints the reply without prompting.
 
-- `S` (`--diag status`) prints the build commit and time, uptime, reset cause, the flash state (mapped, checked, suspended, idle power-down, steno hold), the chip ID, the last check path and time, whether the saved verification record is present, each image's verified state, the counters below, and wake timing.
+- `S` (`--diag status`) prints the build commit and time, uptime, reset cause, whether USB is powering the board and the battery level, the flash state (mapped, checked, suspended, idle power-down, steno hold), the chip ID, the last check path and time, whether the saved verification record is present, each image's verified state, the counters below, and wake timing.
 - `D` (`--diag log`) prints the boot log kept in RAM, about 1 KiB of the flash lifecycle lines with boot number and uptime. It survives a soft reset, so a line printed before you opened the port is still there. It is empty after a power loss.
 - `Z` (`--diag clear`) clears that log and the counters.
+- `R` (`--diag rail`) is the switched-rail test. It takes the flash down, drives P0.31 low and then high while reading one pin, and reports which level raises the rail, how many microseconds the pin takes to read high after switch-on, and how long it takes to read low after switch-off. The pin is chip select (P0.07 by default, `CONFIG_ZMK_JAVELIN_DIAG_RAIL_SENSE_PIN`), which the Steno Squid's 10 k pull-up ties to the switched rail, so **R1 must be fitted or wired** for it to see anything. It is a digital threshold, roughly 1 V to 2 V on a 3.3 V rail, not a scope trace. Run it on USB and again on battery with USB unplugged (`S` shows which is which). If the fall takes well under a second, leave R2 and C2 off. If it is slow or the pin never falls, see the rail notes in the Steno Squid repo. The test takes about ten seconds and holds the flash lock, so dictionary lookups wait. It then starts the flash again.
+- `T` (`--diag bench`) powers the flash off and on ten times through the same start-up path a wake uses, with the same 500 ms off time as a retry. It prints each cycle's result and time, then the number mapped, the mean and maximum time, and how many start-up retries and quick-to-full fallbacks happened. It is the way to get real numbers on the retry logic before relying on it. The retry counters it raises are saved; clear them with `Z` afterwards if you want a clean count.
 
 Counters saved across reboots, with this boot's count in brackets: boots, start-up retries, rail power cycles, quick checks that fell back to a full check, bring-ups with no dictionaries, serial erases and serial writes. They are written to settings five seconds or more after boot, at most every two seconds, and only when something changed, so they do not wear the settings flash. Wake timing is since boot only: for each idle or resume wake it records how long passed from the request to a mapped flash, with the check path and time. A line `Wake from idle: ready N ms after the request` also goes to the log.
 
@@ -104,7 +106,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Qwerty** after connection, **Arrows+Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Qwerty** after connection, **Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -114,7 +116,7 @@ ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
 Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
-Arrows+Numpad and tap the outer right thumb, then release both. On the steno layer,
+Numpad and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.

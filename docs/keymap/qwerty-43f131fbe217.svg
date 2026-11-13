@@ -104,9 +104,9 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <g class="plain" data-key-index="36"><title>⌘</title><rect class="key" x="275" y="412" width="72" height="76" rx="8"/>
 <text x="311" y="450" class="">⌘</text>
 </g>
-<g class="layer" data-key-index="37"><title>Arrows+ / hold Numpad</title><rect class="key" x="356" y="412" width="72" height="76" rx="8"/>
-<text x="392" y="437" class="compact">Arrows+</text>
-<text x="392" y="469" class="meta">hold Numpad</text>
+<g class="layer" data-key-index="37"><title>Numpad / hold</title><rect class="key" x="356" y="412" width="72" height="76" rx="8"/>
+<text x="392" y="437" class="">Numpad</text>
+<text x="392" y="469" class="meta">hold</text>
 </g>
 <g class="plain" data-key-index="38"><title>Bksp</title><rect class="key" x="437" y="412" width="72" height="76" rx="8"/>
 <text x="473" y="450" class="">Bksp</text>
@@ -208,5 +208,5 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <text x="809" y="437" class="compact">PloverHID</text>
 <text x="809" y="469" class="meta">tap to switch</text>
 </g>
-<text x="32" y="516" class="footer">Hold middle left thumb for Arrows+Numpad · Right thumbs: Space, Javelin, PloverHID</text>
+<text x="32" y="516" class="footer">Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, PloverHID</text>
 </svg>

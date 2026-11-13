@@ -1,9 +1,11 @@
 #include "pet_widget.h"
 
 #include <zephyr/sys/util.h>
+#include <zmk/activity.h>
 
 #define PET_SIZE 48
 #define PET_IMAGE(name)                                                                            \
+    BUILD_ASSERT(sizeof(name##_pixels) == PET_SIZE * PET_SIZE, #name " sprite size");              \
     static const lv_image_dsc_t name##_image = {                                                     \
         .header = {.magic = LV_IMAGE_HEADER_MAGIC, .cf = LV_COLOR_FORMAT_A8, .w = PET_SIZE,            \
                    .h = PET_SIZE, .stride = PET_SIZE},                                                \
@@ -16,6 +18,7 @@
 BUILD_ASSERT(sizeof(idle_pixels) == PET_SIZE * PET_SIZE);
 
 #define FX_SIZED_IMAGE(name, width, height)                                                         \
+    BUILD_ASSERT(sizeof(name##_pixels) == (width) * (height), #name " effect size");               \
     static const lv_image_dsc_t name##_image = {                                                    \
         .header = {.magic = LV_IMAGE_HEADER_MAGIC, .cf = LV_COLOR_FORMAT_A8,                         \
                    .w = width, .h = height, .stride = width},                                      \
@@ -115,6 +118,13 @@ static void show_frame(void) {
     lv_timer_resume(frame_timer);
 }
 
+/* Where an animation ends: asleep when the keyboard is idle, awake otherwise.
+ * USB power and a hidden pet are handled by zen_r4_pet_set_state().
+ */
+static enum pet_state resting_state(void) {
+    return zmk_activity_get_state() == ZMK_ACTIVITY_ACTIVE ? PET_IDLE : PET_SLEEP;
+}
+
 static void advance_frame(lv_timer_t *timer) {
     frame_index++;
     if (frame_index == animations[state].count) {
@@ -122,7 +132,7 @@ static void advance_frame(lv_timer_t *timer) {
             frame_index = 0;
             show_frame();
         } else {
-            zen_r4_pet_set_state(PET_IDLE);
+            zen_r4_pet_set_state(resting_state());
         }
     } else {
         show_frame();

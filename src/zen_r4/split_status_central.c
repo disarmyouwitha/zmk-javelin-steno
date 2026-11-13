@@ -43,9 +43,14 @@ static zmk_keymap_layer_id_t active_layer(void) {
 }
 BUILD_ASSERT(sizeof(ZEN_R4_STATUS_BEHAVIOR) <= ZMK_SPLIT_RUN_BEHAVIOR_DEV_LEN);
 
-/* Four snapshots a second apart, then six more spread over half a minute. */
+/* Four snapshots a second apart, then six more spread over half a minute.
+ * After that one snapshot a minute, so a message the right half missed is
+ * repaired within a minute. It is a single small write on a link that is
+ * already open.
+ */
 #define SYNC_FAST_ATTEMPTS 4
 #define SYNC_SLOW_ATTEMPTS 6
+#define SYNC_HEARTBEAT_SECONDS 60
 
 static atomic_t connected;
 static atomic_t sync_attempts;
@@ -144,11 +149,17 @@ static void sync_after_connect(struct k_work *work) {
     // ZMK discovers the remote behavior characteristic after the link comes up.
     // Send snapshots through discovery, which can outlast the first few seconds
     // on a fresh pairing. After that, only send on layer changes.
-    const atomic_val_t remaining = atomic_dec(&sync_attempts) - 1;
-    if (atomic_get(&connected) && remaining > 0) {
-        k_work_reschedule(k_work_delayable_from_work(work),
-                          remaining > SYNC_SLOW_ATTEMPTS ? K_SECONDS(1) : K_SECONDS(5));
+    if (!atomic_get(&connected)) {
+        return;
     }
+    k_timeout_t next = K_SECONDS(SYNC_HEARTBEAT_SECONDS);
+    if (atomic_get(&sync_attempts) > 0) {
+        const atomic_val_t remaining = atomic_dec(&sync_attempts) - 1;
+        if (remaining > 0) {
+            next = remaining > SYNC_SLOW_ATTEMPTS ? K_SECONDS(1) : K_SECONDS(5);
+        }
+    }
+    k_work_reschedule(k_work_delayable_from_work(work), next);
 }
 
 K_WORK_DELAYABLE_DEFINE(sync_status_work, sync_after_connect);
@@ -190,7 +201,19 @@ static void apply_layer(void) {
     if (!steno) {
         atomic_clear(&practice_wanted);
     }
-    zen_r4_practice_set_active(steno && atomic_get(&practice_wanted));
+    const bool want_practice = steno && atomic_get(&practice_wanted);
+#if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
+    /* Starting practice takes the engine lock, which waits for an idle flash
+     * to power up. This runs on the thread that handles keys, so do not wait
+     * here: lapwing_flash_hold() above has started the wake, and the ready
+     * hook calls apply_layer() again once the dictionaries are mapped.
+     */
+    if (want_practice && !lapwing_mapped_address()) {
+        zen_r4_split_status_refresh();
+        return;
+    }
+#endif
+    zen_r4_practice_set_active(want_practice);
 #endif
     zen_r4_split_status_refresh();
 }

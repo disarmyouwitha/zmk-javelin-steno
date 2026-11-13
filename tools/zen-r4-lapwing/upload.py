@@ -222,16 +222,24 @@ def status(port):
 
 
 # Diagnostics commands in the logging build: letter sent, line that ends the reply.
-DIAG = {"status": (b"S", "END"), "log": (b"D", "LOG END"), "clear": (b"Z", "CLEARED")}
+# The third field is how long to wait for the reply, in seconds: the rail test
+# takes about ten and the power-cycle bench about half a minute.
+DIAG = {
+    "status": (b"S", "END", 20),
+    "log": (b"D", "LOG END", 20),
+    "clear": (b"Z", "CLEARED", 20),
+    "rail": (b"R", "RAIL END", 40),
+    "bench": (b"T", "BENCH END", 90),
+}
 
 
 def diag(port, what):
     """Print the firmware's status, saved boot log, or clear both. Never prompts."""
-    command, end = DIAG[what]
+    command, end, wait = DIAG[what]
     port.reset_input_buffer()
     port.write(command)
     port.flush()
-    deadline = time.monotonic() + 20
+    deadline = time.monotonic() + wait
     pending = b""
     while time.monotonic() < deadline:
         pending += port.readline()
@@ -265,8 +273,10 @@ def main():
     parser.add_argument("--status", action="store_true",
                         help="Print the state of every image and exit")
     parser.add_argument("--diag", choices=sorted(DIAG),
-                        help="Print the firmware status (counters, flash state, wake timing), "
-                             "print the boot log it kept across the last reset, or clear both")
+                        help="status: counters, flash state, wake timing, power. log: the boot "
+                             "log kept across the last reset. clear: wipe both. rail: switch "
+                             "the flash rail both ways and time its rise and fall. bench: "
+                             "power-cycle the flash ten times through the wake path")
     args = parser.parse_args()
     base = (args.base or "all").upper()
     if args.diag:
