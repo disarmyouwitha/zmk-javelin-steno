@@ -11,6 +11,10 @@
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/position_state_changed.h>
 #include <zmk/events/split_peripheral_status_changed.h>
+#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
+#include <zmk/events/usb_conn_state_changed.h>
+#include <zmk/usb.h>
+#endif
 
 #include "display/screen.h"
 #include "display/pet_widget.h"
@@ -43,6 +47,9 @@ static void refresh_status(struct k_work *work) {
     const bool wake = atomic_clear(&pet_wake);
     const bool typing = atomic_clear(&pet_typing);
     const bool practicing = (practice & ZEN_R4_PRACTICE_ACTIVE) != 0;
+#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
+    zen_r4_pet_set_powered(zmk_usb_is_powered());
+#endif
     if (wake && !practicing) {
         zen_r4_pet_set_state(PET_IDLE);
     }
@@ -151,6 +158,9 @@ ZMK_SUBSCRIPTION(zen_r4_display, zmk_activity_state_changed);
 ZMK_SUBSCRIPTION(zen_r4_display, zmk_split_peripheral_status_changed);
 ZMK_SUBSCRIPTION(zen_r4_display, zmk_battery_state_changed);
 ZMK_SUBSCRIPTION(zen_r4_display, zmk_position_state_changed);
+#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
+ZMK_SUBSCRIPTION(zen_r4_display, zmk_usb_conn_state_changed);
+#endif
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = zen_r4_screen_create();

@@ -51,6 +51,7 @@ and thresholds it into one-bit pixels for the panel.
 | Original dual-canvas layout | 378,656 B | 75,360 B |
 | Portrait status and Practice widgets | 388,064 B | 54,608 B |
 | Bold portrait widgets with grayscale text rendering | 430,872 B | 64,064 B |
+| Portrait widgets with USB squid animation | 443,248 B | 64,072 B |
 
 The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
 panel buffer. A right-half test pattern verified the rotation and polarity
@@ -58,8 +59,13 @@ on the physical panel.
 
 The 48 × 48 squid sits above the mode label and reacts to right-half
 keypresses. In Practice it appears at completion and celebrates once.
-The right half draws its frames from internal flash, and the animation timer
-pauses between reactions. The footer pairs a rounded battery icon inspired
+The right half draws its frames from internal flash. On battery, the animation
+timer pauses between reactions. While the right half has USB power, the squid
+bobs and blinks through eight frames with sparkles rising above it. The sparkles
+hide when the upper mode label needs that space. This indicates USB
+power, including when the battery is full. Typing and completion celebrations
+take priority, and the timer pauses while Practice hides the squid.
+The footer pairs a rounded battery icon inspired
 by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
 with the right half's battery percentage.
 
