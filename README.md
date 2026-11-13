@@ -118,6 +118,13 @@ The uploader installs missing configured images from `build/`. Use `--status` to
 
 Local builds must use this checkout's west manifest. If the workspace keeps a separate manifest copy, synchronize it before running `west update`. The compiled dictionary format depends on the pinned Javelin engine. [Dependency manifest](config/west.yml)
 
+The `upload.py` tests run against a fake keyboard, with no hardware or pyserial: `python3 tools/zen-r4-lapwing/test_upload.py`. CI runs them on every push and posts each build's flash and RAM use on the run page.
+
+## Planned work
+
+- **Daily-use features: to do.** This is live last stroke and translation on the nice!view, with a hint when a shorter outline exists, plus a WPM and accuracy counter. I still need to check whether the engine exposes the data these need. That check is the first step.
+- **Battery:** once a board is running, use the diagnostics counters to settle the idle power-down default.
+
 ## Debug and test code to remove or gate
 
 These exist for bring-up and battery testing. Before calling the firmware finished, remove each one or put it behind a build flag.

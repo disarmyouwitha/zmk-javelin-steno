@@ -8,6 +8,15 @@ on:
   workflow_dispatch:
 
 jobs:
+  upload-tests:
+    name: upload.py tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+      - name: Run the upload.py tests against a fake keyboard
+        run: python3 tools/zen-r4-lapwing/test_upload.py
+
   build:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -85,7 +94,20 @@ jobs:
           if [ -n "${{ matrix.snippet }}" ]; then
             snippet=(-S "${{ matrix.snippet }}")
           fi
-          west build -s zmk/app -d "$GITHUB_WORKSPACE/out" -b nice_nano//zmk "${snippet[@]}" -- "${args[@]}"
+          set -o pipefail
+          west build -s zmk/app -d "$GITHUB_WORKSPACE/out" -b nice_nano//zmk "${snippet[@]}" -- "${args[@]}"             2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      # The linker prints how full the internal flash and RAM are. Post it on
+      # the run page so growth is visible on every push.
+      - name: Summarize flash and RAM use
+        shell: bash
+        run: |
+          {
+            echo "### ${{ matrix.name }}: flash and RAM"
+            echo '```'
+            grep -A 8 "Memory region" "$GITHUB_WORKSPACE/build.log" | grep -E "Memory region|FLASH:|RAM:" || echo "No memory table in the build log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
