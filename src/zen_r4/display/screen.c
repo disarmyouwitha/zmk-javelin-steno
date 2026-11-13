@@ -218,7 +218,7 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
     if (done != was_done) {
         zen_r4_pet_set_state(done ? PET_LEVEL_UP : PET_IDLE);
     }
-    zen_r4_pet_set_headroom(!practicing &&
-                            lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN));
+    zen_r4_pet_set_headroom(done || (!practicing &&
+                            lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN)));
     was_done = done;
 }

@@ -32,6 +32,7 @@ static atomic_t layer_name_high;
 static atomic_t practice_screen;
 static atomic_t pet_wake;
 static atomic_t pet_typing;
+static atomic_t pet_greeting;
 
 static void refresh_status(struct k_work *work) {
     const unsigned shown = atomic_get(&mode);
@@ -60,6 +61,14 @@ static void refresh_status(struct k_work *work) {
         } else if (typing) {
             zen_r4_pet_set_state(PET_TYPING);
         }
+        /* Wait for the first valid mode snapshot after connection so the
+         * greeting gets the space previously used by Waiting / For Left.
+         */
+        if (shown != ZEN_R4_MODE_UNKNOWN && atomic_cas(&pet_greeting, 1, 0)) {
+            zen_r4_pet_set_state(PET_GREETING);
+        }
+    } else {
+        atomic_clear(&pet_greeting);
     }
 }
 
@@ -145,9 +154,12 @@ static int display_event(const zmk_event_t *event) {
     }
     const struct zmk_split_peripheral_status_changed *split =
         as_zmk_split_peripheral_status_changed(event);
-    if (split && !split->connected) {
-        atomic_clear(&mode);
-        atomic_clear(&practice_screen);
+    if (split) {
+        atomic_set(&pet_greeting, split->connected);
+        if (!split->connected) {
+            atomic_clear(&mode);
+            atomic_clear(&practice_screen);
+        }
     }
     queue_refresh();
     return ZMK_EV_EVENT_BUBBLE;

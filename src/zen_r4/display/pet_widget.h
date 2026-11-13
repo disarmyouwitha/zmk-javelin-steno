@@ -8,6 +8,7 @@ enum pet_state {
     PET_LEVEL_UP,
     PET_SLEEP,
     PET_POWERED,
+    PET_GREETING,
 };
 
 void zen_r4_pet_create(lv_obj_t *parent);

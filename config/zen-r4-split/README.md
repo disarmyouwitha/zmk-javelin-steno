@@ -52,6 +52,7 @@ and thresholds it into one-bit pixels for the panel.
 | Portrait status and Practice widgets | 388,064 B | 54,608 B |
 | Bold portrait widgets with grayscale text rendering | 430,872 B | 64,064 B |
 | Portrait widgets with USB squid animation | 443,248 B | 64,072 B |
+| Squid with typing, sleep, reconnect and completion effects | 466,720 B | 64,072 B |
 
 The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
 panel buffer. A right-half test pattern verified the rotation and polarity
@@ -65,6 +66,12 @@ bobs and blinks through eight frames with sparkles rising above it. The sparkles
 hide when the upper mode label needs that space. This indicates USB
 power, including when the battery is full. Typing and completion celebrations
 take priority, and the timer pauses while Practice hides the squid.
+Right-hand typing sends a 420 ms puff above the pet. Further keypresses let
+the current rise-and-pop sequence finish before triggering another one. On battery, idle shows a
+static sleep bubble with the animation timer paused. Split reconnection plays
+a greeting after the first mode update, and a completed Practice run adds
+confetti around its headings. These effects run locally on the right half. The user verified the reactions
+on the nice!view, including the reconnect greeting and revised typing timing.
 The footer pairs a rounded battery icon inspired
 by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
 with the right half's battery percentage.

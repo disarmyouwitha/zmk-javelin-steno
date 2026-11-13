@@ -15,14 +15,16 @@
 
 BUILD_ASSERT(sizeof(idle_pixels) == PET_SIZE * PET_SIZE);
 
-#define FX_IMAGE(name)                                                                             \
+#define FX_SIZED_IMAGE(name, width, height)                                                         \
     static const lv_image_dsc_t name##_image = {                                                    \
         .header = {.magic = LV_IMAGE_HEADER_MAGIC, .cf = LV_COLOR_FORMAT_A8,                         \
-                   .w = 48, .h = 30, .stride = 48},                                                \
+                   .w = width, .h = height, .stride = width},                                      \
         .data_size = sizeof(name##_pixels), .data = name##_pixels,                                  \
     }
+#define FX_IMAGE(name) FX_SIZED_IMAGE(name, 48, 30)
 #include "pet_effects.h"
 #undef FX_IMAGE
+#undef FX_SIZED_IMAGE
 
 struct pet_frame {
     const lv_image_dsc_t *image;
@@ -32,13 +34,19 @@ struct pet_frame {
 struct pet_animation {
     const struct pet_frame *frames;
     uint8_t count;
+    const lv_image_dsc_t *const *effects;
+    int8_t effect_x;
+    int8_t effect_y;
 };
 
 static const struct pet_frame typing_frames[] = {
-    {&typing_image, 130}, {&idle_image, 650}, {&blink_image, 110},
+    {&typing_image, 110}, {&idle_image, 110}, {&blink_image, 110}, {&idle_image, 90},
 };
 static const struct pet_frame level_up_frames[] = {
     {&jump_image, 120}, {&spark_image, 180}, {&land_image, 100}, {&blink_image, 120},
+};
+static const struct pet_frame greeting_frames[] = {
+    {&typing_image, 200}, {&jump_image, 180}, {&idle_image, 600}, {&blink_image, 130},
 };
 static const struct pet_frame powered_frames[] = {
     {&idle_image, 220}, {&idle_image, 180}, {&jump_image, 180}, {&idle_image, 180},
@@ -51,12 +59,25 @@ static const lv_image_dsc_t *const powered_effects[] = {
 static const int8_t powered_bob[] = {0, -1, -2, -3, -2, -1, 0, 0};
 BUILD_ASSERT(ARRAY_SIZE(powered_effects) == ARRAY_SIZE(powered_frames));
 BUILD_ASSERT(ARRAY_SIZE(powered_bob) == ARRAY_SIZE(powered_frames));
+static const lv_image_dsc_t *const typing_effects[] = {
+    &puff_0_image, &puff_1_image, &puff_2_image, &puff_pop_image,
+};
+static const lv_image_dsc_t *const celebration_effects[] = {
+    &confetti_0_image, &confetti_1_image, &confetti_2_image, &confetti_3_image,
+};
+static const lv_image_dsc_t *const greeting_effects[] = {
+    &greeting_0_image, &greeting_1_image, &greeting_2_image, &greeting_0_image,
+};
+BUILD_ASSERT(ARRAY_SIZE(typing_effects) == ARRAY_SIZE(typing_frames));
+BUILD_ASSERT(ARRAY_SIZE(celebration_effects) == ARRAY_SIZE(level_up_frames));
+BUILD_ASSERT(ARRAY_SIZE(greeting_effects) == ARRAY_SIZE(greeting_frames));
 
-#define ANIMATION(frames) {frames, sizeof(frames) / sizeof((frames)[0])}
+#define ANIMATION(frames, effects, x, y) {frames, ARRAY_SIZE(frames), effects, x, y}
 static const struct pet_animation animations[] = {
-    [PET_TYPING] = ANIMATION(typing_frames),
-    [PET_LEVEL_UP] = ANIMATION(level_up_frames),
-    [PET_POWERED] = ANIMATION(powered_frames),
+    [PET_TYPING] = ANIMATION(typing_frames, typing_effects, 10, 12),
+    [PET_LEVEL_UP] = ANIMATION(level_up_frames, celebration_effects, 0, 0),
+    [PET_POWERED] = ANIMATION(powered_frames, powered_effects, 10, 12),
+    [PET_GREETING] = ANIMATION(greeting_frames, greeting_effects, 10, 12),
 };
 
 static lv_obj_t *pet_image;
@@ -69,8 +90,14 @@ static bool pet_visible = true;
 static bool headroom = true;
 
 static void update_effect(void) {
-    if (pet_visible && headroom && state == PET_POWERED) {
-        lv_image_set_src(effect_image, powered_effects[frame_index]);
+    if (pet_visible && headroom && state == PET_SLEEP) {
+        lv_image_set_src(effect_image, &sleep_bubble_image);
+        lv_obj_set_pos(effect_image, 10, 12);
+        lv_obj_remove_flag(effect_image, LV_OBJ_FLAG_HIDDEN);
+    } else if (pet_visible && headroom && animations[state].effects) {
+        const struct pet_animation *animation = &animations[state];
+        lv_image_set_src(effect_image, animation->effects[frame_index]);
+        lv_obj_set_pos(effect_image, animation->effect_x, animation->effect_y);
         lv_obj_remove_flag(effect_image, LV_OBJ_FLAG_HIDDEN);
     } else {
         lv_obj_add_flag(effect_image, LV_OBJ_FLAG_HIDDEN);
@@ -128,12 +155,11 @@ void zen_r4_pet_set_state(enum pet_state next) {
     } else if (usb_powered && (next == PET_IDLE || next == PET_SLEEP)) {
         next = PET_POWERED;
     }
-    if (next == PET_TYPING && state != PET_IDLE && state != PET_TYPING &&
-        state != PET_POWERED) {
+    /* Finish the current puff before a later keypress starts another one. */
+    if (next == PET_TYPING && state != PET_IDLE && state != PET_POWERED) {
         return;
     }
-    if (next == PET_TYPING && state == PET_TYPING && frame_index == 0) {
-        lv_timer_reset(frame_timer);
+    if (next == PET_GREETING && state == PET_LEVEL_UP) {
         return;
     }
     if (next == state && (state == PET_IDLE || state == PET_SLEEP || state == PET_POWERED)) {
