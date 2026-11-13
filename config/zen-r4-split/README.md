@@ -81,7 +81,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Typing** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Typing, and **PloverHID** after tapping the outer right thumb from Typing. Press the outer left thumb to return to Typing from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **QWERTY** after connection, **SYM + NUM** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from QWERTY, and **PloverHID** after tapping the outer right thumb from QWERTY. Press the outer left thumb to return to QWERTY from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -90,7 +90,7 @@ through Javelin's active dictionaries, including personal overrides. The
 ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
-Practice runs on the steno layer. From Typing, hold the middle left thumb for
+Practice runs on the steno layer. From QWERTY, hold the middle left thumb for
 SYM+NUM and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
@@ -114,7 +114,7 @@ Correct answers show **CORRECT** for
 and keep the current prompt. After all prompts are answered correctly, the screen shows
 **DONE** and the best streak.
 
-The outer left thumb returns to Typing. The key left of the Lapwing # key (the one above S) exits to
+The outer left thumb returns to QWERTY. The key left of the Lapwing # key (the one above S) exits to
 normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
