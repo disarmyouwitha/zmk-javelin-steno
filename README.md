@@ -21,35 +21,6 @@ In onboard Javelin, the upper left S position is the Lapwing **#** key; the lowe
 
 The typing layout uses tap/hold keys and macOS Command shortcuts. Customize bindings through ZMK Studio. [Shared keymap](config/corne.keymap) · [Split keymap](config/zen-r4-split/corne.keymap)
 
-## Visual keymap
-
-These diagrams show the default split keymap. Tap actions appear above the
-divider and hold actions below. Transparent keys show the inherited Qwerty
-action. Number-bar and star suffixes identify physical keys; all number-bar
-keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
-
-### Qwerty
-
-![Qwerty layer with tap and hold actions](docs/keymap/qwerty-291efc8e1dc7.svg)
-
-### Arrows+Numpad
-
-![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/arrows-numpad-ca56e4818432.svg)
-
-### Javelin
-
-![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-6b66808fe689.svg)
-
-### PloverHID
-
-![Plover HID layer with raw steno keys](docs/keymap/plover-hid-e7698eee1835.svg)
-
-Regenerate the diagrams after editing the shared or split keymap:
-
-```sh
-python3 scripts/render_keymap.py
-```
-
 ## Onboard dictionaries
 
 | Dictionary | Default |
@@ -150,3 +121,32 @@ Local builds must use this checkout's west manifest. If the workspace keeps a se
 ## License
 
 The Javelin steno engine is licensed under PolyForm Noncommercial 1.0.0. Dependencies and dictionary sources retain their respective licenses. [Javelin license](https://github.com/jthlim/javelin-steno/blob/22726675b2dcf3b8b6ba1e20898f25e324b2260a/LICENSE.txt)
+
+## Visual keymap
+
+These diagrams show the default split keymap. Tap actions appear above the
+divider and hold actions below. Transparent keys show the inherited Qwerty
+action. Number-bar and star suffixes identify physical keys; all number-bar
+keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
+
+### Qwerty
+
+![Qwerty layer with tap and hold actions](docs/keymap/qwerty-291efc8e1dc7.svg)
+
+### Arrows+Numpad
+
+![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/arrows-numpad-ca56e4818432.svg)
+
+### Javelin
+
+![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-6b66808fe689.svg)
+
+### PloverHID
+
+![Plover HID layer with raw steno keys](docs/keymap/plover-hid-e7698eee1835.svg)
+
+Regenerate the diagrams after editing the shared or split keymap:
+
+```sh
+python3 scripts/render_keymap.py
+```
