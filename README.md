@@ -118,6 +118,22 @@ The uploader installs missing configured images from `build/`. Use `--status` to
 
 Local builds must use this checkout's west manifest. If the workspace keeps a separate manifest copy, synchronize it before running `west update`. The compiled dictionary format depends on the pinned Javelin engine. [Dependency manifest](config/west.yml)
 
+## Debug and test code to remove or gate
+
+These exist for bring-up and battery testing. Before calling the firmware finished, remove each one or put it behind a build flag.
+
+| Item | Where | Current state |
+| --- | --- | --- |
+| `W` serial query: last flash check path and its time in milliseconds | `src/zen_r4/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
+| Diagnostics: boot log kept across a soft reset, `S` status, `D` log dump, `Z` clear, fault counters saved in settings, wake timing, `upload.py --diag` | `src/zen_r4/diag.c`, `src/zen_r4/diag.h`, the `diag_*()` calls in `src/zen_r4/lapwing_flash.c` | Behind `CONFIG_ZMK_JAVELIN_DIAG`, default on, only in builds with `-S zmk-usb-logging`. To remove for good, delete the two files and the calls |
+| Battery and activity logger, its `B` serial export and host script | `src/zen_r4/battery_log.c`, `tools/zen-r4-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
+| 128 KiB internal flash partition reserved for the battery log | `config/zen-r4-split/corne_left.overlay` | Always reserved, even with the logger off |
+| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | On by default. Once battery testing settles it, remove the option or keep it as a plain setting |
+| Start-up prints such as `[JAV] ...`, the JEDEC ID, flash check time and idle power-down | `src/engine_init.cc`, `src/zen_r4/lapwing_flash.c`, `src/zen_r4/lapwing_dictionary.cc` | Always compiled, visible only on the logging serial port |
+| `CONFIG_STACK_SENTINEL` and `CONFIG_THREAD_NAME` | `config/zen-r4-split/corne_left.conf` | Always on |
+
+Serial provisioning with `upload.py` is not on this list. It stays, and is already limited to builds with the logging snippet.
+
 ## License
 
 The Javelin steno engine is licensed under PolyForm Noncommercial 1.0.0. Dependencies and dictionary sources retain their respective licenses. [Javelin license](https://github.com/jthlim/javelin-steno/blob/22726675b2dcf3b8b6ba1e20898f25e324b2260a/LICENSE.txt)

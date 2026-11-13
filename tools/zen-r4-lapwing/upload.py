@@ -221,6 +221,32 @@ def status(port):
         raise SystemExit("The firmware reported no dictionary images")
 
 
+# Diagnostics commands in the logging build: letter sent, line that ends the reply.
+DIAG = {"status": (b"S", "END"), "log": (b"D", "LOG END"), "clear": (b"Z", "CLEARED")}
+
+
+def diag(port, what):
+    """Print the firmware's status, saved boot log, or clear both. Never prompts."""
+    command, end = DIAG[what]
+    port.reset_input_buffer()
+    port.write(command)
+    port.flush()
+    deadline = time.monotonic() + 20
+    pending = b""
+    while time.monotonic() < deadline:
+        pending += port.readline()
+        if not pending.endswith(b"\n"):
+            continue
+        line = pending.decode("utf-8", errors="replace").rstrip()
+        pending = b""
+        if line:
+            print(line, flush=True)
+        if line.startswith(end):
+            return
+    raise SystemExit("No diagnostics reply. This needs the logging build with "
+                     "CONFIG_ZMK_JAVELIN_DIAG, which the default left-logging build has")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("port", help="USB CDC device path")
@@ -238,8 +264,17 @@ def main():
                         help="Read the whole image and check its CRC. Writes nothing")
     parser.add_argument("--status", action="store_true",
                         help="Print the state of every image and exit")
+    parser.add_argument("--diag", choices=sorted(DIAG),
+                        help="Print the firmware status (counters, flash state, wake timing), "
+                             "print the boot log it kept across the last reset, or clear both")
     args = parser.parse_args()
     base = (args.base or "all").upper()
+    if args.diag:
+        if args.repair or args.verify or args.status or args.image:
+            parser.error("--diag stands alone")
+        with Serial(args.port, 115200, timeout=0.25, write_timeout=5, exclusive=True) as port:
+            diag(port, args.diag)
+        return
     if sum([args.repair, args.verify, args.status]) > 1:
         parser.error("Use only one of --repair, --verify and --status")
     if args.repair and base == "ALL":
