@@ -9,6 +9,12 @@
 #include <zephyr/init.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/printk.h>
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING)
+#include <zmk/battery.h>
+#endif
+#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
+#include <zmk/usb.h>
+#endif
 #if IS_ENABLED(CONFIG_SETTINGS)
 #include <zephyr/settings/settings.h>
 #endif
@@ -185,6 +191,23 @@ void diag_note(enum diag_event event) {
         unsaved[event]++;
         dirty = true;
     }
+}
+
+uint32_t diag_session_count(enum diag_event event) {
+    return event < DIAG_EVENT_COUNT ? session[event] : 0;
+}
+
+void diag_print_power(const struct device *console) {
+#if IS_ENABLED(CONFIG_USB_DEVICE_STACK)
+    const char *usb = zmk_usb_is_powered() ? "powered" : "not powered";
+#else
+    const char *usb = "unknown";
+#endif
+#if IS_ENABLED(CONFIG_ZMK_BATTERY_REPORTING)
+    diag_printf(console, "POWER USB %s, battery %u%%", usb, (unsigned)zmk_battery_state_of_charge());
+#else
+    diag_printf(console, "POWER USB %s, battery level not reported", usb);
+#endif
 }
 
 void diag_tick(void) {

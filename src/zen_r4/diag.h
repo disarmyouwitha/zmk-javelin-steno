@@ -40,6 +40,8 @@ enum diag_event {
 
 void diag_log(const char *fmt, ...) __printf_like(1, 2);
 void diag_note(enum diag_event event);
+/* How many times an event happened since this boot. */
+uint32_t diag_session_count(enum diag_event event);
 /* Call from the flash worker, on every pass of its loop. Saves counters. */
 void diag_tick(void);
 void diag_wake_requested(bool from_idle);
@@ -48,6 +50,8 @@ void diag_wake_ready(bool mapped, bool quick, uint32_t check_ms);
 /* Serial output helpers for the status, dump and clear commands. */
 void diag_printf(const struct device *console, const char *fmt, ...) __printf_like(2, 3);
 void diag_print_status(const struct device *console);
+/* USB power and battery level, to put a rail measurement in context. */
+void diag_print_power(const struct device *console);
 void diag_dump_log(const struct device *console);
 void diag_clear(const struct device *console);
 
