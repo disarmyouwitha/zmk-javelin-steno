@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="540" viewBox="0 0 1120 540" role="img" aria-labelledby="title desc">
+<title id="title">ZMK + Javelin — Arrows+Numpad layer 1</title>
+<desc id="desc">42-key split layout. For dual-action keys, tap is above the divider and hold is below. Thumb keys appear at the bottom. Disabled keys have a dash.</desc>
+<style>
+.bg{fill:#f6f7fb}.key{fill:#fff;stroke:#d5d9e4;stroke-width:1.2}.line{stroke:#e5e7ef;stroke-width:1}
+text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#202637;font-size:18px;text-anchor:middle;dominant-baseline:middle}
+.title{font-size:27px;font-weight:600;text-anchor:start}.subtitle{font-size:14px;fill:#596477;text-anchor:start}.side{font-size:12px;letter-spacing:2px;fill:#596477;text-anchor:start}
+.compact{font-size:14px}.hold{fill:#5f4aad;font-size:16px}.meta{fill:#596477;font-size:11px}.disabled .key{fill:#eceef4;stroke:#e0e3eb}.disabled text{fill:#8e98aa}
+.layer .key{fill:#ebe5fb;stroke:#c5b4eb}.steno .key{fill:#edf5fb;stroke:#c4d9ea}.footer{font-size:14px;fill:#596477;text-anchor:start}
+@media(prefers-color-scheme:dark){.bg{fill:#151922}.key{fill:#222936;stroke:#414b5e}.line{stroke:#414b5e}text{fill:#ecf0f7}.subtitle,.side,.meta,.footer{fill:#b3bdcd}.compact{font-size:14px}.hold{fill:#c2aaff}.disabled .key{fill:#1b202b;stroke:#303746}.disabled text{fill:#77849a}.layer .key{fill:#35294e;stroke:#71578e}.steno .key{fill:#203448;stroke:#3f617c}}
+</style>
+<rect class="bg" width="1120" height="540" rx="16"/>
+<text x="32" y="37" class="title">Arrows+Numpad  /  1</text>
+<text x="32" y="69" class="subtitle">ZEN R4 / CORNE SPLIT     ·     DEFAULT KEYMAP</text>
+<text x="735" y="37" class="subtitle">Dual-action keys: tap above · hold below</text>
+<text x="735" y="64" class="subtitle">⌘ Command     ⌥ Option     ⇧ Shift</text>
+<text x="32" y="105" class="side">LEFT HALF</text>
+<g class="plain" data-key-index="0"><title>⌘⌥Esc</title><rect class="key" x="32" y="146" width="72" height="76" rx="8"/>
+<text x="68" y="184" class="">⌘⌥Esc</text>
+</g>
+<g class="plain" data-key-index="1"><title>BT 1 / profile</title><rect class="key" x="113" y="146" width="72" height="76" rx="8"/>
+<text x="149" y="171" class="">BT 1</text>
+<text x="149" y="203" class="meta">profile</text>
+</g>
+<g class="plain" data-key-index="2"><title>BT 2 / profile</title><rect class="key" x="194" y="136" width="72" height="76" rx="8"/>
+<text x="230" y="161" class="">BT 2</text>
+<text x="230" y="193" class="meta">profile</text>
+</g>
+<g class="plain" data-key-index="3"><title>↑</title><rect class="key" x="275" y="128" width="72" height="76" rx="8"/>
+<text x="311" y="166" class="">↑</text>
+</g>
+<g class="plain" data-key-index="4"><title>Clear / BT bond</title><rect class="key" x="356" y="136" width="72" height="76" rx="8"/>
+<text x="392" y="161" class="">Clear</text>
+<text x="392" y="193" class="meta">BT bond</text>
+</g>
+<g class="disabled" data-key-index="5"><title>—</title><rect class="key" x="437" y="146" width="72" height="76" rx="8"/>
+<text x="473" y="184" class="">—</text>
+</g>
+<g class="disabled" data-key-index="12"><title>—</title><rect class="key" x="32" y="234" width="72" height="76" rx="8"/>
+<text x="68" y="272" class="">—</text>
+</g>
+<g class="disabled" data-key-index="13"><title>—</title><rect class="key" x="113" y="234" width="72" height="76" rx="8"/>
+<text x="149" y="272" class="">—</text>
+</g>
+<g class="plain" data-key-index="14"><title>←</title><rect class="key" x="194" y="224" width="72" height="76" rx="8"/>
+<text x="230" y="262" class="">←</text>
+</g>
+<g class="plain" data-key-index="15"><title>↓</title><rect class="key" x="275" y="216" width="72" height="76" rx="8"/>
+<text x="311" y="254" class="">↓</text>
+</g>
+<g class="plain" data-key-index="16"><title>→</title><rect class="key" x="356" y="224" width="72" height="76" rx="8"/>
+<text x="392" y="262" class="">→</text>
+</g>
+<g class="disabled" data-key-index="17"><title>—</title><rect class="key" x="437" y="234" width="72" height="76" rx="8"/>
+<text x="473" y="272" class="">—</text>
+</g>
+<g class="plain" data-key-index="24"><title>⇧←</title><rect class="key" x="32" y="322" width="72" height="76" rx="8"/>
+<text x="68" y="360" class="">⇧←</text>
+</g>
+<g class="disabled" data-key-index="25"><title>—</title><rect class="key" x="113" y="322" width="72" height="76" rx="8"/>
+<text x="149" y="360" class="">—</text>
+</g>
+<g class="disabled" data-key-index="26"><title>—</title><rect class="key" x="194" y="312" width="72" height="76" rx="8"/>
+<text x="230" y="350" class="">—</text>
+</g>
+<g class="plain" data-key-index="27"><title>Space</title><rect class="key" x="275" y="304" width="72" height="76" rx="8"/>
+<text x="311" y="342" class="">Space</text>
+</g>
+<g class="disabled" data-key-index="28"><title>—</title><rect class="key" x="356" y="312" width="72" height="76" rx="8"/>
+<text x="392" y="350" class="">—</text>
+</g>
+<g class="disabled" data-key-index="29"><title>—</title><rect class="key" x="437" y="322" width="72" height="76" rx="8"/>
+<text x="473" y="360" class="">—</text>
+</g>
+<g class="plain" data-key-index="36"><title>⌘</title><rect class="key" x="275" y="412" width="72" height="76" rx="8"/>
+<text x="311" y="450" class="">⌘</text>
+</g>
+<g class="layer" data-key-index="37"><title>Arrows+ / hold Numpad</title><rect class="key" x="356" y="412" width="72" height="76" rx="8"/>
+<text x="392" y="437" class="compact">Arrows+</text>
+<text x="392" y="469" class="meta">hold Numpad</text>
+</g>
+<g class="plain" data-key-index="38"><title>Bksp</title><rect class="key" x="437" y="412" width="72" height="76" rx="8"/>
+<text x="473" y="450" class="">Bksp</text>
+</g>
+<text x="611" y="105" class="side">RIGHT HALF</text>
+<g class="plain" data-key-index="6"><title>KP +</title><rect class="key" x="611" y="146" width="72" height="76" rx="8"/>
+<text x="647" y="184" class="">KP +</text>
+</g>
+<g class="plain" data-key-index="7"><title>7</title><rect class="key" x="692" y="136" width="72" height="76" rx="8"/>
+<text x="728" y="174" class="">7</text>
+</g>
+<g class="plain" data-key-index="8"><title>8</title><rect class="key" x="773" y="128" width="72" height="76" rx="8"/>
+<text x="809" y="166" class="">8</text>
+</g>
+<g class="plain" data-key-index="9"><title>9</title><rect class="key" x="854" y="136" width="72" height="76" rx="8"/>
+<text x="890" y="174" class="">9</text>
+</g>
+<g class="plain" data-key-index="10"><title>Bksp</title><rect class="key" x="935" y="146" width="72" height="76" rx="8"/>
+<text x="971" y="184" class="">Bksp</text>
+</g>
+<g class="plain" data-key-index="11"><title>Bksp</title><rect class="key" x="1016" y="146" width="72" height="76" rx="8"/>
+<text x="1052" y="184" class="">Bksp</text>
+</g>
+<g class="plain" data-key-index="18"><title>−</title><rect class="key" x="611" y="234" width="72" height="76" rx="8"/>
+<text x="647" y="272" class="">−</text>
+</g>
+<g class="plain" data-key-index="19"><title>4</title><rect class="key" x="692" y="224" width="72" height="76" rx="8"/>
+<text x="728" y="262" class="">4</text>
+</g>
+<g class="plain" data-key-index="20"><title>5</title><rect class="key" x="773" y="216" width="72" height="76" rx="8"/>
+<text x="809" y="254" class="">5</text>
+</g>
+<g class="plain" data-key-index="21"><title>6</title><rect class="key" x="854" y="224" width="72" height="76" rx="8"/>
+<text x="890" y="262" class="">6</text>
+</g>
+<g class="plain" data-key-index="22"><title>Enter</title><rect class="key" x="935" y="234" width="72" height="76" rx="8"/>
+<text x="971" y="272" class="">Enter</text>
+</g>
+<g class="plain" data-key-index="23"><title>Enter</title><rect class="key" x="1016" y="234" width="72" height="76" rx="8"/>
+<text x="1052" y="272" class="">Enter</text>
+</g>
+<g class="plain" data-key-index="30"><title>=</title><rect class="key" x="611" y="322" width="72" height="76" rx="8"/>
+<text x="647" y="360" class="">=</text>
+</g>
+<g class="plain" data-key-index="31"><title>1</title><rect class="key" x="692" y="312" width="72" height="76" rx="8"/>
+<text x="728" y="350" class="">1</text>
+</g>
+<g class="plain" data-key-index="32"><title>2</title><rect class="key" x="773" y="304" width="72" height="76" rx="8"/>
+<text x="809" y="342" class="">2</text>
+</g>
+<g class="plain" data-key-index="33"><title>3</title><rect class="key" x="854" y="312" width="72" height="76" rx="8"/>
+<text x="890" y="350" class="">3</text>
+</g>
+<g class="plain" data-key-index="34"><title>.</title><rect class="key" x="935" y="322" width="72" height="76" rx="8"/>
+<text x="971" y="360" class="">.</text>
+</g>
+<g class="plain" data-key-index="35"><title>Shift / sticky</title><rect class="key" x="1016" y="322" width="72" height="76" rx="8"/>
+<text x="1052" y="347" class="">Shift</text>
+<text x="1052" y="379" class="meta">sticky</text>
+</g>
+<g class="disabled" data-key-index="39"><title>—</title><rect class="key" x="611" y="412" width="72" height="76" rx="8"/>
+<text x="647" y="450" class="">—</text>
+</g>
+<g class="plain" data-key-index="40"><title>0</title><rect class="key" x="692" y="412" width="72" height="76" rx="8"/>
+<text x="728" y="450" class="">0</text>
+</g>
+<g class="layer" data-key-index="41"><title>Practice / toggle</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
+<text x="809" y="437" class="compact">Practice</text>
+<text x="809" y="469" class="meta">toggle</text>
+</g>
+<text x="32" y="516" class="footer">Release middle left thumb to return · Outer right thumb starts Practice</text>
+</svg>
