@@ -122,6 +122,14 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Job logs need a GitHub sign-in to read. Annotations do not, so surface
+      # the compiler's errors as annotations when the build fails.
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          grep -E "error|undefined reference|fatal|FAILED" "$GITHUB_WORKSPACE/build.log"             | head -12 | cut -c1-600 | sed 's/%/%25/g'             | while IFS= read -r line; do echo "::error::$line"; done || true
+
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
