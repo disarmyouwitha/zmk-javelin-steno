@@ -41,7 +41,7 @@ The compiled base and extras images occupy about 4.13 MiB of external flash. Per
 
 ## Wireless dictionary editing
 
-1. Connect the left half by USB, or pair **StenoSquid Split** with the computer for Bluetooth access.
+1. Connect the left half by USB, or pair **Steno Squid** with the computer for Bluetooth access.
 2. Open Javelin Steno Tools in Chrome, choose **Connect via HID**, and select the keyboard.
 3. Use **Active Dictionaries** to change selections and **Dictionary Management → View** to add, replace, remove, or export personal entries.
 4. Use **Host Layout** to select **Mac U.S.** or **Windows U.S. (plain text)**. The keyboard remembers the choice.
@@ -88,7 +88,7 @@ Practice works with the computer off and consumes its strokes before host output
 
 ## Bluetooth and power
 
-From Qwerty, hold Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **StenoSquid Split** in the computer's Bluetooth settings. USB is normally preferred while connected.
+From Qwerty, hold Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **Steno Squid** in the computer's Bluetooth settings. USB is normally preferred while connected.
 
 Typing, onboard Javelin, Plover HID, and dictionary editing have been verified over Bluetooth on macOS. The Windows plain-text output profile has been tested on Windows; Windows Bluetooth remains unverified.
 

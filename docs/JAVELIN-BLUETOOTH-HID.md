@@ -45,7 +45,7 @@ cannot use this console. The send path does not truncate replies to fit.
 
 1. Flash the left half, preserving settings and both external base dictionaries.
 2. Confirm USB HID editor handshake still works with the unmodified website.
-3. Pair/connect **StenoSquid Split** in macOS Bluetooth settings. Unplug USB.
+3. Pair/connect **Steno Squid** in macOS Bluetooth settings. Unplug USB.
 4. Open the existing website in Chrome, choose **Connect via HID**, and check
    whether its filtered picker offers the Bluetooth editor collection.
 5. Verify handshake, dictionary list/checkboxes, and host layout selection.

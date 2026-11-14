@@ -98,9 +98,9 @@ def decode_rows(header, rows):
 
 
 def find_port():
-    matches = [port.device for port in list_ports.comports() if port.description == "StenoSquid Split"]
+    matches = [port.device for port in list_ports.comports() if port.description == "Steno Squid"]
     if len(matches) != 1:
-        raise RuntimeError("Connect one StenoSquid Split over USB or specify --port.")
+        raise RuntimeError("Connect one Steno Squid over USB or specify --port.")
     return matches[0]
 
 
