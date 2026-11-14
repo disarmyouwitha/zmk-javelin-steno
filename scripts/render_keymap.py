@@ -34,14 +34,14 @@ LAYERS = [
         "javelin",
         "Javelin",
         "2",
-        "Practice toggles at the key left of # · Outer left thumb: Qwerty · Outer right: PloverHID",
+        "Outer left thumb: Qwerty · Outer right thumb: Practice toggle",
     ),
     (
         "plover_hid_layer",
         "plover-hid",
         "PloverHID",
         "3",
-        "Raw strokes to host Plover · Outer left thumb: Qwerty · Outer right thumb: Javelin",
+        "Raw strokes to host Plover · Outer left thumb: Qwerty · Outer right thumb: Practice",
     ),
 ]
 NAMES = {

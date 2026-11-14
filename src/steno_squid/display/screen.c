@@ -19,6 +19,9 @@ static lv_obj_t *tape_text;
 static lv_obj_t *tape_stroke;
 static struct steno_squid_tape tape_state;
 static bool was_done;
+static bool had_layer;
+static unsigned previous_layer_mode;
+static char previous_layer_title[STENO_SQUID_LAYER_NAME_CHARS + 1];
 
 static void draw_bold_text(lv_event_t *event) {
     lv_obj_t *label = lv_event_get_target_obj(event);
@@ -283,7 +286,8 @@ lv_obj_t *steno_squid_screen_create(void) {
     return screen;
 }
 
-void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t practice, unsigned charge) {
+void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t practice, unsigned charge,
+                         bool host_disconnected) {
 #ifdef CONFIG_ZMK_STENO_SQUID_FONT_SAMPLER
     return;
 #endif
@@ -303,10 +307,12 @@ void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t p
         lv_bar_set_value(battery_bar, charge, LV_ANIM_OFF);
     }
 
+    bool layer_changed = false;
     const bool practicing = (practice & STENO_SQUID_PRACTICE_ACTIVE) != 0;
     const bool done = practicing && steno_squid_practice_feedback_value(practice) == STENO_SQUID_PRACTICE_DONE;
     steno_squid_pet_set_visible(!practicing || done);
     if (practicing) {
+        had_layer = false;
         lv_obj_add_flag(status_page, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(practice_page, LV_OBJ_FLAG_HIDDEN);
         steno_squid_practice_widget_update(practice);
@@ -314,7 +320,19 @@ void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t p
         lv_obj_add_flag(practice_page, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(status_page, LV_OBJ_FLAG_HIDDEN);
         const char *title = mode < STENO_SQUID_MODE_COUNT ? mode_names[mode] : layer_name;
-        show_mode(title);
+        show_mode(host_disconnected && mode != STENO_SQUID_MODE_UNKNOWN ? "Discon-\n-nected"
+                                                                    : title);
+        const bool valid_layer = (mode >= STENO_SQUID_MODE_TYPING && mode <= STENO_SQUID_MODE_PLOVER) ||
+                                 mode >= STENO_SQUID_MODE_COUNT;
+        if (valid_layer) {
+            layer_changed = had_layer && (mode != previous_layer_mode ||
+                                         strcmp(title, previous_layer_title) != 0);
+            previous_layer_mode = mode;
+            snprintf(previous_layer_title, sizeof(previous_layer_title), "%s", title);
+            had_layer = true;
+        } else if (mode == STENO_SQUID_MODE_UNKNOWN) {
+            had_layer = false;
+        }
     }
     show_tape(!practicing && mode == STENO_SQUID_MODE_JAVELIN);
     if (done != was_done) {
@@ -322,5 +340,8 @@ void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t p
     }
     steno_squid_pet_set_headroom(done || (!practicing &&
                             lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN)));
+    if (layer_changed) {
+        steno_squid_pet_set_state(PET_LAYER_CHANGE);
+    }
     was_done = done;
 }

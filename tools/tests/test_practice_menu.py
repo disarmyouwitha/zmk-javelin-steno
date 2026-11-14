@@ -52,7 +52,7 @@ struct zmk_behavior_binding { uint32_t param1, param2; };
 struct zmk_behavior_binding_event {};
 #define ZMK_BEHAVIOR_OPAQUE 0
 #define MODE_LAYER_NAME 100
-atomic_t layer_name_low, layer_name_high, mode;
+atomic_t layer_name_low, layer_name_high, mode, host_disconnected;
 void atomic_clear(atomic_t *p) { *p = 0; }
 void queue_refresh() {}
 int lookups;
@@ -107,6 +107,12 @@ int main() {
   // New menu packets and the two previous run protocols remain distinct.
   zmk_behavior_binding packet{practice_screen, STENO_SQUID_PRACTICE_PROTOCOL};
   assert(status_received(&packet, {}) == 0);
+  const auto snapshot = practice_screen;
+  zmk_behavior_binding host_packet{1, STENO_SQUID_HOST_STATUS_PROTOCOL};
+  assert(status_received(&host_packet, {}) == 0 && host_disconnected);
+  assert(practice_screen == snapshot);
+  host_packet.param1 = 0;
+  assert(status_received(&host_packet, {}) == 0 && !host_disconnected);
   packet.param1 |= 1u << STENO_SQUID_PRACTICE_ROUND_SHIFT;
   assert(status_received(&packet, {}) == -EINVAL);
   packet = {STENO_SQUID_PRACTICE_ACTIVE | STENO_SQUID_PRACTICE_MENU, STENO_SQUID_PRACTICE_RUN_PROTOCOL};

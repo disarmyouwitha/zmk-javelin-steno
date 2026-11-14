@@ -15,7 +15,7 @@ ZMK handles the keyboard, Bluetooth, power management, and keymap editing. Javel
 | **Javelin** | Onboard dictionary translation, including spelling rules, repeat, and undo. Works with Plover closed. |
 | **PloverHID** | Raw steno strokes sent to Plover on the computer, using Plover's dictionaries. |
 
-In Qwerty, the right thumbs are **Space**, **Javelin**, and **PloverHID**, from left to right. The outer left thumb returns to Qwerty from either steno mode. In a steno mode, the outer right thumb switches to the other steno mode.
+In Qwerty, the right thumbs are **Space**, **Javelin**, and **PloverHID**, from left to right. The outer left thumb returns to Qwerty from either steno mode. The outer right thumb starts Practice from Numpad, Javelin, or PloverHID and toggles it off again to ordinary Javelin. To switch steno modes, return to Qwerty and select the desired mode.
 
 In onboard Javelin, the upper left S position is the Lapwing **#** key; the lower position stays **S**. Pressing **#** by itself repeats the preceding translation, and star undoes it.
 
@@ -60,7 +60,9 @@ Saved Studio keymaps take precedence over the source keymap. To load updated def
 
 The right half renders a **68 × 160** portrait interface with bold text, mode names, a rounded battery indicator, and its own battery percentage.
 
-The squid reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
+Pop, the 48 × 48 squid traced from the original concept, reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. Layer changes play a separate 320 ms card-flip above the squid. Typing and battery updates do not restart it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
+
+The right display shows **Discon-** above Pop and **-nected** below when the left half has neither a connected Bluetooth host on the active profile nor a USB HID connection. **Waiting for Left** means the halves themselves are disconnected.
 
 On the Javelin layer the display also shows a **stroke tape** under the pet: the translation of the last stroke, the keys of that stroke below it, and your typing speed in WPM at the top. It appears with the first stroke and goes away when you change layer or start Practice. Strokes made on the left half show up too, because the left half reports them. Each stroke costs one small write on the split link, and a translation longer than four characters costs a second one. A translation is cut at twelve characters, and anything that does not fit the display ends in "..". The speed counts characters the strokes typed (five to a word, a space after each word), over the last ten seconds, and it updates with each stroke, so it holds its last value when you stop. [How the messages are packed](src/steno_squid/stroke_feed.h)
 
@@ -82,7 +84,7 @@ Practice opens a Practice menu. Select WORDS, LEFT, or RIGHT with the left/right
 
 The hand drills use Steno Jig's key sets and draw a new random prompt after each correct answer. Consecutive repeats are allowed. Mistakes keep the current prompt and reset the streak; correct answers advance after 250 ms.
 
-Tap a left star by itself for the previous drill, or a right star for the next. The key immediately left of the Lapwing # key toggles Practice. The outer left thumb returns to Qwerty.
+Tap a left star by itself for the previous drill, or a right star for the next. The outer right thumb toggles Practice; the former left-hand Practice key is unbound. The outer left thumb returns to Qwerty.
 
 Practice works with the computer off and consumes its strokes before host output. Hand drills work with dictionaries disabled; WORDS can use the verified Lapwing Base as a fallback. Saved dictionary selections stay intact. [Practice guide](config/steno-squid-split/README.md#offline-practice) · [Steno Jig](https://joshuagrams.github.io/steno-jig/learn-keyboard.html)
 
@@ -181,11 +183,11 @@ keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
 
 ### Javelin
 
-![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-538840d23333.svg)
+![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-68ed47c7832b.svg)
 
 ### PloverHID
 
-![Plover HID layer with raw steno keys](docs/keymap/plover-hid-77ba5b4317c0.svg)
+![Plover HID layer with raw steno keys](docs/keymap/plover-hid-bb106271c2df.svg)
 
 Regenerate the diagrams after editing the shared or split keymap:
 

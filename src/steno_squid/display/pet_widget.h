@@ -9,6 +9,7 @@ enum pet_state {
     PET_SLEEP,
     PET_POWERED,
     PET_GREETING,
+    PET_LAYER_CHANGE,
 };
 
 void steno_squid_pet_create(lv_obj_t *parent);

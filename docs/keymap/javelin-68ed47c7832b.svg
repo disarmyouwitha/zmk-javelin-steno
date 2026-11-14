@@ -33,9 +33,8 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <g class="steno" data-key-index="5"><title>#5</title><rect class="key" x="437" y="146" width="72" height="76" rx="8"/>
 <text x="473" y="184" class="">#5</text>
 </g>
-<g class="layer" data-key-index="12"><title>Practice / toggle</title><rect class="key" x="32" y="234" width="72" height="76" rx="8"/>
-<text x="68" y="259" class="compact">Practice</text>
-<text x="68" y="291" class="meta">toggle</text>
+<g class="disabled" data-key-index="12"><title>—</title><rect class="key" x="32" y="234" width="72" height="76" rx="8"/>
+<text x="68" y="272" class="">—</text>
 </g>
 <g class="steno" data-key-index="13"><title>#1</title><rect class="key" x="113" y="234" width="72" height="76" rx="8"/>
 <text x="149" y="272" class="">#1</text>
@@ -141,9 +140,9 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <g class="steno" data-key-index="40"><title>U</title><rect class="key" x="692" y="412" width="72" height="76" rx="8"/>
 <text x="728" y="450" class="">U</text>
 </g>
-<g class="layer" data-key-index="41"><title>PloverHID / tap to switch</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
-<text x="809" y="437" class="compact">PloverHID</text>
-<text x="809" y="469" class="meta">tap to switch</text>
+<g class="layer" data-key-index="41"><title>Practice / toggle</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
+<text x="809" y="437" class="compact">Practice</text>
+<text x="809" y="469" class="meta">toggle</text>
 </g>
-<text x="32" y="516" class="footer">Practice toggles at the key left of # · Outer left thumb: Qwerty · Outer right: PloverHID</text>
+<text x="32" y="516" class="footer">Outer left thumb: Qwerty · Outer right thumb: Practice toggle</text>
 </svg>

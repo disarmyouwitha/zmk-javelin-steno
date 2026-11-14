@@ -31,6 +31,7 @@ BUILD_ASSERT(__builtin_strcmp(DEVICE_DT_NAME(DT_DRV_INST(0)), STENO_SQUID_STATUS
 #define MODE_LAYER_NAME STENO_SQUID_MODE_COUNT
 
 static atomic_t mode;
+static atomic_t host_disconnected;
 static atomic_t layer_name_low;
 static atomic_t layer_name_high;
 static atomic_t practice_screen;
@@ -81,7 +82,8 @@ static void refresh_status(struct k_work *work) {
     k_spin_unlock(&tape_lock, key);
     steno_squid_screen_set_tape(&shown_tape);
 #endif
-    steno_squid_screen_update(shown, name, practice, zmk_battery_state_of_charge());
+    steno_squid_screen_update(shown, name, practice, zmk_battery_state_of_charge(),
+                         atomic_get(&host_disconnected));
     if (!practicing) {
         if (zmk_activity_get_state() != ZMK_ACTIVITY_ACTIVE) {
             steno_squid_pet_set_state(PET_SLEEP);
@@ -109,7 +111,12 @@ static void queue_refresh(void) {
 
 static int status_received(struct zmk_behavior_binding *binding,
                            struct zmk_behavior_binding_event event) {
-    if (binding->param2 == STENO_SQUID_PRACTICE_PROTOCOL ||
+    if (binding->param2 == STENO_SQUID_HOST_STATUS_PROTOCOL) {
+        if (binding->param1 > 1) {
+            return -EINVAL;
+        }
+        atomic_set(&host_disconnected, binding->param1);
+    } else if (binding->param2 == STENO_SQUID_PRACTICE_PROTOCOL ||
         binding->param2 == STENO_SQUID_PRACTICE_RUN_PROTOCOL ||
         binding->param2 == STENO_SQUID_PRACTICE_LEGACY_PROTOCOL) {
         const uint32_t raw = binding->param1;
@@ -223,6 +230,7 @@ static int display_event(const zmk_event_t *event) {
         atomic_set(&pet_greeting, split->connected);
         if (!split->connected) {
             atomic_clear(&mode);
+            atomic_clear(&host_disconnected);
             atomic_clear(&practice_screen);
             clear_tape();
         }

@@ -28,6 +28,13 @@ lv_obj_t *steno_squid_practice_widget_create(lv_obj_t *parent) {
     lv_obj_set_size(welcome_page, 68, 130);
     lv_obj_t *welcome = steno_squid_display_label(welcome_page, 0, &lv_font_montserrat_12);
     lv_label_set_text_static(welcome, "Practice");
+    lv_obj_t *separator = lv_obj_create(welcome_page);
+    lv_obj_remove_style_all(separator);
+    lv_obj_remove_flag(separator, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(separator, 4, 19);
+    lv_obj_set_size(separator, 60, 1);
+    lv_obj_set_style_bg_color(separator, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(separator, LV_OPA_COVER, 0);
     static const char *const choices[] = {"WORDS 10", "LEFT 50", "RIGHT 50"};
     for (unsigned i = 0; i < STENO_SQUID_PRACTICE_DRILL_COUNT; ++i) {
         drill_choices[i] = steno_squid_display_label(welcome_page, 23 + i * 23,

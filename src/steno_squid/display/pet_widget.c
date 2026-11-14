@@ -51,6 +51,14 @@ static const struct pet_frame level_up_frames[] = {
 static const struct pet_frame greeting_frames[] = {
     {&typing_image, 200}, {&jump_image, 180}, {&idle_image, 600}, {&blink_image, 130},
 };
+static const struct pet_frame layer_change_frames[] = {
+    {&blink_image, 100}, {&typing_image, 100}, {&idle_image, 120},
+};
+static const lv_image_dsc_t *const layer_change_effects[] = {
+    &layer_flip_0_image, &layer_flip_1_image, &layer_flip_2_image,
+};
+BUILD_ASSERT(ARRAY_SIZE(layer_change_effects) == ARRAY_SIZE(layer_change_frames));
+
 static const struct pet_frame powered_frames[] = {
     {&idle_image, 220}, {&idle_image, 180}, {&jump_image, 180}, {&idle_image, 180},
     {&idle_image, 180}, {&blink_image, 130}, {&idle_image, 180}, {&idle_image, 1400},
@@ -81,6 +89,7 @@ static const struct pet_animation animations[] = {
     [PET_LEVEL_UP] = ANIMATION(level_up_frames, celebration_effects, 0, 0),
     [PET_POWERED] = ANIMATION(powered_frames, powered_effects, 10, 12),
     [PET_GREETING] = ANIMATION(greeting_frames, greeting_effects, 10, 12),
+    [PET_LAYER_CHANGE] = ANIMATION(layer_change_frames, layer_change_effects, 10, 12),
 };
 
 static lv_obj_t *pet_image;

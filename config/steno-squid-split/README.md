@@ -66,6 +66,7 @@ and thresholds it into one-bit pixels for the panel.
 | Portrait widgets with USB squid animation | 443,248 B | 64,072 B |
 | Squid with typing, sleep, reconnect and completion effects | 466,720 B | 64,072 B |
 | Practice menu with 32 KiB display heap | 480,892 B | 88,672 B |
+| Traced Pop and layer-change reaction | 485,576 B | 88,688 B |
 
 The right-only LVGL runtime heap is 32 KiB. It covers widgets and temporary
 font/image decoding allocations, separately from the fixed draw buffers.
@@ -86,9 +87,11 @@ The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
 panel buffer. A right-half test pattern verified the rotation and polarity
 on the physical panel.
 
-The 48 × 48 squid sits above the mode label and reacts to right-half
-keypresses. In Practice it appears at completion and celebrates once.
-The right half draws its frames from internal flash. On battery, the animation
+The 48 × 48 traced Pop squid sits above the mode label and reacts to right-half
+keypresses. Changing layers plays a separate 320 ms, three-frame card-flip above
+the pet. It also follows custom layer names. Typing and battery updates do not
+restart that reaction; reconnecting keeps the existing **Hi** greeting. In Practice it appears at completion and celebrates once.
+The base pose is traced from the original concept crop in `tools/artwork/pop-source.png`; regenerate it with `python3 tools/artwork/generate_pop_traced.py` (requires Pillow). The right half draws its frames from internal flash. On battery, the animation
 timer pauses between reactions. While the right half has USB power, the squid
 bobs and blinks through eight frames with sparkles rising above it. The sparkles
 hide when the upper mode label needs that space. This indicates USB
@@ -137,8 +140,9 @@ ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
 Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
-Numpad and tap the outer right thumb, then release both. On the steno layer,
-the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
+Numpad and tap the outer right thumb, then release both. The outer right thumb
+also starts Practice directly from Javelin or PloverHID. During Practice it
+returns to ordinary Javelin. The former left-hand Practice key is unbound. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
 Switching returns to the Practice menu with the new drill selected; start it with a vowel thumb. A new run resets the streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
@@ -161,8 +165,9 @@ and keep the current prompt. After all prompts are answered correctly, the scree
 **DONE**, the best streak, and the celebrating squid. Tap a vowel thumb to return
 to the Practice menu, or a star to select another drill.
 
-The outer left thumb returns to Qwerty. The key left of the Lapwing # key (the one above S) exits to
-normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
+The outer left thumb returns to Qwerty. The outer right thumb exits to
+normal Javelin. To select PloverHID, return to Qwerty first and tap the outer
+right thumb there. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
 the session. Both halves can run on battery with the computer off.
