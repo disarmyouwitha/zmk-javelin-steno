@@ -25,8 +25,6 @@ Both steno layers use the same left-bank positions as the combined Corne configu
 
 ![Steno Squid left-half matrix, nice!nano v2 edge pins, and W25Q128 wiring](steno_squid_left_wiring_diagram.png)
 
-The diagram was drawn before bring-up. The assembled left half has since passed [standalone matrix testing](../../tools/steno-squid-matrix/README.md) and the firmware tests below.
-
 ## Build and provision
 
 The pinned [Lapwing base dictionary](https://github.com/aerickt/plover-lapwing-aio/blob/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json) has 114,885 outlines. It compiles to a 1,700,488-byte image with the pinned Javelin ABI. The host Plover plugins and optional dictionaries belong to the host mode.
@@ -61,9 +59,3 @@ The uploader checks for conflicting existing bits before programming, verifies e
 ## Physical USB checks
 
 In a text editor with Plover closed, enter Javelin with the outer thumb. Chord `TP / -T / KAT / S / -T / KAT` to type “if the cat is the cat.” For `KAT`, use R2C2, the middle thumb and R1C0. Test `HE / HROE` for “hello” from a two-stroke entry. Both strokes use R2C0 for E. Return to typing with the outer thumb. Enter Plover HID with the middle thumb and check the raw strokes in host Plover.
-
-## Hardware results
-
-The left half booted as StenoSquid Left with keyboard and Plover HID USB interfaces. The full image passed per-chunk flash readback and a CRC check over all 1,700,488 memory-mapped bytes. Native Javelin lookups returned `if`, `cat`, and `hello` from `TP`, `KAT`, and `HE/HROE`.
-
-The builder confirmed ordinary typing, host Plover HID steno, and onboard Javelin steno on the assembled left half.
