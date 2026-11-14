@@ -1,0 +1,23 @@
+#include "../../tools/steno-squid-qspi/qspi.overlay"
+
+&kscan0 {
+#include "../steno-squid-left/left-matrix.dtsi"
+};
+
+&uart0 { status = "disabled"; };
+&spi1 { status = "disabled"; };
+&i2c0 { status = "disabled"; };
+
+/* Reserve the top 128 KiB of application space for the test log. The ZMK
+ * settings partition and the bootloader retain their original addresses.
+ */
+&code_partition {
+    reg = <0x26000 0xa6000>;
+};
+
+&{/soc/flash-controller@4001e000/flash@0/partitions} {
+    battery_log_partition: partition@cc000 {
+        label = "battery-log";
+        reg = <0xcc000 0x20000>;
+    };
+};

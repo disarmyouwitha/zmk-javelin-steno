@@ -1,0 +1,3 @@
+description: Receive the active Steno Squid layer from the split central
+compatible: "zmk,behavior-steno-squid-status"
+include: two_param.yaml

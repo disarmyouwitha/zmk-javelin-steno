@@ -25,21 +25,21 @@ The Adafruit #5634 schematic routes IO2 and IO3 to separate pads. Check continui
 
 ## Build
 
-Use the repository's [pinned west manifest](../west.yml) and Zephyr SDK 0.16.9. The [Lapwing preparation commands](../zen-r4-left/README.md#build-and-provision) produce `build/lapwing/lapwing-base.bin`. The left builds use the external images' size and CRC. The UF2s carry the firmware, and the dictionary files are transferred separately when provisioning.
+Use the repository's [pinned west manifest](../west.yml) and Zephyr SDK 0.16.9. The [Lapwing preparation commands](../steno-squid-left/README.md#build-and-provision) produce `build/lapwing/lapwing-base.bin`. The left builds use the external images' size and CRC. The UF2s carry the firmware, and the dictionary files are transferred separately when provisioning.
 
 Run from this repository's root in a shell with west and the Zephyr SDK available. Set `ws` to the absolute path of the pinned west workspace.
 
 ```sh
 repo="$PWD"
 target="$repo/config/boardsource-wireless-corne"
-zen="$repo/config/zen-r4-split"
-probe="$repo/tools/zen-r4-qspi"
+split="$repo/config/steno-squid-split"
+probe="$repo/tools/steno-squid-qspi"
 vendor="$repo/build/boardsource-upstream"
 
 git clone https://github.com/boardsource/wireless-corne_zmk_config "$vendor"
 git -C "$vendor" checkout --detach 2158104902e164c317e35f53dfa0ca1e36e1a751
-python3 "$repo/tools/zen-r4-lapwing/prepare_plover.py"
-python3 "$repo/tools/zen-r4-lapwing/prepare_extras.py"
+python3 "$repo/tools/steno-squid-lapwing/prepare_plover.py"
+python3 "$repo/tools/steno-squid-lapwing/prepare_extras.py"
 export ZEPHYR_BASE="$ws/zephyr"
 zephyr_cmake="$ZEPHYR_BASE/share/zephyr-package/cmake"
 cd "$ws"
@@ -50,7 +50,7 @@ build_left() {
   west build -s zmk/app -d "$repo/build/$output" -b blecorne_left "$@" -- \
     "-DBOARD_ROOT=$vendor" "-DZephyr_DIR=$zephyr_cmake" \
     "-DZMK_CONFIG=$target" "-DZMK_EXTRA_MODULES=$repo" \
-    "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/corne_left.conf" \
+    "-DEXTRA_CONF_FILE=$split/corne.conf;$split/corne_left.conf" \
     "-DZMK_JAVELIN_LAPWING_IMAGE=$repo/build/lapwing/lapwing-base.bin" \
     "-DZMK_JAVELIN_PLOVER_IMAGE=$repo/build/plover/plover-main.bin" \
     "-DZMK_JAVELIN_EXTRAS_IMAGE=$repo/build/extras/lapwing-extras.bin"
@@ -61,7 +61,7 @@ build_left boardsource-provision -S zmk-usb-logging
 west build -s zmk/app -d "$repo/build/boardsource-right" -b blecorne_right -- \
   -DSHIELD=nice_view "-DBOARD_ROOT=$vendor" "-DZephyr_DIR=$zephyr_cmake" \
   "-DZMK_CONFIG=$target" "-DZMK_EXTRA_MODULES=$repo" \
-  "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/right-nice-view.conf"
+  "-DEXTRA_CONF_FILE=$split/corne.conf;$split/right-nice-view.conf"
 
 build_probe() {
   output="$1"
@@ -84,17 +84,17 @@ build_probe boardsource-quad -DQUAD_PROBE=ON
 | `boardsource-left/zephyr/zmk.uf2` | Everyday left central, including browser HID over USB and Bluetooth. |
 | `boardsource-provision/zephyr/zmk.uf2` | Same left target with USB logging and the serial base-dictionary uploader interface. |
 
-The factory application partition is `0x1000–0xD3FFF`. The settings partition starts at `0xD4000` and the UF2 bootloader starts at `0xF4000`. The vendor board keeps USB HID on the central and uses ADC channel 2 for its battery divider. This port shares the split keymap and settings in [zen-r4-split](../zen-r4-split), so ZMK Studio is on and starts unlocked, and battery test logging is left out. The everyday left build adds Studio over USB with the `studio-rpc-usb-uart` snippet; every left build has Studio over Bluetooth.
+The factory application partition is `0x1000–0xD3FFF`. The settings partition starts at `0xD4000` and the UF2 bootloader starts at `0xF4000`. The vendor board keeps USB HID on the central and uses ADC channel 2 for its battery divider. This port shares the split keymap and settings in [steno-squid-split](../steno-squid-split), so ZMK Studio is on and starts unlocked, and battery test logging is left out. The everyday left build adds Studio over USB with the `studio-rpc-usb-uart` snippet; every left build has Studio over Bluetooth.
 
 ## Test on the new pair
 
 1. **Establish recovery.** Save the matching [factory left and right UF2s](https://github.com/boardsource/wireless-corne_zmk_config), confirm stock typing and split pairing, and check that double-tap RESET mounts each integrated board's bootloader over USB. Record each `INFO_UF2.TXT` and flash one identified half at a time.
-2. **Measure the empty header.** Confirm orientation, ground, and VCC with the accessories disconnected. Load the first left probe. Open its USB CDC serial port at 115200 with DTR asserted, which starts the probe and asserts P0.31. Verify the enabled rail is suitable for 3.3 V flash and logic. Check rail rise and behavior on USB and battery, then repeat under load. Verify the nice!view rail and connector orientation separately. Once the Steno Squid is fitted with R1, the left logging build can measure the same rail for you: run `upload.py <port> --diag rail` on USB and again on battery, and `--diag bench` to power-cycle the flash ten times through the wake path (see the [diagnostics notes](../zen-r4-split/README.md)).
+2. **Measure the empty header.** Confirm orientation, ground, and VCC with the accessories disconnected. Load the first left probe. Open its USB CDC serial port at 115200 with DTR asserted, which starts the probe and asserts P0.31. Verify the enabled rail is suitable for 3.3 V flash and logic. Check rail rise and behavior on USB and battery, then repeat under load. Verify the nice!view rail and connector orientation separately. Once the Steno Squid is fitted with R1, the left logging build can measure the same rail for you: run `upload.py <port> --diag rail` on USB and again on battery, and `--diag bench` to power-cycle the flash ten times through the wake path (see the [diagnostics notes](../steno-squid-split/README.md)).
 3. **Read the flash ID and sample.** With power off, attach the flash to the left header. Reboot, open the probe's serial port, and expect `JEDEC ID: EF 40 18` followed by a 16-byte `FASTREAD` at address zero. Compare against known bytes when available. An erased chip normally reads all `FF`. The first probe issues neither write-enable nor program/erase commands.
 4. **Check quad reads.** Use the separate quad probe only after the rail and JEDEC checks. It compares standard SPI and quad reads over the first 64 KiB. Use a spare, independently preloaded reference chip with data exercising both bit states on all four lanes and look for a pass with lane mask `0xf`. An all-`FF` comparison is inconclusive. This build may temporarily set and restore the flash's volatile Quad Enable bit. It leaves the flash array alone.
-5. **Test mapped reads and the split.** A reference flash with both expected bases lets you test Javelin before any provisioning through the keyboard. Flash the matching right UF2 and the provisioning left UF2. Use [upload.py](../../tools/zen-r4-lapwing/upload.py) with the serial port and `--status` for a read-only status query and look for `MAPPED`. Confirm ordinary typing on both halves, onboard `KAT` → “cat” with host Plover closed, raw Plover HID strokes, and nice!view mode and Practice updates. If you have only a blank flash, complete the electrical checks first and return to dictionary-dependent checks after initial provisioning.
+5. **Test mapped reads and the split.** A reference flash with both expected bases lets you test Javelin before any provisioning through the keyboard. Flash the matching right UF2 and the provisioning left UF2. Use [upload.py](../../tools/steno-squid-lapwing/upload.py) with the serial port and `--status` for a read-only status query and look for `MAPPED`. Confirm ordinary typing on both halves, onboard `KAT` → “cat” with host Plover closed, raw Plover HID strokes, and nice!view mode and Practice updates. If you have only a blank flash, complete the electrical checks first and return to dictionary-dependent checks after initial provisioning.
 6. **Test wireless and sleep.** Pair **Boardsource Corne Steno** and unplug USB. Test ordinary typing, Plover HID, onboard Javelin, and Javelin Steno Tools **Connect via HID**. Let both halves reach deep sleep. Check that the left rail turns off, wake each half with one of its own keys, and check display and split reconnection, flash verification, and onboard output. Use the left provisioning console command `W` to distinguish `CHECK_QUICK` from `CHECK_FULL`. Check right display rail behavior and battery readings independently.
-7. **Provision and test persistence.** Once the power and read checks pass, use the [existing dual-base provisioning procedure](../zen-r4-split/README.md#flash-regions-and-initial-plover-provisioning) with the Boardsource provisioning UF2 and its serial device. Send the Lapwing image to `--base lapwing`, the [Lapwing extras](../zen-r4-split/README.md#lapwing-extras) image to `--base extras`, and the Plover image to `--base plover`. Check for `MAPPED` after both bases verify. Switch bases in the browser, save a temporary personal edit, reboot, verify persistence, and remove the test entry. Switch to the everyday left UF2 and repeat the HID and wake checks.
+7. **Provision and test persistence.** Once the power and read checks pass, use the [existing dual-base provisioning procedure](../steno-squid-split/README.md#flash-regions-and-initial-plover-provisioning) with the Boardsource provisioning UF2 and its serial device. Send the Lapwing image to `--base lapwing`, the [Lapwing extras](../steno-squid-split/README.md#lapwing-extras) image to `--base extras`, and the Plover image to `--base plover`. Check for `MAPPED` after both bases verify. Switch bases in the browser, save a temporary personal edit, reboot, verify persistence, and remove the test entry. Switch to the everyday left UF2 and repeat the HID and wake checks.
 
 Compilation and generated pin/partition checks cover the firmware configuration. On-device boot and recovery, rail polarity and voltage, connector fit, all flash reads and writes, battery calibration, Bluetooth, nice!view behavior, and sleep/wake on the Boardsource pair still need physical verification.
 

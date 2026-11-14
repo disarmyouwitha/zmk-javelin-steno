@@ -1,0 +1,22 @@
+// Give both steno modes direct entry from the right thumb cluster.
+#define CORNE_RIGHT_MAIN_THUMBS &kp SPACE &to STENO &to PLOVER_HID
+#include <behaviors/javelin_practice.dtsi>
+// The outer right thumb starts/toggles Practice on every non-main layer.
+// Main keeps direct entry to both steno modes; the old left spare stays unbound.
+#define CORNE_RIGHT_SYMBOL_THUMBS &none &kp N0 &javpractice
+#define CORNE_RIGHT_STENO_THUMBS &javsteno STENO_E &javsteno STENO_U &javpractice
+#define CORNE_RIGHT_PLOVER_THUMBS &plv PLV_E &plv PLV_U &javpractice
+
+#include "../corne.keymap"
+
+&{/keymap} {
+    // Spare layers that ZMK Studio can hand out. Builds without Studio ignore
+    // them. Keep them last so the layers before them keep their IDs.
+    extra1 {
+        status = "reserved";
+    };
+
+    extra2 {
+        status = "reserved";
+    };
+};

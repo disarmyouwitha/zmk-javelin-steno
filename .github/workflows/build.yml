@@ -15,7 +15,20 @@ jobs:
       - name: Check out this repository
         uses: actions/checkout@v4
       - name: Run the upload.py tests against a fake keyboard
-        run: python3 tools/zen-r4-lapwing/test_upload.py
+        run: python3 tools/steno-squid-lapwing/test_upload.py
+
+  stroke-feed-tests:
+    name: stroke tape tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+      - name: Build and run the stroke tape tests as C and as C++
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -O2 -o stroke-feed-c tools/tests/test_stroke_feed.c
+          ./stroke-feed-c
+          g++ -std=c++17 -x c++ -Wall -Wextra -Werror -O2 -o stroke-feed-cpp tools/tests/test_stroke_feed.c
+          ./stroke-feed-cpp
 
   build:
     name: ${{ matrix.name }}
@@ -26,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Zen R4 left with a Corne Ultralight right, on nice!nano v2.
+          # Steno Squid left with a Corne Ultralight right, on nice!nano v2.
           - name: left-logging
             shield: corne_left
             snippet: zmk-usb-logging
@@ -91,15 +104,15 @@ jobs:
           mkdir -p build/lapwing
           python3 -c "import sys, urllib.request; urllib.request.urlretrieve(sys.argv[1], sys.argv[2])" https://raw.githubusercontent.com/aerickt/plover-lapwing-aio/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json build/lapwing/lapwing-base.json
           python3 tools/dict_compiler/compile_dict.py build/lapwing/lapwing-base.json --base-addr 0x12000000 -o build/lapwing/lapwing-base.bin
-          python3 tools/zen-r4-lapwing/prepare_plover.py
-          python3 tools/zen-r4-lapwing/prepare_extras.py
+          python3 tools/steno-squid-lapwing/prepare_plover.py
+          python3 tools/steno-squid-lapwing/prepare_extras.py
 
       - name: Build
         working-directory: ws
         shell: bash
         run: |
           repo="$GITHUB_WORKSPACE/repo"
-          zen="$repo/config/zen-r4-split"
+          split="$repo/config/steno-squid-split"
           source=zmk/app
           args=("-DZMK_EXTRA_MODULES=$repo")
           case "${{ matrix.boardsource }}" in
@@ -107,18 +120,18 @@ jobs:
               board=blecorne_left
               args+=("-DBOARD_ROOT=$GITHUB_WORKSPACE/vendor"
                      "-DZMK_CONFIG=$repo/config/boardsource-wireless-corne"
-                     "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/corne_left.conf")
+                     "-DEXTRA_CONF_FILE=$split/corne.conf;$split/corne_left.conf")
               ;;
             right)
               board=blecorne_right
               args+=("-DSHIELD=nice_view"
                      "-DBOARD_ROOT=$GITHUB_WORKSPACE/vendor"
                      "-DZMK_CONFIG=$repo/config/boardsource-wireless-corne"
-                     "-DEXTRA_CONF_FILE=$zen/corne.conf;$zen/right-nice-view.conf")
+                     "-DEXTRA_CONF_FILE=$split/corne.conf;$split/right-nice-view.conf")
               ;;
             probe)
               board=blecorne_left
-              source="$repo/tools/zen-r4-qspi"
+              source="$repo/tools/steno-squid-qspi"
               args=("-DBOARD_ROOT=$GITHUB_WORKSPACE/vendor"
                     "-DDTS_ROOT=$GITHUB_WORKSPACE/ws/zmk/app"
                     "-DDTC_OVERLAY_FILE=$source/boardsource.overlay"
@@ -130,10 +143,10 @@ jobs:
               ;;
             *)
               board=nice_nano//zmk
-              args+=("-DSHIELD=${{ matrix.shield }}" "-DZMK_CONFIG=$zen")
+              args+=("-DSHIELD=${{ matrix.shield }}" "-DZMK_CONFIG=$split")
               if [ "${{ matrix.nice_view }}" = "true" ]; then
-                args+=("-DEXTRA_CONF_FILE=$zen/right-nice-view.conf"
-                       "-DEXTRA_DTC_OVERLAY_FILE=$zen/right-nice-view.overlay")
+                args+=("-DEXTRA_CONF_FILE=$split/right-nice-view.conf"
+                       "-DEXTRA_DTC_OVERLAY_FILE=$split/right-nice-view.overlay")
               fi
               ;;
           esac
@@ -160,6 +173,14 @@ jobs:
             grep -A 8 "Memory region" "$GITHUB_WORKSPACE/build.log" | grep -E "Memory region|FLASH:|RAM:" || echo "No memory table in the build log"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Job logs need a GitHub sign-in to read. Annotations do not, so surface
+      # the compiler's errors as annotations when the build fails.
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          grep -E "error|undefined reference|fatal|FAILED" "$GITHUB_WORKSPACE/build.log"             | head -12 | cut -c1-600 | sed 's/%/%25/g'             | while IFS= read -r line; do echo "::error::$line"; done || true
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4

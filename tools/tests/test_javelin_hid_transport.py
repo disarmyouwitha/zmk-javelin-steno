@@ -68,7 +68,7 @@ HARNESS = r'''
 extern "C" bool zmk_usb_is_hid_ready() { return usb_ready; }
 std::vector<std::string> commands;
 bool console_ready = true;
-bool zen_javelin_console_line(const char *p,size_t n,IWriter &w) {
+bool steno_squid_javelin_console_line(const char *p,size_t n,IWriter &w) {
     if (!console_ready) {
         return false;
     }
@@ -77,8 +77,8 @@ bool zen_javelin_console_line(const char *p,size_t n,IWriter &w) {
     w.Write(reply.data(),reply.size());
     return true;
 }
-extern "C" int zen_javelin_ble_session_valid(uint32_t s) { return s==live_session; }
-extern "C" int zen_javelin_ble_send(const void *p,size_t n,uint32_t s) {
+extern "C" int steno_squid_javelin_ble_session_valid(uint32_t s) { return s==live_session; }
+extern "C" int steno_squid_javelin_ble_send(const void *p,size_t n,uint32_t s) {
     if(s!=live_session) return -ENOTCONN;
     ble_tx.emplace_back((const uint8_t *)p,(const uint8_t *)p+n); return 0;
 }
@@ -94,7 +94,7 @@ void usb(const std::string &s) {
     assert(output_report(&dev,&setup,&n,&p)==0);
 }
 void ble(const std::string &s,uint32_t session=2) {
-    assert(zen_javelin_ble_receive(s.data(),s.size(),session)==0);
+    assert(steno_squid_javelin_ble_receive(s.data(),s.size(),session)==0);
 }
 void run() { try { hid_worker(nullptr,nullptr,nullptr); } catch(Done &) {} }
 int main() {
@@ -141,8 +141,8 @@ int main() {
     reset();usb_ready=false;transmit_ready.count=0;run();
     usb_ready=true;usb("c00 hello\n");run();assert(!usb_tx.empty());
 
-    assert(zen_javelin_ble_receive("x",64,2)==-EINVAL);
-    assert(zen_javelin_ble_receive("",0,2)==-EINVAL);
+    assert(steno_squid_javelin_ble_receive("x",64,2)==-EINVAL);
+    assert(steno_squid_javelin_ble_receive("",0,2)==-EINVAL);
 }
 '''
 
@@ -158,7 +158,7 @@ def main():
             path.write_text('#include "stubs.h"\n')
         (root / "test.cc").write_text(HARNESS)
         subprocess.run(["c++", "-std=c++20", "-I", str(root), "-I",
-                        str(ROOT / "src/zen_r4"), str(root / "test.cc"),
+                        str(ROOT / "src/steno_squid"), str(root / "test.cc"),
                         "-o", str(root / "test")], check=True)
         subprocess.run([str(root / "test")], check=True)
     print("PASS: BLE without USB, transport isolation, stale sessions, allowlist, flash not ready, overflow, USB reconnect")
