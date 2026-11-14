@@ -27,7 +27,7 @@ lv_obj_t *zen_r4_practice_widget_create(lv_obj_t *parent) {
     lv_obj_remove_flag(welcome_page, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(welcome_page, 68, 130);
     lv_obj_t *welcome = zen_r4_display_label(welcome_page, 0, &lv_font_montserrat_12);
-    lv_label_set_text_static(welcome, "Welcome");
+    lv_label_set_text_static(welcome, "Practice");
     static const char *const choices[] = {"WORDS 10", "LEFT 50", "RIGHT 50"};
     for (unsigned i = 0; i < ZEN_R4_PRACTICE_DRILL_COUNT; ++i) {
         drill_choices[i] = zen_r4_display_label(welcome_page, 23 + i * 23,

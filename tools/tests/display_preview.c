@@ -1,0 +1,78 @@
+/* Native LVGL render regression using the real screen, drill and squid widgets. */
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include "../../src/zen_r4/display/screen.c"
+#include "../../src/zen_r4/display/practice_widget.c"
+static uint8_t pixels[68*160];
+static uint8_t saved[68*160];
+#include "../../src/zen_r4/display/pet_widget.c"
+void zen_r4_portrait_init(void) {}
+static void flush(lv_display_t *d, const lv_area_t *a, uint8_t *p) {
+    memcpy(saved,p,sizeof(saved));
+    lv_display_flush_ready(d);
+}
+static void save(const char *name) {
+    lv_refr_now(NULL);
+    char path[80]; snprintf(path,sizeof(path),"%s.pgm",name);
+    FILE *out=fopen(path,"wb");assert(out);
+    fprintf(out,"P5\n68 160\n255\n");
+    for(unsigned i=0;i<sizeof(saved);i++) saved[i]=saved[i]>=128?255:0;
+    fwrite(saved,1,sizeof(saved),out);fclose(out);
+}
+int main(void) {
+    lv_init();lv_display_t *d=lv_display_create(68,160);
+    lv_display_set_color_format(d,LV_COLOR_FORMAT_L8);
+    lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_flush_cb(d,flush);
+    lv_screen_load(zen_r4_screen_create());
+    zen_r4_screen_update(ZEN_R4_MODE_SYMBOLS,NULL,0,85);
+    assert(!strcmp(lv_label_get_text(mode_below),"Numpad"));
+    save("numpad");
+    assert(lv_obj_get_height(mode_below)<=20);
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85); save("qwerty");
+    zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
+    zen_r4_screen_update(ZEN_R4_MODE_PLOVER,NULL,0,85); save("plover");
+    for(unsigned i=0;i<3;i++) {
+        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
+           ZEN_R4_PRACTICE_ACTIVE|ZEN_R4_PRACTICE_MENU|(i<<ZEN_R4_PRACTICE_DRILL_SHIFT),85);
+        char name[30];snprintf(name,sizeof(name),"welcome-%u",i);save(name);
+        for(unsigned j=0;j<3;j++) assert(lv_obj_get_height(drill_choices[j])<=22);
+    }
+    zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
+    save("cat");
+    for (unsigned pass=0; pass<30; pass++) {
+        for (unsigned mode=0; mode<ZEN_R4_MODE_COUNT; mode++) {
+            zen_r4_screen_update(mode,NULL,0,pass+65);
+            lv_refr_now(NULL);
+            assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
+        }
+        zen_r4_pet_set_powered(pass%2);
+        zen_r4_pet_set_state(PET_TYPING);
+        for(unsigned tick=0; tick<12; tick++) {
+            lv_tick_inc(100); lv_timer_handler(); lv_refr_now(NULL);
+        }
+        for(unsigned drill=0; drill<3; drill++) {
+            const uint32_t base=ZEN_R4_PRACTICE_ACTIVE|(drill<<ZEN_R4_PRACTICE_DRILL_SHIFT);
+            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|ZEN_R4_PRACTICE_MENU,85);
+            lv_refr_now(NULL);
+            assert(lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
+            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base,85); lv_refr_now(NULL);
+            for(unsigned feedback=1;feedback<3;feedback++) {
+                zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
+                   base|(feedback<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT),85);lv_refr_now(NULL);
+            }
+            const unsigned total=zen_r4_practice_rounds(drill);
+            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|
+                 (ZEN_R4_PRACTICE_DONE<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT)|
+                 (total<<ZEN_R4_PRACTICE_ROUND_SHIFT),85);
+            lv_refr_now(NULL);
+            assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
+        }
+    }
+    lv_mem_monitor_t mon;lv_mem_monitor(&mon);
+    printf("Heap total %zu free %zu max used %zu\n",mon.total_size,mon.free_size,mon.max_used);
+    assert(mon.free_size >= 4096);
+    printf("Configured heap: %u\n",(unsigned)LV_MEM_SIZE);
+    puts("Status, squid, Practice menu and repeated transition checks passed");
+}
