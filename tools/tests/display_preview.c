@@ -117,13 +117,25 @@ int main(void) {
         snprintf(tape.text,sizeof(tape.text),"%s","cat");
         steno_squid_screen_set_tape(&tape);
         steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85,false);
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION
         assert(!lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
         assert(!lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
         assert(!lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
         assert(lv_obj_has_flag(tape_hint,LV_OBJ_FLAG_HIDDEN));
         assert(!strcmp(lv_label_get_text(tape_stroke),"KAT"));
         assert(!strcmp(lv_label_get_text(tape_wpm),"87 WPM"));
+        assert(!headroom);
+        lv_refr_now(NULL);
+        assert(lv_obj_get_y(tape_text) + lv_obj_get_height(tape_text) <= lv_obj_get_y(tape_stroke));
+        assert(lv_obj_get_y(tape_stroke) + lv_obj_get_height(tape_stroke) <= 48);
         save("tape-word");
+#else
+        assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
+        assert(lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
+        assert(lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
+        assert(headroom); // Both translation and hints off: animations get the space.
+        save("tape-disabled");
+#endif
         /* The widest text each row can be given. */
         snprintf(tape.text,sizeof(tape.text),"%s","WWWWWWWWWWWW");
         tape.mask=STENO_SQUID_TAPE_KEYS_MASK;
@@ -133,12 +145,29 @@ int main(void) {
         assert(!lv_obj_has_flag(tape_hint,LV_OBJ_FLAG_HIDDEN));
         assert(lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
         lv_refr_now(NULL);
-        assert(lv_obj_get_height(tape_text)<=14);
-        assert(lv_obj_get_height(tape_stroke)<=10);
+        assert(!headroom); // Hints alone also reserve the upper area.
+        assert(lv_obj_get_height(tape_text)<=24);
+        assert(lv_obj_get_height(tape_stroke)<=20);
         assert(lv_obj_get_height(tape_hint)<=12);
         assert(lv_text_get_width(lv_label_get_text(tape_text),strlen(lv_label_get_text(tape_text)),
-                                 &lv_font_montserrat_10,0)<=TAPE_WIDTH);
+                                 lv_obj_get_style_text_font(tape_text,0),0)<=TAPE_WIDTH);
+        assert(lv_obj_get_y(tape_text) + lv_obj_get_height(tape_text) <= lv_obj_get_y(tape_stroke));
+        assert(lv_obj_get_y(tape_stroke) + lv_obj_get_height(tape_stroke) <= 48);
+        assert(lv_obj_get_y(tape_hint) + lv_obj_get_height(tape_hint) <= 140);
         save("tape-widest");
+        /* A real two-stroke word with a one-stroke shortcut. */
+        snprintf(tape.text,sizeof(tape.text),"%s","hello");
+        tape.mask=0x40u|0x80u|0x200u|0x800u; /* HROE */
+        tape.hint_count=1; tape.hint_mask=0x40u|0x20000u;
+        steno_squid_screen_set_tape(&tape);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85,false);
+        save("tape-shortcut");
+#ifndef CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION
+        tape.hint_count=0;
+        steno_squid_screen_set_tape(&tape);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85,false);
+        assert(headroom); // Clearing the hint restores animations immediately.
+#endif
         /* Other layers and Practice hide the tape. */
         steno_squid_screen_update(STENO_SQUID_MODE_TYPING,NULL,0,85,false);
         assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));

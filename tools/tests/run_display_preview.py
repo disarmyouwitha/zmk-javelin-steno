@@ -19,6 +19,7 @@ def main():
     parser.add_argument('lvgl', type=Path)
     parser.add_argument('--build-dir', type=Path, default=ROOT / 'build/display-preview')
     parser.add_argument('--heap-size', type=int, help='Override the RHS heap for failure reproduction')
+    parser.add_argument('--no-translation', action='store_true')
     args = parser.parse_args()
     output = args.build_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -58,6 +59,7 @@ add_subdirectory("{args.lvgl.resolve()}" lvgl)
 add_executable(preview "{ROOT / 'tools/tests/display_preview.c'}")
 target_include_directories(preview PRIVATE "${{CMAKE_CURRENT_SOURCE_DIR}}/stubs")
 target_link_libraries(preview PRIVATE lvgl m)
+{'' if args.no_translation else 'target_compile_definitions(preview PRIVATE CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION=1)'}
 ''')
     with (output / 'build.log').open('w') as log:
         subprocess.run(['cmake', '-S', str(output), '-B', str(output / 'out'), '-G', 'Ninja'],

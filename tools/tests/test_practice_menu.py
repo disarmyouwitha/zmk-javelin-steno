@@ -33,12 +33,20 @@ unsigned steno_squid_practice_prompt_count(unsigned drill) {
 unsigned steno_squid_practice_rounds(unsigned drill) {
   return steno_squid_practice_rounds(static_cast<steno_squid_practice_drill>(drill));
 }
+#define IS_ENABLED(option) option
+#define CONFIG_ZMK_STENO_SQUID_STROKE_TAPE 0
 #define K_MUTEX_DEFINE(n) int n
 #define K_FOREVER 0
 #define K_TIMEOUT_ABS_MS(n) n
 #define K_WORK_DELAYABLE_DEFINE(n,f) int n
-using atomic_t = uint32_t;
-void atomic_set(atomic_t *p, uint32_t v) { *p = v; }
+using atomic_val_t = uint32_t;
+using atomic_t = atomic_val_t;
+atomic_val_t atomic_get(const atomic_t *p) { return *p; }
+atomic_val_t atomic_set(atomic_t *p, atomic_val_t v) {
+  const auto old = *p;
+  *p = v;
+  return old;
+}
 void k_mutex_lock(int *, int) {}
 void k_mutex_unlock(int *) {}
 struct k_work {};
@@ -53,7 +61,8 @@ struct zmk_behavior_binding_event {};
 #define ZMK_BEHAVIOR_OPAQUE 0
 #define MODE_LAYER_NAME 100
 atomic_t layer_name_low, layer_name_high, mode, host_disconnected;
-void atomic_clear(atomic_t *p) { *p = 0; }
+atomic_val_t atomic_clear(atomic_t *p) { return atomic_set(p, 0); }
+void clear_tape() {}
 void queue_refresh() {}
 int lookups;
 bool answer_correct = true;

@@ -124,14 +124,22 @@ config ZMK_STENO_SQUID_STROKE_TAPE
       small write on the split link per stroke, plus one for a translation
       longer than four characters.
 
+config ZMK_STENO_SQUID_STROKE_TRANSLATION
+    bool "Show stroke and translation above the squid"
+    depends on ZMK_STENO_SQUID_STROKE_TAPE && !ZMK_SPLIT_ROLE_CENTRAL
+    default y
+    help
+      Set this on the right display half. Hints are controlled independently
+      on the left half. If neither is showing, upper animations resume.
+
 config ZMK_STENO_SQUID_STROKE_HINT
     bool "Also show a shorter outline when one exists"
     depends on ZMK_STENO_SQUID_STROKE_TAPE && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
+    depends on ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
     help
-      The engine searches its dictionaries backwards for a shorter way to
-      write what was just typed. That search runs on the thread that handles
-      keys, so enable this only after the logging build shows it takes a few
-      milliseconds at most.
+      Suggest a one-stroke shortcut using the sorted index in freshly compiled
+      external dictionary images. Personal dictionaries use native reverse
+      lookup. Work runs on the key thread; logging builds report its timing.
 
 config ZMK_STENO_SQUID_PRACTICE
     bool "Offline single-stroke practice on the right nice!view"

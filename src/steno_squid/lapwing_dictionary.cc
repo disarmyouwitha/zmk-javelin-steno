@@ -3,6 +3,9 @@
 #include "dictionary/compact_map_dictionary.h"
 #include "dictionary/dictionary_definition.h"
 #include "xip_load.h"
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_HINT
+#include "hint_index.h"
+#endif
 
 #include <string.h>
 #include <zephyr/devicetree.h>
@@ -25,8 +28,13 @@ static const char *const extras_names[EXTRAS_DICTIONARY_COUNT] = {
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
 class ReadOnlyBase final : public StenoDictionary {
 public:
-  explicit ReadOnlyBase(StenoCompactMapDictionary &map)
-      : StenoDictionary(map.GetMaximumOutlineLength()), map(map) {}
+  explicit ReadOnlyBase(StenoCompactMapDictionary &map, uintptr_t address, size_t bytes,
+                        size_t index, size_t count, uintptr_t text, size_t textBytes)
+      : StenoDictionary(map.GetMaximumOutlineLength()), map(map)
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_HINT
+      , hints(address, bytes, index, count, text, textBytes, xip_load_word, xip_load_byte)
+#endif
+      {}
 
   StenoDictionaryLookupResult Lookup(const StenoDictionaryLookup &lookup) const override {
     return map.Lookup(lookup);
@@ -34,8 +42,29 @@ public:
 
   const char *GetName() const override { return map.GetName(); }
 
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_HINT
+  void ReverseLookup(StenoReverseDictionaryLookup &lookup) const override {
+    if (lookup.ignoreStrokeThreshold <= 1) {
+      return;
+    }
+    uint32_t mask;
+    if (!hints.Find(lookup.definition, mask)) {
+      return;
+    }
+    const StenoStroke stroke(mask);
+    // A personal or higher-priority dictionary may override this shortcut.
+    if (parent && parent->GetDictionaryForOutline(&stroke, 1) != this) {
+      return;
+    }
+    lookup.AddResult(&stroke, 1, this);
+  }
+#endif
+
 private:
   StenoCompactMapDictionary &map;
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_HINT
+  StenoSquidHintIndex hints;
+#endif
 };
 #endif
 
@@ -149,7 +178,9 @@ struct BaseDictionary {
       return false;
     }
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-    dictionary = new ReadOnlyBase(*map);
+    const size_t textBytes = xip_load_word(collection + offsetof(StenoDictionaryCollection, textBlock));
+    dictionary = new ReadOnlyBase(*map, address, bytes, index, count,
+                                  reinterpret_cast<uintptr_t>(definition.textBlock), textBytes);
 #else
     dictionary = map;
 #endif

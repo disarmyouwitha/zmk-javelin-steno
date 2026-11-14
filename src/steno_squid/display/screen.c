@@ -122,8 +122,13 @@ static void show_mode(const char *title) {
 
 #define TAPE_WIDTH 66
 
-static const lv_font_t *const tape_text_fonts[] = {&lv_font_montserrat_10};
-static const lv_font_t *const tape_stroke_fonts[] = {&lv_font_unscii_8, &lv_font_montserrat_8};
+static const lv_font_t *const tape_text_fonts[] = {
+    &lv_font_montserrat_20, &lv_font_montserrat_16, &lv_font_montserrat_14,
+    &lv_font_montserrat_12, &lv_font_montserrat_10};
+static const lv_font_t *const tape_stroke_fonts[] = {
+    &lv_font_montserrat_16, &lv_font_montserrat_14, &lv_font_montserrat_12,
+    &lv_font_unscii_8, &lv_font_montserrat_8};
+static const lv_font_t *const tape_hint_fonts[] = {&lv_font_unscii_8, &lv_font_montserrat_8};
 #define FONT_COUNT(fonts) (sizeof(fonts) / sizeof((fonts)[0]))
 
 /* Shows `text` in the first font it fits the tape width in. If it fits in
@@ -148,38 +153,50 @@ static void set_fitted_text(lv_obj_t *label, const char *text, const lv_font_t *
         }
         snprintf(buffer + length, sizeof(buffer) - length, "..");
     }
+    lv_obj_set_style_text_font(label, font, 0);
     if (strcmp(buffer, lv_label_get_text(label)) != 0) {
-        lv_obj_set_style_text_font(label, font, 0);
         lv_label_set_text(label, buffer);
     }
 }
 
-static void show_tape(bool show) {
+static bool show_tape(bool show) {
     const struct steno_squid_tape *tape = &tape_state;
     if (!show || !tape->valid) {
         lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
-        return;
+        return false;
     }
     char stroke[STENO_SQUID_TAPE_STROKE_TEXT_MAX + 1];
     steno_squid_stroke_to_text(tape->mask, stroke);
     set_fitted_text(tape_stroke, stroke, tape_stroke_fonts, FONT_COUNT(tape_stroke_fonts));
     set_fitted_text(tape_text, tape->text, tape_text_fonts, FONT_COUNT(tape_text_fonts));
-    lv_obj_remove_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION
+    const bool translation = true;
+#else
+    const bool translation = false;
+#endif
+    if (translation) {
+        lv_obj_remove_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
+    }
 
-    /* The top row shows a shorter outline when there is one, else the speed. */
+    /* Keep both large rows above Pop. A hint/speed fits below the layer name;
+     * hints-only mode can instead use the free upper area. */
+    lv_obj_set_y(tape_hint, translation ? 123 : 17);
     if (tape->hint_count) {
         char hint[STENO_SQUID_TAPE_STROKE_TEXT_MAX + 8];
         char first[STENO_SQUID_TAPE_STROKE_TEXT_MAX + 1];
         steno_squid_stroke_to_text(tape->hint_mask, first);
         snprintf(hint, sizeof(hint), "TIP %s%s", first, tape->hint_count > 1 ? "+" : "");
-        set_fitted_text(tape_hint, hint, tape_stroke_fonts, FONT_COUNT(tape_stroke_fonts));
+        set_fitted_text(tape_hint, hint, tape_hint_fonts, FONT_COUNT(tape_hint_fonts));
         lv_obj_remove_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
-    } else if (tape->wpm) {
+    } else if (translation && tape->wpm) {
         char speed[12];
         snprintf(speed, sizeof(speed), "%u WPM", tape->wpm);
         if (strcmp(speed, lv_label_get_text(tape_wpm)) != 0) {
@@ -191,6 +208,7 @@ static void show_tape(bool show) {
         lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
     }
+    return translation || tape->hint_count;
 }
 
 void steno_squid_screen_set_tape(const struct steno_squid_tape *tape) {
@@ -251,19 +269,19 @@ lv_obj_t *steno_squid_screen_create(void) {
     lv_obj_set_size(status_page, 68, 140);
     mode_above = steno_squid_display_label(status_page, 17, &lv_font_montserrat_16);
     mode_below = steno_squid_display_label(status_page, 99, &lv_font_montserrat_16);
-    /* The stroke tape: speed or a hint on top, the translation and the stroke
-     * under the mode name. Hidden until a stroke arrives.
+    /* Large translation/stroke rows above Pop; speed or a hint below the
+     * layer name. Hidden until a stroke arrives.
      */
-    tape_wpm = steno_squid_display_label(status_page, 0, &lv_font_montserrat_10);
-    tape_hint = steno_squid_display_label(status_page, 0, &lv_font_unscii_8);
+    tape_wpm = steno_squid_display_label(status_page, 123, &lv_font_montserrat_10);
+    tape_hint = steno_squid_display_label(status_page, 123, &lv_font_unscii_8);
     lv_obj_set_x(tape_hint, 1);
     lv_obj_set_width(tape_hint, 66);
     lv_obj_set_style_pad_ver(tape_hint, 1, 0);
     lv_obj_set_style_text_color(tape_hint, lv_color_white(), 0);
     lv_obj_set_style_bg_color(tape_hint, lv_color_black(), 0);
     lv_obj_set_style_bg_opa(tape_hint, LV_OPA_COVER, 0);
-    tape_text = steno_squid_display_label(status_page, 119, &lv_font_montserrat_10);
-    tape_stroke = steno_squid_display_label(status_page, 131, &lv_font_unscii_8);
+    tape_text = steno_squid_display_label(status_page, 0, &lv_font_montserrat_20);
+    tape_stroke = steno_squid_display_label(status_page, 25, &lv_font_montserrat_16);
     show_tape(false);
     practice_page = steno_squid_practice_widget_create(screen);
 
@@ -334,11 +352,14 @@ void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t p
             had_layer = false;
         }
     }
-    show_tape(!practicing && mode == STENO_SQUID_MODE_JAVELIN);
+    /* Connection notices keep priority over the tape. With no tape or hint,
+     * Pop can use the whole upper area for bubbles, greetings and sparkles. */
+    const bool tape_visible = show_tape(!practicing && !host_disconnected &&
+                          mode == STENO_SQUID_MODE_JAVELIN);
     if (done != was_done) {
         steno_squid_pet_set_state(done ? PET_LEVEL_UP : PET_IDLE);
     }
-    steno_squid_pet_set_headroom(done || (!practicing &&
+    steno_squid_pet_set_headroom(done || (!practicing && !tape_visible &&
                             lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN)));
     if (layer_changed) {
         steno_squid_pet_set_state(PET_LAYER_CHANGE);
