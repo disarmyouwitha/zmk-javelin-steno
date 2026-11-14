@@ -113,6 +113,7 @@ static atomic_t practice_screen;
 static StenoKeyState practice_pending_releases;
 static struct {
   bool active;
+  bool menu;
   bool ignore_chord;
   bool no_dictionary;
   uint8_t round;
@@ -149,6 +150,7 @@ static void practice_publish() {
   uint32_t snapshot = 0;
   if (practice.active) {
     snapshot = ZEN_R4_PRACTICE_ACTIVE |
+               (practice.menu ? ZEN_R4_PRACTICE_MENU : 0) |
                (practice.no_dictionary ? ZEN_R4_PRACTICE_NO_DICTIONARY : 0) |
                practice_prompt() |
                (uint32_t(practice.feedback) << ZEN_R4_PRACTICE_FEEDBACK_SHIFT) |
@@ -203,6 +205,7 @@ static void practice_switch_drill(int direction) {
   const auto drill = static_cast<zen_r4_practice_drill>((practice.drill + direction + count) % count);
   practice = {};
   practice.active = true;
+  practice.menu = true;
   practice.drill = drill;
   if (drill != ZEN_R4_PRACTICE_WORDS) {
     practice_draw_hand_prompt(false);
@@ -263,6 +266,7 @@ extern "C" void zen_r4_practice_set_active(bool active) {
     practice_pending_releases |= practice.keys;
     practice = {};
     practice.active = active && processor;
+    practice.menu = practice.active;
     if (practice.active) {
       practice_refresh_dictionary();
     }
@@ -298,6 +302,19 @@ static bool practice_process_key(int index, bool pressed) {
     const auto steno_key = static_cast<StenoKey>(index);
     if (practice.chord == key && steno_key >= StenoKey::STAR1 && steno_key <= StenoKey::STAR4) {
       practice_switch_drill(steno_key <= StenoKey::STAR2 ? -1 : 1);
+    } else if (practice.menu || practice.feedback == ZEN_R4_PRACTICE_DONE) {
+      // Consume the start key; the first scored chord comes after release.
+      if (practice.chord == key &&
+          (steno_key == StenoKey::A || steno_key == StenoKey::O ||
+           steno_key == StenoKey::E || steno_key == StenoKey::U)) {
+        if (practice.menu) {
+          practice.menu = false;
+          practice_refresh_dictionary();
+          practice_publish();
+        } else {
+          practice_switch_drill(0);
+        }
+      }
     } else if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
                practice.feedback != ZEN_R4_PRACTICE_DONE) {
       practice_refresh_dictionary();

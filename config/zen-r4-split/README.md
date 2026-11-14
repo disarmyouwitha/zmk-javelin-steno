@@ -110,7 +110,12 @@ Check **Qwerty** after connection, **Numpad** while holding the middle left thum
 
 ## Offline practice
 
-Practice starts in **WORDS**. The left central looks up each completed chord
+Practice opens a **Welcome** screen listing **WORDS (10)**, **LEFT (50)**, and
+**RIGHT (50)**. Tap a left star to select the previous drill or a right star for
+the next, then tap a vowel thumb (**A**, **O**, **E**, or **U**) to start. The start
+key is consumed before scoring begins.
+
+The left central looks up each completed chord
 through Javelin's active dictionaries, including personal overrides. The
 ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
@@ -120,7 +125,7 @@ Numpad and tap the outer right thumb, then release both. On the steno layer,
 the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
-Switching starts a fresh run with a new streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
+Switching returns to the welcome screen with the new drill selected; start it with a vowel thumb. A new run resets the streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
 
 **LEFT** and **RIGHT** use the corresponding consonant banks from
 [StenoJig's keyboard drills](https://joshuagrams.github.io/steno-jig/learn-keyboard.html).
@@ -137,7 +142,8 @@ The right nice!view shows the drill, a large prompt, progress, and streak.
 Correct answers show **CORRECT** for
 250 ms and advance automatically. Mistakes show **RETRY**, reset the streak,
 and keep the current prompt. After all prompts are answered correctly, the screen shows
-**DONE** and the best streak.
+**DONE**, the best streak, and the celebrating squid. Tap a vowel thumb to return
+to the welcome screen, or a star to select another drill.
 
 The outer left thumb returns to Qwerty. The key left of the Lapwing # key (the one above S) exits to
 normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno

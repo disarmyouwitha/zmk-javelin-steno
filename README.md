@@ -74,6 +74,8 @@ Hold the middle left thumb for Numpad, tap the outer right thumb, then release b
 | LEFT | 50 | Random left-hand consonant keys. |
 | RIGHT | 50 | Random right-hand consonant keys. |
 
+Practice opens a welcome menu. Select WORDS, LEFT, or RIGHT with the left/right star keys, then tap a vowel thumb (A, O, E, or U) to start. After a run, tap a vowel thumb to return to the menu.
+
 The hand drills use Steno Jig's key sets and draw a new random prompt after each correct answer. Consecutive repeats are allowed. Mistakes keep the current prompt and reset the streak; correct answers advance after 250 ms.
 
 Tap a left star by itself for the previous drill, or a right star for the next. The key immediately left of the Lapwing # key toggles Practice. The outer left thumb returns to Qwerty.

@@ -6,7 +6,8 @@
 #define ZEN_R4_STATUS_BEHAVIOR "zrst"
 #define ZEN_R4_STATUS_PROTOCOL 1
 #define ZEN_R4_PRACTICE_LEGACY_PROTOCOL 4
-#define ZEN_R4_PRACTICE_PROTOCOL 5
+#define ZEN_R4_PRACTICE_RUN_PROTOCOL 5
+#define ZEN_R4_PRACTICE_PROTOCOL 6
 /* A renamed layer uses the high bit of param2 as its tag. The remaining
  * 63 bits hold nine 7-bit characters, first character in the lowest bits.
  */
@@ -22,6 +23,7 @@
 #define ZEN_R4_PRACTICE_NO_DICTIONARY (1u << 24)
 #define ZEN_R4_PRACTICE_DRILL_SHIFT 25
 #define ZEN_R4_PRACTICE_DRILL_MASK (3u << ZEN_R4_PRACTICE_DRILL_SHIFT)
+#define ZEN_R4_PRACTICE_MENU (1u << 27)
 /* Local flag used by the receiver for old 30-prompt hand drills. */
 #define ZEN_R4_PRACTICE_LEGACY (1u << 30)
 #define ZEN_R4_PRACTICE_ROUNDS 50

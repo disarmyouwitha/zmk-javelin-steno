@@ -44,7 +44,7 @@ lv_obj_t *zen_r4_display_label(lv_obj_t *parent, int y, const lv_font_t *font) {
 #define MODE_TEXT_WIDTH 67
 
 static const lv_font_t *const mode_fonts[] = {
-    &lv_font_montserrat_20, &lv_font_montserrat_16,
+    &lv_font_montserrat_20, &lv_font_montserrat_16, &lv_font_montserrat_14,
 };
 
 static const lv_font_t *fit_mode_font(const char *text, size_t length) {

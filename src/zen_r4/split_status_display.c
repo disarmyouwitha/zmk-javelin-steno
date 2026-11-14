@@ -83,11 +83,14 @@ static void queue_refresh(void) {
 static int status_received(struct zmk_behavior_binding *binding,
                            struct zmk_behavior_binding_event event) {
     if (binding->param2 == ZEN_R4_PRACTICE_PROTOCOL ||
+        binding->param2 == ZEN_R4_PRACTICE_RUN_PROTOCOL ||
         binding->param2 == ZEN_R4_PRACTICE_LEGACY_PROTOCOL) {
         const uint32_t raw = binding->param1;
         const bool legacy = binding->param2 == ZEN_R4_PRACTICE_LEGACY_PROTOCOL;
         const unsigned drill = (raw >> (legacy ? 20 : ZEN_R4_PRACTICE_DRILL_SHIFT)) & 3u;
-        const uint32_t allowed = ZEN_R4_PRACTICE_ACTIVE | (legacy ? 0x3fffffu : 0x7ffffffu);
+        const uint32_t allowed = ZEN_R4_PRACTICE_ACTIVE |
+            (legacy ? 0x3fffffu : binding->param2 == ZEN_R4_PRACTICE_PROTOCOL
+                                       ? 0xfffffffu : 0x7ffffffu);
         if (!(raw & ZEN_R4_PRACTICE_ACTIVE) || (raw & ~allowed) ||
             drill >= ZEN_R4_PRACTICE_DRILL_COUNT) {
             return -EINVAL;
@@ -108,7 +111,9 @@ static int status_received(struct zmk_behavior_binding *binding,
         const unsigned total = legacy && drill != ZEN_R4_PRACTICE_WORDS ? 30 :
                                zen_r4_practice_rounds(drill);
         const unsigned round = zen_r4_practice_counter(value, ZEN_R4_PRACTICE_ROUND_SHIFT);
-        if (round > total ||
+        if (((value & ZEN_R4_PRACTICE_MENU) &&
+             (round || zen_r4_practice_feedback_value(value) != ZEN_R4_PRACTICE_PROMPT)) ||
+            round > total ||
             ((round == total) != (zen_r4_practice_feedback_value(value) == ZEN_R4_PRACTICE_DONE)) ||
             zen_r4_practice_counter(value, ZEN_R4_PRACTICE_STREAK_SHIFT) > total ||
             zen_r4_practice_counter(value, ZEN_R4_PRACTICE_BEST_SHIFT) > total ||
