@@ -140,9 +140,9 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <g class="steno" data-key-index="40"><title>U</title><rect class="key" x="692" y="412" width="72" height="76" rx="8"/>
 <text x="728" y="450" class="">U</text>
 </g>
-<g class="layer" data-key-index="41"><title>Javelin / tap to switch</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
-<text x="809" y="437" class="compact">Javelin</text>
-<text x="809" y="469" class="meta">tap to switch</text>
+<g class="layer" data-key-index="41"><title>Practice / toggle</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
+<text x="809" y="437" class="compact">Practice</text>
+<text x="809" y="469" class="meta">toggle</text>
 </g>
-<text x="32" y="516" class="footer">Raw strokes to host Plover · Outer left thumb: Qwerty · Outer right thumb: Javelin</text>
+<text x="32" y="516" class="footer">Raw strokes to host Plover · Outer left thumb: Qwerty · Outer right thumb: Practice</text>
 </svg>

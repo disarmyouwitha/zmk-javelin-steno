@@ -140,8 +140,9 @@ ten-prompt drill repeats CAT, THE, IF and IS. It compares single-stroke
 translations without regard to letter case.
 
 Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
-Numpad and tap the outer right thumb, then release both. On the steno layer,
-the key left of the Lapwing # key (the one above S) turns practice on or off. Tap either left star by itself to go to the previous
+Numpad and tap the outer right thumb, then release both. The outer right thumb
+also starts Practice directly from Javelin or PloverHID. During Practice it
+returns to ordinary Javelin. The former left-hand Practice key is unbound. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
 Switching returns to the Practice menu with the new drill selected; start it with a vowel thumb. A new run resets the streak. WORDS has 10 prompts; LEFT and RIGHT have 50 each. Each hand drill randomly draws from its key list for each prompt, so consecutive prompts can repeat. Update both halves for the new drills. A new right half still displays the original 30-prompt drills from an older left half.
@@ -164,8 +165,9 @@ and keep the current prompt. After all prompts are answered correctly, the scree
 **DONE**, the best streak, and the celebrating squid. Tap a vowel thumb to return
 to the Practice menu, or a star to select another drill.
 
-The outer left thumb returns to Qwerty. The key left of the Lapwing # key (the one above S) exits to
-normal Javelin, and the outer right thumb goes to Plover HID. Leaving the steno
+The outer left thumb returns to Qwerty. The outer right thumb exits to
+normal Javelin. To select PloverHID, return to Qwerty first and tap the outer
+right thumb there. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
 the session. Both halves can run on battery with the computer off.
