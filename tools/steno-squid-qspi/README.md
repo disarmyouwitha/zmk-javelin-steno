@@ -64,19 +64,6 @@ west build -s zmk/app -d "$probe/build/zmk-bench" -b nice_nano//zmk -- \
 
 The build uses a disposable copy of the integration module and produces `build/zmk-bench/zephyr/zmk.uf2`. Its mock scanner lets the bench run without keys. It captures the original reports at the USB write boundary and submits neutral frames to the host. The production ZMK keymap and physical matrix use their own build targets.
 
-## Hardware results
-
-| Check | Observed result |
-|---|---|
-| JEDEC and single-line read | `EF 40 18` and 16 bytes read at offset zero |
-| Quad drive comparison | Standard drive matched 0/8 pages. High drive matched 8/8 at each of the two sampling delays. |
-| High-drive quad after reboot | All 256 programmed bytes matched. All four lanes carried both bit values. |
-| Memory-mapped quad | All 128 CPU word loads matched EasyDMA across two distinct pages. |
-| Native external dictionary | Six injected strokes resolved to **if the cat is the cat**. All returned words pointed into the mapped fixture. |
-| Full ZMK bench | 42 press/release reports decoded to the same phrase. Every key was released. |
-
-The scratch sector verified blank after each successful scratch test. These tests cover the breadboard flash and the onboard translation path. The left display, physical matrix, and Plover HID still need combined hardware validation on the final pin map.
-
 ## Left nice!view on a custom Steno Squid PCB
 
 The Rev 2 proposal reserves D2–D7 for the tested QSPI bus and uses a separate display SPI bus with D0 for SCK, D1 for MOSI, and the underside P1.07 pad for CS. The 4×6 matrix uses ten other GPIOs, including underside P1.01 and P1.02, and leaves both NFC pins free. The left display needs custom ZMK pinctrl and an accessible controller footprint for all three underside pads. Verify the display module's 14 × 36 mm outline, socket stack height, and case clearance in KiCad. Shared switched VCC must stay on during mapped flash access. [nice!view dimensions and pinout](https://nicekeyboards.com/docs/nice-view/pinout-schematic/) · [Nordic pin assignments](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/pin.html?contentId=hMpuE~dcsjrrIlIt8ErcrQ)

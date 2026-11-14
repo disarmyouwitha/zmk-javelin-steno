@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Render the default split keymap as SVGs using only the Python standard library.
 
-Adapted from disarmyouwitha/zmk-config-zen-plover-hid/scripts/render_keymap.py.
 The split profile overrides the shared keymap's CORNE_* binding groups.
 """
 

@@ -23,7 +23,3 @@ west build -s "$matrix" -d "$matrix/build" -b nice_nano@2.0.0/nrf52840 -- \
 Double-tap reset and copy `build/zephyr/zephyr.uf2` onto `NICENANO`. Open the USB serial port at 115200 baud. Tap each switch and check its coordinates on both `DOWN` and `UP`. After all 21 switches have reported both transitions, the log shows `tested=21/21`. The held mask uses bit `row * 6 + column`.
 
 For rollover, hold a chord that spans rows and columns, then check that the held mask contains exactly those switches. Repeat with a thumb included. Release every switch and verify `held=0x000000` and `count=0`.
-
-## Assembled left-half results
-
-The read-only QSPI probe returned JEDEC `EF 40 18` and read 16 bytes at address zero. The standalone matrix tester registered individual presses and releases on all 21 switches. It held R0C0 + R1C1 + R2C2 at `0x004081` and all three plus R3C4 at `0x404081`. The final mask was `0x000000`.

@@ -2,7 +2,7 @@
 
 The handwired Steno Squid left half is the Bluetooth split central and the Corne Ultralight right half is the peripheral. Each half scans its own wiring and reports positions in the same 42-key Corne layout. The left half handles USB typing, host Plover HID, and onboard Javelin from the base dictionaries on the W25Q128.
 
-The split uses the [Corne-ish Zen Voyager layout](https://github.com/disarmyouwitha/zmk-config-zen-plover-hid/blob/6a3cf7dbf6502571d5211078ba18009e31b938e6/config/corneish_zen.keymap) with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
+The split uses a 42-key Corne layout with direct access to both steno modes. In MAIN, the left thumbs are Command, hold for Numpad, and Backspace. The right thumbs are Space, onboard Javelin, and Plover HID. Both lists are in physical left-to-right order.
 
 In either steno mode, the middle right thumb chords U, the outer right thumb switches steno modes, and the outer left thumb returns to MAIN.
 
@@ -324,20 +324,6 @@ With Javelin Steno Tools connected over HID, open **Host Layout** and select the
 Try `SA / SRA` in a blank editor. Mac produces “ça va” and Windows plain text produces “ca va.” The Windows profile sends ordinary ASCII keys and has no Num Lock dependency. Latin-1 characters without a one-character ASCII mapping use a question mark. Each mapped character emits one character to keep undo counts aligned. The picker selects firmware-supplied profiles. The page's layout update section refers to uploading new definitions and can still show that uploads are unavailable.
 
 This split enables `CONFIG_ZMK_JAVELIN_STENO_MACOS_US_LAYOUT` to provide the Mac profile and, together with the browser dictionary option, the Windows profile picker. Builds with that option disabled use Javelin's plain U.S. output.
-
-Hardware verification covered switching profiles in Chrome over HID and retaining the selected profile across a USB power cycle. The Mac passed accented typing, repeat, undo, and subsequent ordinary typing. Windows plain text replaced the earlier Alt-code output after application-dependent failures. The [Windows test handoff](../../docs/WINDOWS-HOST-PROFILE-HANDOFF.md) records that earlier investigation.
-
-The Windows plain-text engine regression checks covered accented phrases, consecutive translations, repeat, undo, capitalization, and punctuation. Every checked output used ordinary keys without Alt, keypad, or Num Lock events. The user confirmed the plain-text build works correctly on Windows.
-
-## Latest validation
-
-The user confirmed both-half typing, Javelin KAT, Plover HID, display labels,
-Practice and exit, idle flash power-off, immediate Javelin wake, and all four
-browser-editor checks on the initial boot/idle build. A serial query after
-reboot reported `CHECK_QUICK 53`. Deep sleep with these changes and serial verify/repair remain to be checked
-on hardware. The 30-prompt hand
-drills and nine-character layer-name update compiled and passed host checks;
-they still need an on-keyboard check after flashing both halves.
 
 ## Studio key labels
 
