@@ -190,7 +190,8 @@ lv_obj_t *zen_r4_screen_create(void) {
     return screen;
 }
 
-void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practice, unsigned charge) {
+void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practice, unsigned charge,
+                         bool host_disconnected) {
 #ifdef CONFIG_ZMK_ZEN_R4_FONT_SAMPLER
     return;
 #endif
@@ -223,7 +224,8 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
         lv_obj_add_flag(practice_page, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(status_page, LV_OBJ_FLAG_HIDDEN);
         const char *title = mode < ZEN_R4_MODE_COUNT ? mode_names[mode] : layer_name;
-        show_mode(title);
+        show_mode(host_disconnected && mode != ZEN_R4_MODE_UNKNOWN ? "Discon-\n-nected"
+                                                                    : title);
         const bool valid_layer = (mode >= ZEN_R4_MODE_TYPING && mode <= ZEN_R4_MODE_PLOVER) ||
                                  mode >= ZEN_R4_MODE_COUNT;
         if (valid_layer) {

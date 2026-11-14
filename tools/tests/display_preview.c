@@ -56,49 +56,62 @@ int main(void) {
     lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);
     lv_display_set_flush_cb(d,flush);
     lv_screen_load(zen_r4_screen_create());
-    zen_r4_screen_update(ZEN_R4_MODE_SYMBOLS,NULL,0,85);
+    zen_r4_screen_update(ZEN_R4_MODE_SYMBOLS,NULL,0,85,false);
     assert(!strcmp(lv_label_get_text(mode_below),"Numpad"));
     save("numpad");
     assert(lv_obj_get_height(mode_below)<=20);
-    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85); save("qwerty");
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85,false); save("qwerty");
     assert(state == PET_LAYER_CHANGE);
     advance_frame(frame_timer);
     assert(frame_index == 1);
     zen_r4_pet_set_state(PET_TYPING);
     assert(state == PET_LAYER_CHANGE && frame_index == 1);
-    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,100);
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,100,false);
     assert(frame_index == 1); // A battery update must not restart the reaction.
     advance_frame(frame_timer);advance_frame(frame_timer);
     assert(state == PET_IDLE && lv_timer_get_paused(frame_timer));
     save("pop-idle");
-    zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
+    zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85,false); save("waiting");
     assert(lv_obj_get_y(mode_above)==17);
     assert(!strcmp(lv_label_get_text(mode_above),"Waiting"));
     assert(lv_obj_get_y(mode_below)==99);
     assert(!strcmp(lv_label_get_text(mode_below),"For Left"));
-    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85,false);
     assert(state != PET_LAYER_CHANGE); // Reconnection keeps the greeting path.
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85,true);
+    save("host-disconnected");
+    assert(!lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN));
+    assert(!strcmp(lv_label_get_text(mode_above), "Discon-"));
+    assert(!strcmp(lv_label_get_text(mode_below), "-nected"));
+    assert(lv_obj_get_height(mode_above) ==
+           lv_font_get_line_height(lv_obj_get_style_text_font(mode_above, LV_PART_MAIN)));
+    zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85,true);
+    save("waiting-without-host");
+    assert(!strcmp(lv_label_get_text(mode_above), "Waiting"));
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85,false);
+    assert(lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN));
+    assert(!strcmp(lv_label_get_text(mode_below), "Qwerty"));
     lv_obj_update_layout(mode_below);
     assert(lv_obj_get_y(mode_below)==99);
-    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85);
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85,false);
     assert(state == PET_LAYER_CHANGE);
     advance_frame(frame_timer);
-    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85);
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85,false);
     assert(frame_index == 1);
-    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Other",0,85);
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Other",0,85,false);
     assert(frame_index == 0); // Custom layer names can also select different layers.
-    zen_r4_screen_update(ZEN_R4_MODE_PLOVER,NULL,0,85); save("plover");
+    zen_r4_screen_update(ZEN_R4_MODE_PLOVER,NULL,0,85,false); save("plover");
     for(unsigned i=0;i<3;i++) {
         zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
-           ZEN_R4_PRACTICE_ACTIVE|ZEN_R4_PRACTICE_MENU|(i<<ZEN_R4_PRACTICE_DRILL_SHIFT),85);
+           ZEN_R4_PRACTICE_ACTIVE|ZEN_R4_PRACTICE_MENU|(i<<ZEN_R4_PRACTICE_DRILL_SHIFT),85,false);
         char name[30];snprintf(name,sizeof(name),"welcome-%u",i);save(name);
         for(unsigned j=0;j<3;j++) assert(lv_obj_get_height(drill_choices[j])<=22);
     }
-    zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
+    zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85,false);
     save("cat");
     for (unsigned pass=0; pass<30; pass++) {
         for (unsigned mode=0; mode<ZEN_R4_MODE_COUNT; mode++) {
-            zen_r4_screen_update(mode,NULL,0,pass+65);
+            zen_r4_screen_update(mode,NULL,0,pass+65,false);
             lv_refr_now(NULL);
             assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
         }
@@ -109,18 +122,18 @@ int main(void) {
         }
         for(unsigned drill=0; drill<3; drill++) {
             const uint32_t base=ZEN_R4_PRACTICE_ACTIVE|(drill<<ZEN_R4_PRACTICE_DRILL_SHIFT);
-            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|ZEN_R4_PRACTICE_MENU,85);
+            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|ZEN_R4_PRACTICE_MENU,85,false);
             lv_refr_now(NULL);
             assert(lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
-            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base,85); lv_refr_now(NULL);
+            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base,85,false); lv_refr_now(NULL);
             for(unsigned feedback=1;feedback<3;feedback++) {
                 zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
-                   base|(feedback<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT),85);lv_refr_now(NULL);
+                   base|(feedback<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT),85,false);lv_refr_now(NULL);
             }
             const unsigned total=zen_r4_practice_rounds(drill);
             zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|
                  (ZEN_R4_PRACTICE_DONE<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT)|
-                 (total<<ZEN_R4_PRACTICE_ROUND_SHIFT),85);
+                 (total<<ZEN_R4_PRACTICE_ROUND_SHIFT),85,false);
             lv_refr_now(NULL);
             assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
         }

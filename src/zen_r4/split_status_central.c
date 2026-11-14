@@ -2,7 +2,13 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
+#include <zmk/ble.h>
+#include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/layer_state_changed.h>
+#if IS_ENABLED(CONFIG_ZMK_USB)
+#include <zmk/events/usb_conn_state_changed.h>
+#include <zmk/usb.h>
+#endif
 #include <zmk/keymap.h>
 #include <zmk/split/bluetooth/service.h>
 #include <zmk/split/central.h>
@@ -144,8 +150,41 @@ void zen_r4_split_status_refresh(void) {
     k_work_submit(&send_status_work);
 }
 
+/* Report the active host profile, independent of the split Bluetooth link. */
+static void send_host_status(struct k_work *work) {
+    if (!atomic_get(&connected)) {
+        return;
+    }
+
+    bool host_connected = zmk_ble_active_profile_is_connected();
+#if IS_ENABLED(CONFIG_ZMK_USB)
+    host_connected = host_connected || zmk_usb_is_hid_ready();
+#endif
+    struct zmk_behavior_binding binding = {
+        .behavior_dev = ZEN_R4_STATUS_BEHAVIOR,
+        .param1 = !host_connected,
+        .param2 = ZEN_R4_HOST_STATUS_PROTOCOL,
+    };
+    struct zmk_behavior_binding_event event = {.timestamp = k_uptime_get()};
+    zmk_split_central_invoke_behavior(0, &binding, event, true);
+}
+
+K_WORK_DEFINE(send_host_status_work, send_host_status);
+
+static int host_status_changed(const zmk_event_t *event) {
+    k_work_submit(&send_host_status_work);
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(zen_r4_host_status, host_status_changed);
+ZMK_SUBSCRIPTION(zen_r4_host_status, zmk_ble_active_profile_changed);
+#if IS_ENABLED(CONFIG_ZMK_USB)
+ZMK_SUBSCRIPTION(zen_r4_host_status, zmk_usb_conn_state_changed);
+#endif
+
 static void sync_after_connect(struct k_work *work) {
     send_status(work);
+    send_host_status(work);
     // ZMK discovers the remote behavior characteristic after the link comes up.
     // Send snapshots through discovery, which can outlast the first few seconds
     // on a fresh pairing. After that, only send on layer changes.
