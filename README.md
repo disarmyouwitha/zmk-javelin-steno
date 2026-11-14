@@ -1,4 +1,4 @@
-# ZMK + Javelin Steno
+# Steno Squid
 
 ZMK keyboard firmware with onboard Javelin translation, Plover HID, wireless dictionary editing, and offline steno practice.
 
