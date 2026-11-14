@@ -8,8 +8,8 @@
 #include "console.h"
 #include "wpm_tracker.h"
 #include "writer.h"
-#include "zen_r4/split_status.h"
-#include "zen_r4/stroke_feed.h"
+#include "split_status.h"
+#include "stroke_feed.h"
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
