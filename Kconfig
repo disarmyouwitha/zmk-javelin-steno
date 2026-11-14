@@ -17,7 +17,7 @@ config ZMK_JAVELIN_STENO_DICT_LAPWING
     default n
 
 config ZMK_JAVELIN_STENO_EXTERNAL_LAPWING
-    bool "Use the Zen R4's external QSPI Lapwing dictionary"
+    bool "Use the Steno Squid's external QSPI Lapwing dictionary"
     depends on SOC_NRF52840
     select NRFX_QSPI
     select CRC
@@ -28,7 +28,7 @@ config ZMK_JAVELIN_STENO_SERIAL_PROVISIONING
     default y
     help
       Needed only to write or check the Lapwing and Plover base images with
-      tools/zen-r4-lapwing/upload.py. Build with the zmk-usb-logging snippet
+      tools/steno-squid-lapwing/upload.py. Build with the zmk-usb-logging snippet
       to get it. Everyday builds can leave the snippet out: the bases already
       in flash still load, and the browser editor runs over HID.
 
@@ -42,7 +42,7 @@ config ZMK_JAVELIN_DIAG
       counters saved across reboots, and wake timing for the external flash.
       Serial commands: S status, D dump the boot log, Z clear log and counters.
       It compiles in only with the logging snippet. Turn it off, or delete
-      src/zen_r4/diag.c and the diag_*() calls, once debugging is done.
+      src/steno_squid/diag.c and the diag_*() calls, once debugging is done.
 
 config ZMK_JAVELIN_DIAG_RAIL_SENSE_PIN
     int "Port 0 pin that the R rail test reads"
@@ -64,7 +64,7 @@ config ZMK_JAVELIN_STENO_QSPI_SCK_DIVIDER
       16 gives the 2 MHz clock proven on the handwired left half. A routed
       PCB should tolerate a much smaller divider, which shortens the full
       dictionary check after a cold boot. Confirm each new value with
-      tools/zen-r4-qspi before relying on it.
+      tools/steno-squid-qspi before relying on it.
 
 config ZMK_JAVELIN_STENO_FLASH_IDLE_OFF
     bool "Power the external flash down while the dictionaries are idle"
@@ -95,7 +95,7 @@ config ZMK_JAVELIN_STENO_BLE_HID
       report format. The browser tools require no website modifications.
 
 config ZMK_JAVELIN_BATTERY_LOG
-    bool "Record Zen R4 battery samples in a dedicated internal flash partition"
+    bool "Record Steno Squid battery samples in a dedicated internal flash partition"
     depends on ZMK_JAVELIN_STENO_SERIAL_PROVISIONING && ZMK_BLE && FLASH_MAP && HWINFO
     select FCB
 
@@ -109,14 +109,14 @@ endif # ZMK_JAVELIN_STENO
 
 endmenu
 
-config ZMK_ZEN_R4_SPLIT_STATUS
-    bool "Sync the Zen R4 layer to the right-half nice!view"
+config ZMK_STENO_SQUID_SPLIT_STATUS
+    bool "Sync the Steno Squid layer to the right-half nice!view"
     depends on ZMK_SPLIT && ZMK_SPLIT_BLE
     depends on ZMK_SPLIT_ROLE_CENTRAL || (ZMK_DISPLAY && SHIELD_NICE_VIEW && ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)
 
-config ZMK_ZEN_R4_STROKE_TAPE
+config ZMK_STENO_SQUID_STROKE_TAPE
     bool "Show the last stroke, its translation and WPM on the right nice!view"
-    depends on ZMK_ZEN_R4_SPLIT_STATUS
+    depends on ZMK_STENO_SQUID_SPLIT_STATUS
     default y
     help
       On the Javelin layer the left half sends each stroke's keys, its
@@ -124,20 +124,20 @@ config ZMK_ZEN_R4_STROKE_TAPE
       small write on the split link per stroke, plus one for a translation
       longer than four characters.
 
-config ZMK_ZEN_R4_STROKE_HINT
+config ZMK_STENO_SQUID_STROKE_HINT
     bool "Also show a shorter outline when one exists"
-    depends on ZMK_ZEN_R4_STROKE_TAPE && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
+    depends on ZMK_STENO_SQUID_STROKE_TAPE && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
     help
       The engine searches its dictionaries backwards for a shorter way to
       write what was just typed. That search runs on the thread that handles
       keys, so enable this only after the logging build shows it takes a few
       milliseconds at most.
 
-config ZMK_ZEN_R4_PRACTICE
+config ZMK_STENO_SQUID_PRACTICE
     bool "Offline single-stroke practice on the right nice!view"
-    depends on ZMK_ZEN_R4_SPLIT_STATUS && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
+    depends on ZMK_STENO_SQUID_SPLIT_STATUS && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
 
-config ZMK_ZEN_R4_FONT_SAMPLER
+config ZMK_STENO_SQUID_FONT_SAMPLER
     bool "Show a font sampler on the right nice!view"
     select LV_FONT_MONTSERRAT_20
-    depends on ZMK_ZEN_R4_SPLIT_STATUS && !ZMK_SPLIT_ROLE_CENTRAL
+    depends on ZMK_STENO_SQUID_SPLIT_STATUS && !ZMK_SPLIT_ROLE_CENTRAL

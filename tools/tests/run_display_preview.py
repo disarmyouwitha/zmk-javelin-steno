@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     output = args.build_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    config = (ROOT / 'config/zen-r4-split/right-nice-view.conf').read_text()
+    config = (ROOT / 'config/steno-squid-split/right-nice-view.conf').read_text()
     heap = args.heap_size or int(re.search(r'^CONFIG_LV_Z_MEM_POOL_SIZE=(\d+)$', config, re.M)[1])
     (output / 'lv_conf.h').write_text('''#ifndef LV_CONF_H
 #define LV_CONF_H

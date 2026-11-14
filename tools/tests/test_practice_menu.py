@@ -27,11 +27,11 @@ PREFIX = r'''
 #include "steno_key_state.h"
 #include "split_status.h"
 // The display receiver is C; allow its integer-to-enum calls in this C++ harness.
-unsigned zen_r4_practice_prompt_count(unsigned drill) {
-  return zen_r4_practice_prompt_count(static_cast<zen_r4_practice_drill>(drill));
+unsigned steno_squid_practice_prompt_count(unsigned drill) {
+  return steno_squid_practice_prompt_count(static_cast<steno_squid_practice_drill>(drill));
 }
-unsigned zen_r4_practice_rounds(unsigned drill) {
-  return zen_r4_practice_rounds(static_cast<zen_r4_practice_drill>(drill));
+unsigned steno_squid_practice_rounds(unsigned drill) {
+  return steno_squid_practice_rounds(static_cast<steno_squid_practice_drill>(drill));
 }
 #define K_MUTEX_DEFINE(n) int n
 #define K_FOREVER 0
@@ -47,7 +47,7 @@ int64_t k_uptime_get() { return now; }
 void k_work_cancel_delayable(int *) {}
 void k_work_reschedule(int *, int64_t) {}
 uint32_t sys_rand32_get() { return 3; }
-extern "C" void zen_r4_split_status_refresh() {}
+extern "C" void steno_squid_split_status_refresh() {}
 struct zmk_behavior_binding { uint32_t param1, param2; };
 struct zmk_behavior_binding_event {};
 #define ZMK_BEHAVIOR_OPAQUE 0
@@ -69,25 +69,25 @@ void tap(StenoKey key) {
 int main() {
   practice.active = practice.menu = true;
   practice_publish();
-  assert(practice_screen & ZEN_R4_PRACTICE_MENU);
+  assert(practice_screen & STENO_SQUID_PRACTICE_MENU);
   tap(StenoKey::KL);  // Menu does not score strokes.
   assert(lookups == 0 && practice.menu);
   tap(StenoKey::STAR1);
-  assert(practice.drill == ZEN_R4_PRACTICE_RIGHT && practice.menu);
+  assert(practice.drill == STENO_SQUID_PRACTICE_RIGHT && practice.menu);
   tap(StenoKey::STAR3);
-  assert(practice.drill == ZEN_R4_PRACTICE_WORDS && practice.menu);
+  assert(practice.drill == STENO_SQUID_PRACTICE_WORDS && practice.menu);
   tap(StenoKey::STAR4);
-  assert(practice.drill == ZEN_R4_PRACTICE_LEFT);
+  assert(practice.drill == STENO_SQUID_PRACTICE_LEFT);
   tap(StenoKey::A);  // Start is consumed, not scored.
   assert(!practice.menu && lookups == 0 && practice.round == 0);
-  assert(!(practice_screen & ZEN_R4_PRACTICE_MENU));
+  assert(!(practice_screen & STENO_SQUID_PRACTICE_MENU));
   tap(StenoKey::KL);
-  assert(lookups == 1 && practice.feedback == ZEN_R4_PRACTICE_CORRECT);
+  assert(lookups == 1 && practice.feedback == STENO_SQUID_PRACTICE_CORRECT);
   tap(StenoKey::KL);  // A chord during feedback is ignored.
   assert(lookups == 1);
   now = 250;
   practice_advance(nullptr);
-  assert(practice.round == 1 && practice.feedback == ZEN_R4_PRACTICE_PROMPT);
+  assert(practice.round == 1 && practice.feedback == STENO_SQUID_PRACTICE_PROMPT);
   tap(StenoKey::STAR3);  // Switching during a run returns to selection.
   assert(practice.menu && practice.round == 0 && practice.streak == 0);
   // A multi-key chord containing A must not accidentally start a run.
@@ -99,21 +99,21 @@ int main() {
   for (auto key : {StenoKey::O, StenoKey::E, StenoKey::U}) {
     tap(key);
     assert(!practice.menu);
-    practice.feedback = ZEN_R4_PRACTICE_DONE;
-    practice.round = zen_r4_practice_rounds(practice.drill);
+    practice.feedback = STENO_SQUID_PRACTICE_DONE;
+    practice.round = steno_squid_practice_rounds(practice.drill);
     tap(key);  // Keep celebration until an explicit return to menu.
     assert(practice.menu && practice.round == 0);
   }
   // New menu packets and the two previous run protocols remain distinct.
-  zmk_behavior_binding packet{practice_screen, ZEN_R4_PRACTICE_PROTOCOL};
+  zmk_behavior_binding packet{practice_screen, STENO_SQUID_PRACTICE_PROTOCOL};
   assert(status_received(&packet, {}) == 0);
-  packet.param1 |= 1u << ZEN_R4_PRACTICE_ROUND_SHIFT;
+  packet.param1 |= 1u << STENO_SQUID_PRACTICE_ROUND_SHIFT;
   assert(status_received(&packet, {}) == -EINVAL);
-  packet = {ZEN_R4_PRACTICE_ACTIVE | ZEN_R4_PRACTICE_MENU, ZEN_R4_PRACTICE_RUN_PROTOCOL};
+  packet = {STENO_SQUID_PRACTICE_ACTIVE | STENO_SQUID_PRACTICE_MENU, STENO_SQUID_PRACTICE_RUN_PROTOCOL};
   assert(status_received(&packet, {}) == -EINVAL);
-  packet.param1 = ZEN_R4_PRACTICE_ACTIVE;
+  packet.param1 = STENO_SQUID_PRACTICE_ACTIVE;
   assert(status_received(&packet, {}) == 0);
-  packet.param2 = ZEN_R4_PRACTICE_LEGACY_PROTOCOL;
+  packet.param2 = STENO_SQUID_PRACTICE_LEGACY_PROTOCOL;
   assert(status_received(&packet, {}) == 0);
   practice.active = false;
   assert(!practice_process_key(int(StenoKey::KL), true));
@@ -133,7 +133,7 @@ def main():
     code += '\nstatic void practice_refresh_dictionary() { practice.no_dictionary = false; }\n'
     code += function(source, 'static void practice_switch_drill(') + '\n'
     code += function(source, 'static bool practice_process_key(') + '\n'
-    receiver = (ROOT / 'src/zen_r4/split_status_display.c').read_text()
+    receiver = (ROOT / 'src/steno_squid/split_status_display.c').read_text()
     code += function(receiver, 'static int status_received(') + '\n'
     code += CASES
     with tempfile.TemporaryDirectory() as tmp:
@@ -142,7 +142,7 @@ def main():
         (directory / 'zephyr/toolchain.h').write_text('#define BUILD_ASSERT(x, ...) static_assert(x)\n')
         (directory / 'test.cc').write_text('#include <initializer_list>\n' + code)
         subprocess.run(['clang++', '-std=c++20', '-I' + str(directory),
-                        '-I' + str(args.engine.resolve()), '-I' + str(ROOT / 'src/zen_r4'),
+                        '-I' + str(args.engine.resolve()), '-I' + str(ROOT / 'src/steno_squid'),
                         str(directory / 'test.cc'), str(args.engine / 'steno_key_state.cc'),
                         '-o', str(directory / 'test')], check=True)
         subprocess.run([str(directory / 'test')], check=True)

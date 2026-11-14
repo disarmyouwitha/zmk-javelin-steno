@@ -1,6 +1,6 @@
 # Hybrid split Bluetooth battery test
 
-Branch: `zen-r4/bluetooth-battery-test`, starting from `main` at `c2ba6d4`.
+Branch: `steno-squid/bluetooth-battery-test`, starting from `main` at `c2ba6d4`.
 
 ## What was implemented at the time
 
@@ -24,7 +24,7 @@ profile 1 alone did not fix pairing: the keyboard rejected the Mac's pairing
 request with SMP status `0x03` / ZMK security error 4. Profile 0 still contained a
 host bond. Selecting profile 0 and clearing its bond resolved the failure.
 The new pairing completed with SMP status `0x00`, encrypted security level 2,
-and the Mac then listed the connected keyboard as **Zen R4 Split**. The Mac's
+and the Mac then listed the connected keyboard as **Steno Squid Split**. The Mac's
 address was saved to profile 0. The user subsequently confirmed normal typing,
 Plover HID strokes, and onboard Javelin translation over Bluetooth, including
 “ça va ça va”. A full power-cycle/reconnect check and explicit repeat/undo checks
@@ -39,7 +39,7 @@ publish its raw logs: Zephyr's detailed SMP logging can include security keys.
 1. Keep both halves powered. Disconnect the left half's USB data cable so the test
    exercises Bluetooth output. ZMK normally prefers USB while it is available.
 2. From typing mode, hold the middle left thumb (SYM+NUM) and tap Q to select
-   Bluetooth profile 0, or W for profile 1. Pair **Zen R4 Split** in the computer's
+   Bluetooth profile 0, or W for profile 1. Pair **Steno Squid Split** in the computer's
    Bluetooth settings. The right half remains paired to the left half.
 3. Type letters, Shift combinations, Space and Backspace using both halves.
 4. Tap the right middle thumb for onboard Javelin. With Plover closed, test KAT,

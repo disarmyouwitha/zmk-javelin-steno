@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../src/zen_r4/display/screen.c"
-#include "../../src/zen_r4/display/practice_widget.c"
+#include "../../src/steno_squid/display/screen.c"
+#include "../../src/steno_squid/display/practice_widget.c"
 static uint8_t pixels[68*160];
 static uint8_t saved[68*160];
-#include "../../src/zen_r4/display/pet_widget.c"
-void zen_r4_portrait_init(void) {}
+#include "../../src/steno_squid/display/pet_widget.c"
+void steno_squid_portrait_init(void) {}
 static void flush(lv_display_t *d, const lv_area_t *a, uint8_t *p) {
     memcpy(saved,p,sizeof(saved));
     lv_display_flush_ready(d);
@@ -25,30 +25,30 @@ int main(void) {
     lv_display_set_color_format(d,LV_COLOR_FORMAT_L8);
     lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);
     lv_display_set_flush_cb(d,flush);
-    lv_screen_load(zen_r4_screen_create());
-    zen_r4_screen_update(ZEN_R4_MODE_SYMBOLS,NULL,0,85);
+    lv_screen_load(steno_squid_screen_create());
+    steno_squid_screen_update(STENO_SQUID_MODE_SYMBOLS,NULL,0,85);
     assert(!strcmp(lv_label_get_text(mode_below),"Numpad"));
     save("numpad");
     assert(lv_obj_get_height(mode_below)<=20);
-    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85); save("qwerty");
-    zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
-    zen_r4_screen_update(ZEN_R4_MODE_PLOVER,NULL,0,85); save("plover");
+    steno_squid_screen_update(STENO_SQUID_MODE_TYPING,NULL,0,85); save("qwerty");
+    steno_squid_screen_update(STENO_SQUID_MODE_UNKNOWN,NULL,0,85); save("waiting");
+    steno_squid_screen_update(STENO_SQUID_MODE_PLOVER,NULL,0,85); save("plover");
     for(unsigned i=0;i<3;i++) {
-        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
-           ZEN_R4_PRACTICE_ACTIVE|ZEN_R4_PRACTICE_MENU|(i<<ZEN_R4_PRACTICE_DRILL_SHIFT),85);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,
+           STENO_SQUID_PRACTICE_ACTIVE|STENO_SQUID_PRACTICE_MENU|(i<<STENO_SQUID_PRACTICE_DRILL_SHIFT),85);
         char name[30];snprintf(name,sizeof(name),"welcome-%u",i);save(name);
         for(unsigned j=0;j<3;j++) assert(lv_obj_get_height(drill_choices[j])<=22);
     }
-    zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
+    steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,STENO_SQUID_PRACTICE_ACTIVE,85);
     save("cat");
     /* The stroke tape: shown on the Javelin layer only, and always on one line each. */
     {
-        struct zen_r4_tape tape;
+        struct steno_squid_tape tape;
         memset(&tape,0,sizeof(tape));
         tape.valid=true; tape.wpm=87; tape.mask=0x8u|0x100u|0x80000u;
         snprintf(tape.text,sizeof(tape.text),"%s","cat");
-        zen_r4_screen_set_tape(&tape);
-        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        steno_squid_screen_set_tape(&tape);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85);
         assert(!lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
         assert(!lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
         assert(!lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
@@ -58,10 +58,10 @@ int main(void) {
         save("tape-word");
         /* The widest text each row can be given. */
         snprintf(tape.text,sizeof(tape.text),"%s","WWWWWWWWWWWW");
-        tape.mask=ZEN_R4_TAPE_KEYS_MASK;
+        tape.mask=STENO_SQUID_TAPE_KEYS_MASK;
         tape.hint_count=2; tape.hint_mask=tape.mask;
-        zen_r4_screen_set_tape(&tape);
-        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        steno_squid_screen_set_tape(&tape);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85);
         assert(!lv_obj_has_flag(tape_hint,LV_OBJ_FLAG_HIDDEN));
         assert(lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
         lv_refr_now(NULL);
@@ -72,40 +72,40 @@ int main(void) {
                                  &lv_font_montserrat_10,0)<=TAPE_WIDTH);
         save("tape-widest");
         /* Other layers and Practice hide the tape. */
-        zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
+        steno_squid_screen_update(STENO_SQUID_MODE_TYPING,NULL,0,85);
         assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
-        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,STENO_SQUID_PRACTICE_ACTIVE,85);
         assert(lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
         memset(&tape,0,sizeof(tape));
-        zen_r4_screen_set_tape(&tape);
-        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        steno_squid_screen_set_tape(&tape);
+        steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,0,85);
         assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
     }
     for (unsigned pass=0; pass<30; pass++) {
-        for (unsigned mode=0; mode<ZEN_R4_MODE_COUNT; mode++) {
-            zen_r4_screen_update(mode,NULL,0,pass+65);
+        for (unsigned mode=0; mode<STENO_SQUID_MODE_COUNT; mode++) {
+            steno_squid_screen_update(mode,NULL,0,pass+65);
             lv_refr_now(NULL);
             assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
         }
-        zen_r4_pet_set_powered(pass%2);
-        zen_r4_pet_set_state(PET_TYPING);
+        steno_squid_pet_set_powered(pass%2);
+        steno_squid_pet_set_state(PET_TYPING);
         for(unsigned tick=0; tick<12; tick++) {
             lv_tick_inc(100); lv_timer_handler(); lv_refr_now(NULL);
         }
         for(unsigned drill=0; drill<3; drill++) {
-            const uint32_t base=ZEN_R4_PRACTICE_ACTIVE|(drill<<ZEN_R4_PRACTICE_DRILL_SHIFT);
-            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|ZEN_R4_PRACTICE_MENU,85);
+            const uint32_t base=STENO_SQUID_PRACTICE_ACTIVE|(drill<<STENO_SQUID_PRACTICE_DRILL_SHIFT);
+            steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,base|STENO_SQUID_PRACTICE_MENU,85);
             lv_refr_now(NULL);
             assert(lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
-            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base,85); lv_refr_now(NULL);
+            steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,base,85); lv_refr_now(NULL);
             for(unsigned feedback=1;feedback<3;feedback++) {
-                zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,
-                   base|(feedback<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT),85);lv_refr_now(NULL);
+                steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,
+                   base|(feedback<<STENO_SQUID_PRACTICE_FEEDBACK_SHIFT),85);lv_refr_now(NULL);
             }
-            const unsigned total=zen_r4_practice_rounds(drill);
-            zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,base|
-                 (ZEN_R4_PRACTICE_DONE<<ZEN_R4_PRACTICE_FEEDBACK_SHIFT)|
-                 (total<<ZEN_R4_PRACTICE_ROUND_SHIFT),85);
+            const unsigned total=steno_squid_practice_rounds(drill);
+            steno_squid_screen_update(STENO_SQUID_MODE_JAVELIN,NULL,base|
+                 (STENO_SQUID_PRACTICE_DONE<<STENO_SQUID_PRACTICE_FEEDBACK_SHIFT)|
+                 (total<<STENO_SQUID_PRACTICE_ROUND_SHIFT),85);
             lv_refr_now(NULL);
             assert(!lv_obj_has_flag(pet_image,LV_OBJ_FLAG_HIDDEN));
         }

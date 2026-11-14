@@ -1,10 +1,10 @@
 # Codex handoff: debug Windows accent output
 
-The Zen R4 split is flashed with the host profile picker. Mac output passed the user's physical test: they could type the accented phrase twice, repeat it, undo with star, and then type `cat`. The user reports the equivalent behavior is incorrect on Windows. The exact Windows output and first failing step have not been recorded yet.
+The Steno Squid split is flashed with the host profile picker. Mac output passed the user's physical test: they could type the accented phrase twice, repeat it, undo with star, and then type `cat`. The user reports the equivalent behavior is incorrect on Windows. The exact Windows output and first failing step have not been recorded yet.
 
 ## Start here on Windows
 
-1. Plug the handwired left half into Windows over USB and keep the Corne Ultralight right half powered. In Chrome, open [Javelin Steno Tools → Host Layout](https://lim.au/#/software/javelin-steno-tools/host-layouts), connect to **Zen R4 Split** via HID, and select **Windows U.S. (Alt codes)**. Keep Windows on its ordinary U.S. input layout. Confirm Num Lock is on.
+1. Plug the handwired left half into Windows over USB and keep the Corne Ultralight right half powered. In Chrome, open [Javelin Steno Tools → Host Layout](https://lim.au/#/software/javelin-steno-tools/host-layouts), connect to **Steno Squid Split** via HID, and select **Windows U.S. (Alt codes)**. Keep Windows on its ordinary U.S. input layout. Confirm Num Lock is on.
 2. In a blank Notepad document with Plover closed, tap the middle right thumb from normal typing to enter onboard Javelin. Stroke `KAT` for **cat** as a baseline, then tap star to clear it. Stroke `SA / SRA` twice, tap star once, then stroke `KAT`. Capture the exact text after each step. Expected progression is **ça va**, **ça va ça va**, **ça va**, **ça va cat**. Also try tapping the number bar instead of writing the second phrase to test the repeat command.
 3. Compare against a physical keypad on the same Windows machine, if available. Hold **left Alt**, type **0231** on the keypad, and release Alt. Expected output is **ç**. If the manual sequence fails, check Num Lock, input locale, and the target app. If it works and the Zen fails, compare the actual USB reports or use the firmware's USB diagnostics serial port at 115200 baud to see the emitted key events.
 

@@ -12,7 +12,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "config/corne.keymap"
-PROFILE = ROOT / "config/zen-r4-split/corne.keymap"
+PROFILE = ROOT / "config/steno-squid-split/corne.keymap"
 OUTPUT = ROOT / "docs/keymap"
 LAYERS = [
     (
@@ -249,7 +249,7 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 </style>""",
         '<rect class="bg" width="1120" height="540" rx="16"/>',
         text(32, 37, title + "  /  " + number, "title"),
-        text(32, 69, "ZEN R4 / CORNE SPLIT     ·     DEFAULT KEYMAP", "subtitle"),
+        text(32, 69, "STENO SQUID / CORNE SPLIT     ·     DEFAULT KEYMAP", "subtitle"),
         text(735, 37, "Dual-action keys: tap above · hold below", "subtitle"),
         text(735, 64, "⌘ Command     ⌥ Option     ⇧ Shift", "subtitle"),
     ]

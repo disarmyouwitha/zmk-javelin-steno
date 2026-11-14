@@ -1,6 +1,6 @@
 # Javelin editor over Bluetooth HID
 
-Branch: `zen-r4/javelin-bluetooth-hid`. Firmware builds and native transport tests
+Branch: `steno-squid/javelin-bluetooth-hid`. Firmware builds and native transport tests
 pass. On the flashed left half, macOS exposed the editor collection over both
 USB and Bluetooth. A native HID client completed the Javelin handshake and read
 the dictionary list on both transports. Over Bluetooth it also added, replaced,
@@ -45,7 +45,7 @@ cannot use this console. The send path does not truncate replies to fit.
 
 1. Flash the left half, preserving settings and both external base dictionaries.
 2. Confirm USB HID editor handshake still works with the unmodified website.
-3. Pair/connect **Zen R4 Split** in macOS Bluetooth settings. Unplug USB.
+3. Pair/connect **Steno Squid Split** in macOS Bluetooth settings. Unplug USB.
 4. Open the existing website in Chrome, choose **Connect via HID**, and check
    whether its filtered picker offers the Bluetooth editor collection.
 5. Verify handshake, dictionary list/checkboxes, and host layout selection.

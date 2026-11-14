@@ -25,10 +25,10 @@
 #include "steno_key_state.h"
 #include "static_allocate.h"
 #include "stroke.h"
-#if defined(CONFIG_ZMK_ZEN_R4_PRACTICE) || defined(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
-#include "zen_r4/split_status.h"
+#if defined(CONFIG_ZMK_STENO_SQUID_PRACTICE) || defined(CONFIG_ZMK_STENO_SQUID_STROKE_TAPE)
+#include "steno_squid/split_status.h"
 #endif
-#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#ifdef CONFIG_ZMK_STENO_SQUID_PRACTICE
 #include <zephyr/random/random.h>
 #include <new>
 #include <strings.h>
@@ -109,7 +109,7 @@ public:
 static uint8_t dictionary_selection = 3 | EXTRAS_SELECTION_DEFAULT;
 #endif
 
-#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#ifdef CONFIG_ZMK_STENO_SQUID_PRACTICE
 K_MUTEX_DEFINE(practice_mutex);
 static atomic_t practice_screen;
 static StenoKeyState practice_pending_releases;
@@ -123,20 +123,20 @@ static struct {
   uint8_t streak;
   uint8_t best;
   int64_t advance_at;
-  zen_r4_practice_drill drill;
-  zen_r4_practice_feedback feedback;
+  steno_squid_practice_drill drill;
+  steno_squid_practice_feedback feedback;
   StenoKeyState keys;
   StenoKeyState chord;
 } practice;
 
 static unsigned practice_prompt() {
-  return practice.drill == ZEN_R4_PRACTICE_WORDS ? practice.round % 4 : practice.hand_prompt;
+  return practice.drill == STENO_SQUID_PRACTICE_WORDS ? practice.round % 4 : practice.hand_prompt;
 }
 
 // Draws the next hand-drill prompt. After the first, it never repeats the
 // one just shown, which would look as if nothing had happened.
 static void practice_draw_hand_prompt(bool avoid_previous) {
-  const unsigned count = zen_r4_practice_prompt_count(practice.drill);
+  const unsigned count = steno_squid_practice_prompt_count(practice.drill);
   if (avoid_previous && count > 1) {
     unsigned next = sys_rand32_get() % (count - 1);
     if (next >= practice.hand_prompt) {
@@ -151,29 +151,29 @@ static void practice_draw_hand_prompt(bool avoid_previous) {
 static void practice_publish() {
   uint32_t snapshot = 0;
   if (practice.active) {
-    snapshot = ZEN_R4_PRACTICE_ACTIVE |
-               (practice.menu ? ZEN_R4_PRACTICE_MENU : 0) |
-               (practice.no_dictionary ? ZEN_R4_PRACTICE_NO_DICTIONARY : 0) |
+    snapshot = STENO_SQUID_PRACTICE_ACTIVE |
+               (practice.menu ? STENO_SQUID_PRACTICE_MENU : 0) |
+               (practice.no_dictionary ? STENO_SQUID_PRACTICE_NO_DICTIONARY : 0) |
                practice_prompt() |
-               (uint32_t(practice.feedback) << ZEN_R4_PRACTICE_FEEDBACK_SHIFT) |
-               (uint32_t(practice.round) << ZEN_R4_PRACTICE_ROUND_SHIFT) |
-               (uint32_t(practice.streak) << ZEN_R4_PRACTICE_STREAK_SHIFT) |
-               (uint32_t(practice.best) << ZEN_R4_PRACTICE_BEST_SHIFT) |
-               (uint32_t(practice.drill) << ZEN_R4_PRACTICE_DRILL_SHIFT);
+               (uint32_t(practice.feedback) << STENO_SQUID_PRACTICE_FEEDBACK_SHIFT) |
+               (uint32_t(practice.round) << STENO_SQUID_PRACTICE_ROUND_SHIFT) |
+               (uint32_t(practice.streak) << STENO_SQUID_PRACTICE_STREAK_SHIFT) |
+               (uint32_t(practice.best) << STENO_SQUID_PRACTICE_BEST_SHIFT) |
+               (uint32_t(practice.drill) << STENO_SQUID_PRACTICE_DRILL_SHIFT);
   }
   atomic_set(&practice_screen, snapshot);
-  zen_r4_split_status_refresh();
+  steno_squid_split_status_refresh();
 }
 
 static void practice_advance(struct k_work *) {
   k_mutex_lock(&practice_mutex, K_FOREVER);
-  if (practice.active && practice.feedback == ZEN_R4_PRACTICE_CORRECT &&
+  if (practice.active && practice.feedback == STENO_SQUID_PRACTICE_CORRECT &&
       k_uptime_get() >= practice.advance_at) {
     ++practice.round;
-    practice.feedback = practice.round == zen_r4_practice_rounds(practice.drill)
-                            ? ZEN_R4_PRACTICE_DONE
-                            : ZEN_R4_PRACTICE_PROMPT;
-    if (practice.feedback == ZEN_R4_PRACTICE_PROMPT && practice.drill != ZEN_R4_PRACTICE_WORDS) {
+    practice.feedback = practice.round == steno_squid_practice_rounds(practice.drill)
+                            ? STENO_SQUID_PRACTICE_DONE
+                            : STENO_SQUID_PRACTICE_PROMPT;
+    if (practice.feedback == STENO_SQUID_PRACTICE_PROMPT && practice.drill != STENO_SQUID_PRACTICE_WORDS) {
       practice_draw_hand_prompt(true);
     }
     practice_publish();
@@ -196,20 +196,20 @@ static const StenoDictionary *practice_fallback_dictionary() {
 
 static void practice_refresh_dictionary() {
   practice.no_dictionary =
-      practice.drill == ZEN_R4_PRACTICE_WORDS &&
+      practice.drill == STENO_SQUID_PRACTICE_WORDS &&
       StenoEngine::container.value.GetDictionary().GetMaximumOutlineLength() == 0 &&
       !practice_fallback_dictionary();
 }
 
 static void practice_switch_drill(int direction) {
   k_work_cancel_delayable(&practice_advance_work);
-  const int count = ZEN_R4_PRACTICE_DRILL_COUNT;
-  const auto drill = static_cast<zen_r4_practice_drill>((practice.drill + direction + count) % count);
+  const int count = STENO_SQUID_PRACTICE_DRILL_COUNT;
+  const auto drill = static_cast<steno_squid_practice_drill>((practice.drill + direction + count) % count);
   practice = {};
   practice.active = true;
   practice.menu = true;
   practice.drill = drill;
-  if (drill != ZEN_R4_PRACTICE_WORDS) {
+  if (drill != STENO_SQUID_PRACTICE_WORDS) {
     practice_draw_hand_prompt(false);
   }
   practice_refresh_dictionary();
@@ -217,9 +217,9 @@ static void practice_switch_drill(int direction) {
 }
 
 static bool practice_correct(const StenoStroke &stroke) {
-  if (practice.drill != ZEN_R4_PRACTICE_WORDS) {
+  if (practice.drill != STENO_SQUID_PRACTICE_WORDS) {
     StenoStroke expected;
-    expected.Set(zen_r4_practice_outline(practice.drill, practice_prompt()));
+    expected.Set(steno_squid_practice_outline(practice.drill, practice_prompt()));
     return stroke == expected;
   }
   const StenoDictionaryLookup lookup(&stroke, 1);
@@ -230,16 +230,16 @@ static bool practice_correct(const StenoStroke &stroke) {
     }
   }
   const bool correct =
-      result.IsValid() && strcasecmp(result.GetText(), zen_r4_practice_words[practice_prompt()]) == 0;
+      result.IsValid() && strcasecmp(result.GetText(), steno_squid_practice_words[practice_prompt()]) == 0;
   result.Destroy();
   return correct;
 }
 
-extern "C" uint32_t zen_r4_practice_snapshot(void) {
+extern "C" uint32_t steno_squid_practice_snapshot(void) {
   return uint32_t(atomic_get(&practice_screen));
 }
 
-extern "C" void zen_r4_practice_set_active(bool active) {
+extern "C" void steno_squid_practice_set_active(bool active) {
   if (active) {
     zmk_javelin_steno_init();
   } else {
@@ -295,8 +295,8 @@ static bool practice_process_key(int index, bool pressed) {
     return false;
   }
   if (pressed && practice.keys.IsEmpty()) {
-    practice.ignore_chord = practice.feedback == ZEN_R4_PRACTICE_CORRECT ||
-                            practice.feedback == ZEN_R4_PRACTICE_DONE;
+    practice.ignore_chord = practice.feedback == STENO_SQUID_PRACTICE_CORRECT ||
+                            practice.feedback == STENO_SQUID_PRACTICE_DONE;
   }
   practice.keys.Process(static_cast<StenoKey>(index), pressed);
   practice.chord |= practice.keys;
@@ -304,7 +304,7 @@ static bool practice_process_key(int index, bool pressed) {
     const auto steno_key = static_cast<StenoKey>(index);
     if (practice.chord == key && steno_key >= StenoKey::STAR1 && steno_key <= StenoKey::STAR4) {
       practice_switch_drill(steno_key <= StenoKey::STAR2 ? -1 : 1);
-    } else if (practice.menu || practice.feedback == ZEN_R4_PRACTICE_DONE) {
+    } else if (practice.menu || practice.feedback == STENO_SQUID_PRACTICE_DONE) {
       // Consume the start key; the first scored chord comes after release.
       if (practice.chord == key &&
           (steno_key == StenoKey::A || steno_key == StenoKey::O ||
@@ -317,22 +317,22 @@ static bool practice_process_key(int index, bool pressed) {
           practice_switch_drill(0);
         }
       }
-    } else if (!practice.ignore_chord && practice.feedback != ZEN_R4_PRACTICE_CORRECT &&
-               practice.feedback != ZEN_R4_PRACTICE_DONE) {
+    } else if (!practice.ignore_chord && practice.feedback != STENO_SQUID_PRACTICE_CORRECT &&
+               practice.feedback != STENO_SQUID_PRACTICE_DONE) {
       practice_refresh_dictionary();
       if (practice.no_dictionary) {
-        practice.feedback = ZEN_R4_PRACTICE_PROMPT;
+        practice.feedback = STENO_SQUID_PRACTICE_PROMPT;
       } else if (practice_correct(practice.chord.ToStroke())) {
         ++practice.streak;
         if (practice.streak > practice.best) {
           practice.best = practice.streak;
         }
-        practice.feedback = ZEN_R4_PRACTICE_CORRECT;
+        practice.feedback = STENO_SQUID_PRACTICE_CORRECT;
         practice.advance_at = k_uptime_get() + 250;
         k_work_reschedule(&practice_advance_work, K_TIMEOUT_ABS_MS(practice.advance_at));
       } else {
         practice.streak = 0;
-        practice.feedback = ZEN_R4_PRACTICE_INCORRECT;
+        practice.feedback = STENO_SQUID_PRACTICE_INCORRECT;
       }
       practice_publish();
     }
@@ -478,7 +478,7 @@ static void select_dictionary(void *, const char *line) {
     StenoEngine::container.value.DisableDictionary(name);
   }
   ConsoleWriter::Pop();
-#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#ifdef CONFIG_ZMK_STENO_SQUID_PRACTICE
   practice_dictionary_changed();
 #endif
   Console::SendOk();
@@ -489,7 +489,7 @@ static void select_dictionary(void *, const char *line) {
 static bool load_dictionary_collection() {
   List<StenoDictionaryListEntry> entries;
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-  auto *personal = zen_user_dictionary_open();
+  auto *personal = steno_squid_user_dictionary_open();
   if (personal) {
     entries.Add(StenoDictionaryListEntry(personal, dictionary_selection & 1));
   }
@@ -600,7 +600,7 @@ static bool load_dictionary_collection() {
   Console::instance.RegisterCommand("toggle_dictionary", "Toggle and save selection",
                                     select_dictionary, nullptr);
   if (personal) {
-    zen_user_dictionary_register(Console::instance, dictionaryList.value);
+    steno_squid_user_dictionary_register(Console::instance, dictionaryList.value);
   }
 #endif
   StenoEngine::container.value.AddConsoleCommands(Console::instance);
@@ -671,26 +671,26 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
       return;
     }
   }
-#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#ifdef CONFIG_ZMK_STENO_SQUID_PRACTICE
   if (practice_process_key(steno_key_index, is_press)) {
     return;
   }
 #endif
   LOG_DBG("[JAV] key %d %s", steno_key_index, is_press ? "down" : "up");
-#ifdef CONFIG_ZMK_ZEN_R4_STROKE_TAPE
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_TAPE
   // Catch the engine's stroke events for the right display's stroke tape.
-  zen_r4_stroke_feed_begin();
+  steno_squid_stroke_feed_begin();
 #endif
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
-#ifdef CONFIG_ZMK_ZEN_R4_STROKE_TAPE
-  zen_r4_stroke_feed_end();
+#ifdef CONFIG_ZMK_STENO_SQUID_STROKE_TAPE
+  steno_squid_stroke_feed_end();
 #endif
 }
 
 } // extern "C"
 
 #ifdef CONFIG_ZMK_JAVELIN_STENO_BROWSER_DICTIONARY
-bool zen_javelin_console_line(const char *line, size_t size, IWriter &writer) {
+bool steno_squid_javelin_console_line(const char *line, size_t size, IWriter &writer) {
   const JavelinEngineLock lock;
   if (!lock) {
     // The flash is asleep, unprovisioned or still verifying.

@@ -2,7 +2,7 @@
 
 ZMK keyboard firmware with onboard Javelin translation, Plover HID, wireless dictionary editing, and offline steno practice.
 
-The tested keyboard pairs a handwired Zen R4 left half with a Corne Ultralight right half, both using nice!nano v2 controllers. The halves communicate over Bluetooth. The left half connects to the computer over USB or Bluetooth and reads dictionaries from a 16 MiB W25Q128 QSPI flash chip. The right half drives a portrait nice!view display.
+The tested keyboard pairs a handwired Steno Squid left half with a Corne Ultralight right half, both using nice!nano v2 controllers. The halves communicate over Bluetooth. The left half connects to the computer over USB or Bluetooth and reads dictionaries from a 16 MiB W25Q128 QSPI flash chip. The right half drives a portrait nice!view display.
 
 ZMK handles the keyboard, Bluetooth, power management, and keymap editing. Javelin handles onboard steno translation. The external flash integration includes dictionary provisioning, verified readback, memory-mapped lookups, and persistent personal entries. [ZMK](https://github.com/zmkfirmware/zmk) · [Javelin](https://github.com/jthlim/javelin-steno)
 
@@ -19,7 +19,7 @@ In Qwerty, the right thumbs are **Space**, **Javelin**, and **PloverHID**, from 
 
 In onboard Javelin, the upper left S position is the Lapwing **#** key; the lower position stays **S**. Pressing **#** by itself repeats the preceding translation, and star undoes it.
 
-The typing layout uses tap/hold keys and macOS Command shortcuts. Customize bindings through ZMK Studio. [Shared keymap](config/corne.keymap) · [Split keymap](config/zen-r4-split/corne.keymap)
+The typing layout uses tap/hold keys and macOS Command shortcuts. Customize bindings through ZMK Studio. [Shared keymap](config/corne.keymap) · [Split keymap](config/steno-squid-split/corne.keymap)
 
 ## Onboard dictionaries
 
@@ -37,11 +37,11 @@ Personal entries have highest priority, followed by the Lapwing extras in the or
 
 Enable Plover Base and disable Lapwing Base to switch bases. The extras have independent checkboxes, so disable those too if you want only Plover's base plus your personal entries. With every dictionary disabled, Javelin outputs literal outlines such as `KAT`.
 
-The compiled base and extras images occupy about 4.13 MiB of external flash. Personal entries have 16 KiB of entry data, backed by two CRC-checked snapshots. Initial dictionary installation uses the left half's diagnostics serial port. [Provisioning and flash layout](config/zen-r4-split/README.md#flash-regions-and-initial-plover-provisioning)
+The compiled base and extras images occupy about 4.13 MiB of external flash. Personal entries have 16 KiB of entry data, backed by two CRC-checked snapshots. Initial dictionary installation uses the left half's diagnostics serial port. [Provisioning and flash layout](config/steno-squid-split/README.md#flash-regions-and-initial-plover-provisioning)
 
 ## Wireless dictionary editing
 
-1. Connect the left half by USB, or pair **Zen R4 Split** with the computer for Bluetooth access.
+1. Connect the left half by USB, or pair **Steno Squid Split** with the computer for Bluetooth access.
 2. Open Javelin Steno Tools in Chrome, choose **Connect via HID**, and select the keyboard.
 3. Use **Active Dictionaries** to change selections and **Dictionary Management → View** to add, replace, remove, or export personal entries.
 4. Use **Host Layout** to select **Mac U.S.** or **Windows U.S. (plain text)**. The keyboard remembers the choice.
@@ -54,7 +54,7 @@ ZMK Studio edits the keymap over Bluetooth. The **left-studio** build also suppo
 
 Tap/hold bindings display their tap keys. Javelin and Plover HID bindings have separate parameters for the visible key label and the actual steno key. Change the steno identity to change what a key sends.
 
-Saved Studio keymaps take precedence over the source keymap. To load updated defaults, use **Restore stock settings**, which replaces saved keymap edits. Renamed layers appear on the nice!view after a layer change. Only the first nine characters are sent across the split, and only plain ASCII: any other character, such as an accented letter, shows as `?`. [Studio](https://zmk.studio/) · [Binding details](config/zen-r4-split/README.md#studio-key-labels)
+Saved Studio keymaps take precedence over the source keymap. To load updated defaults, use **Restore stock settings**, which replaces saved keymap edits. Renamed layers appear on the nice!view after a layer change. Only the first nine characters are sent across the split, and only plain ASCII: any other character, such as an accented letter, shows as `?`. [Studio](https://zmk.studio/) · [Binding details](config/steno-squid-split/README.md#studio-key-labels)
 
 ## Portrait nice!view and squid
 
@@ -62,11 +62,11 @@ The right half renders a **68 × 160** portrait interface with bold text, mode n
 
 The squid reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
 
-On the Javelin layer the display also shows a **stroke tape** under the pet: the translation of the last stroke, the keys of that stroke below it, and your typing speed in WPM at the top. It appears with the first stroke and goes away when you change layer or start Practice. Strokes made on the left half show up too, because the left half reports them. Each stroke costs one small write on the split link, and a translation longer than four characters costs a second one. A translation is cut at twelve characters, and anything that does not fit the display ends in "..". The speed counts characters the strokes typed (five to a word, a space after each word), over the last ten seconds, and it updates with each stroke, so it holds its last value when you stop. [How the messages are packed](src/zen_r4/stroke_feed.h)
+On the Javelin layer the display also shows a **stroke tape** under the pet: the translation of the last stroke, the keys of that stroke below it, and your typing speed in WPM at the top. It appears with the first stroke and goes away when you change layer or start Practice. Strokes made on the left half show up too, because the left half reports them. Each stroke costs one small write on the split link, and a translation longer than four characters costs a second one. A translation is cut at twelve characters, and anything that does not fit the display ends in "..". The speed counts characters the strokes typed (five to a word, a space after each word), over the last ten seconds, and it updates with each stroke, so it holds its last value when you stop. [How the messages are packed](src/steno_squid/stroke_feed.h)
 
-Shorter-outline hints are built but off by default. With `CONFIG_ZMK_ZEN_R4_STROKE_HINT=y` the left half asks the engine for a shorter way to write what you just typed, and the top row shows `TIP` and the first stroke of that outline, with a `+` if it takes more than one stroke. The engine searches its dictionaries backwards for this on every stroke, on the thread that handles keys. A left-logging build with the option on prints `[tape] stroke handled in N us` for each stroke, so you can see what it costs before deciding to keep it.
+Shorter-outline hints are built but off by default. With `CONFIG_ZMK_STENO_SQUID_STROKE_HINT=y` the left half asks the engine for a shorter way to write what you just typed, and the top row shows `TIP` and the first stroke of that outline, with a `+` if it takes more than one stroke. The engine searches its dictionaries backwards for this on every stroke, on the thread that handles keys. A left-logging build with the option on prints `[tape] stroke handled in N us` for each stroke, so you can see what it costs before deciding to keep it.
 
-Sprites live in the right controller's internal flash, and animations run locally. The USB effect indicates external power, including when the battery is full. [Display implementation and memory use](config/zen-r4-split/README.md#right-half-niceview)
+Sprites live in the right controller's internal flash, and animations run locally. The USB effect indicates external power, including when the battery is full. [Display implementation and memory use](config/steno-squid-split/README.md#right-half-niceview)
 
 ## Offline Practice
 
@@ -84,17 +84,17 @@ The hand drills use Steno Jig's key sets and draw a new random prompt after each
 
 Tap a left star by itself for the previous drill, or a right star for the next. The key immediately left of the Lapwing # key toggles Practice. The outer left thumb returns to Qwerty.
 
-Practice works with the computer off and consumes its strokes before host output. Hand drills work with dictionaries disabled; WORDS can use the verified Lapwing Base as a fallback. Saved dictionary selections stay intact. [Practice guide](config/zen-r4-split/README.md#offline-practice) · [Steno Jig](https://joshuagrams.github.io/steno-jig/learn-keyboard.html)
+Practice works with the computer off and consumes its strokes before host output. Hand drills work with dictionaries disabled; WORDS can use the verified Lapwing Base as a fallback. Saved dictionary selections stay intact. [Practice guide](config/steno-squid-split/README.md#offline-practice) · [Steno Jig](https://joshuagrams.github.io/steno-jig/learn-keyboard.html)
 
 ## Bluetooth and power
 
-From Qwerty, hold Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **Zen R4 Split** in the computer's Bluetooth settings. USB is normally preferred while connected.
+From Qwerty, hold Numpad and tap **Q** for Bluetooth profile 0 or **W** for profile 1. Tap **R** on that layer to clear the selected profile's host pairing. Pair **Steno Squid Split** in the computer's Bluetooth settings. USB is normally preferred while connected.
 
 Typing, onboard Javelin, Plover HID, and dictionary editing have been verified over Bluetooth on macOS. The Windows plain-text output profile has been tested on Windows; Windows Bluetooth remains unverified.
 
 Both halves enable deep sleep after 15 idle minutes on battery. Wake each half with one of its own keys. The left half switches off the external flash rail during deep sleep and also after 30 seconds outside Javelin/Practice without dictionary use. Entering Javelin or accessing the editor wakes the flash. Boot checks verify the installed images before translation starts.
 
-Battery logging is available as an optional build feature. [Battery logger](tools/zen-r4-battery/README.md) · [Power settings](config/zen-r4-split/corne_left.conf)
+Battery logging is available as an optional build feature. [Battery logger](tools/steno-squid-battery/README.md) · [Power settings](config/steno-squid-split/corne_left.conf)
 
 ## Build and install
 
@@ -112,25 +112,25 @@ Download artifacts from a successful run. Double-tap RESET on the intended contr
 For a new keyboard, prepare the dictionary images using the build guides, flash **left-logging**, and install them through its diagnostics port using Python with the `pyserial` package. Substitute the actual serial device path:
 
 ```sh
-python3 tools/zen-r4-lapwing/upload.py /dev/cu.usbmodem14501
+python3 tools/steno-squid-lapwing/upload.py /dev/cu.usbmodem14501
 ```
 
 The uploader installs missing configured images from `build/`. Use `--status` to inspect them or `--verify` for a full CRC check. After provisioning, flash **left-studio** for everyday use. Dictionary images are uploaded separately from the UF2 firmware.
 
-- [Split build, provisioning, and pairing guide](config/zen-r4-split/README.md)
-- [Standalone left-half build and pinout](config/zen-r4-left/README.md)
-- [Handwired left-half wiring diagram](config/zen-r4-left/zen_r4_left_wiring_diagram.png)
-- [QSPI diagnostics](tools/zen-r4-qspi/README.md)
+- [Split build, provisioning, and pairing guide](config/steno-squid-split/README.md)
+- [Standalone left-half build and pinout](config/steno-squid-left/README.md)
+- [Handwired left-half wiring diagram](config/steno-squid-left/steno_squid_left_wiring_diagram.png)
+- [QSPI diagnostics](tools/steno-squid-qspi/README.md)
 
 Local builds must use this checkout's west manifest. If the workspace keeps a separate manifest copy, synchronize it before running `west update`. The compiled dictionary format depends on the pinned Javelin engine. [Dependency manifest](config/west.yml)
 
-The `upload.py` tests run against a fake keyboard, with no hardware or pyserial: `python3 tools/zen-r4-lapwing/test_upload.py`. CI runs them on every push and posts each build's flash and RAM use on the run page.
+The `upload.py` tests run against a fake keyboard, with no hardware or pyserial: `python3 tools/steno-squid-lapwing/test_upload.py`. CI runs them on every push and posts each build's flash and RAM use on the run page.
 
 ## Planned work
 
 ### Daily-use features
 
-- **Built, not run on hardware:** the stroke tape (last stroke, translation, WPM) and the hint behind `CONFIG_ZMK_ZEN_R4_STROKE_HINT`. The engine reports strokes as console events, which the left half catches around each key event. Still to check on a board: how long a stroke takes with hints on, and the extra battery cost of the per-stroke writes.
+- **Built, not run on hardware:** the stroke tape (last stroke, translation, WPM) and the hint behind `CONFIG_ZMK_STENO_SQUID_STROKE_HINT`. The engine reports strokes as console events, which the left half catches around each key event. Still to check on a board: how long a stroke takes with hints on, and the extra battery cost of the per-stroke writes.
 - The typing animation listens for local right-half keypresses, not every stroke made on both halves. That is reasonable for the first version. The stroke tape now gives the central a way to report completed strokes, so the pet could react to actual translations in Javelin mode.
 
 Keep the typing reaction exactly as it is for now. It is a major part of the charm.
@@ -150,13 +150,13 @@ These exist for bring-up and battery testing. Before calling the firmware finish
 
 | Item | Where | Current state |
 | --- | --- | --- |
-| `W` serial query: last flash check path and its time in milliseconds | `src/zen_r4/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
-| Diagnostics: boot log kept across a soft reset, `S` status, `D` log dump, `Z` clear, `R` rail test, `T` power-cycle bench, fault counters saved in settings, wake timing, `upload.py --diag` | `src/zen_r4/diag.c`, `src/zen_r4/diag.h`, the `diag_*()` calls in `src/zen_r4/lapwing_flash.c` | Behind `CONFIG_ZMK_JAVELIN_DIAG`, default on, only in builds with `-S zmk-usb-logging`. To remove for good, delete the two files and the calls |
-| Battery and activity logger, its `B` serial export and host script | `src/zen_r4/battery_log.c`, `tools/zen-r4-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
-| 128 KiB internal flash partition reserved for the battery log | `config/zen-r4-split/corne_left.overlay` | Always reserved, even with the logger off |
-| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/zen_r4/lapwing_flash.c` | On by default. Once battery testing settles it, remove the option or keep it as a plain setting |
-| Start-up prints such as `[JAV] ...`, the JEDEC ID, flash check time and idle power-down | `src/engine_init.cc`, `src/zen_r4/lapwing_flash.c`, `src/zen_r4/lapwing_dictionary.cc` | Always compiled, visible only on the logging serial port |
-| `CONFIG_STACK_SENTINEL` and `CONFIG_THREAD_NAME` | `config/zen-r4-split/corne_left.conf` | Always on |
+| `W` serial query: last flash check path and its time in milliseconds | `src/steno_squid/lapwing_flash.c` | Only in builds with `-S zmk-usb-logging` |
+| Diagnostics: boot log kept across a soft reset, `S` status, `D` log dump, `Z` clear, `R` rail test, `T` power-cycle bench, fault counters saved in settings, wake timing, `upload.py --diag` | `src/steno_squid/diag.c`, `src/steno_squid/diag.h`, the `diag_*()` calls in `src/steno_squid/lapwing_flash.c` | Behind `CONFIG_ZMK_JAVELIN_DIAG`, default on, only in builds with `-S zmk-usb-logging`. To remove for good, delete the two files and the calls |
+| Battery and activity logger, its `B` serial export and host script | `src/steno_squid/battery_log.c`, `tools/steno-squid-battery/` | Behind `CONFIG_ZMK_JAVELIN_BATTERY_LOG` |
+| 128 KiB internal flash partition reserved for the battery log | `config/steno-squid-split/corne_left.overlay` | Always reserved, even with the logger off |
+| Flash idle power-down experiment | `CONFIG_ZMK_JAVELIN_STENO_FLASH_IDLE_OFF` in `Kconfig`, `src/steno_squid/lapwing_flash.c` | On by default. Once battery testing settles it, remove the option or keep it as a plain setting |
+| Start-up prints such as `[JAV] ...`, the JEDEC ID, flash check time and idle power-down | `src/engine_init.cc`, `src/steno_squid/lapwing_flash.c`, `src/steno_squid/lapwing_dictionary.cc` | Always compiled, visible only on the logging serial port |
+| `CONFIG_STACK_SENTINEL` and `CONFIG_THREAD_NAME` | `config/steno-squid-split/corne_left.conf` | Always on |
 
 Serial provisioning with `upload.py` is not on this list. It stays, and is already limited to builds with the logging snippet.
 
@@ -173,19 +173,19 @@ keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
 
 ### Qwerty
 
-![Qwerty layer with tap and hold actions](docs/keymap/qwerty-43f131fbe217.svg)
+![Qwerty layer with tap and hold actions](docs/keymap/qwerty-77e6b9193543.svg)
 
 ### Numpad
 
-![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/numpad-30b734edf269.svg)
+![Arrows and number pad layer with Bluetooth and Practice controls](docs/keymap/numpad-73da1dd8421b.svg)
 
 ### Javelin
 
-![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-6b66808fe689.svg)
+![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-538840d23333.svg)
 
 ### PloverHID
 
-![Plover HID layer with raw steno keys](docs/keymap/plover-hid-e7698eee1835.svg)
+![Plover HID layer with raw steno keys](docs/keymap/plover-hid-77ba5b4317c0.svg)
 
 Regenerate the diagrams after editing the shared or split keymap:
 
