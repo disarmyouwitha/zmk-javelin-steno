@@ -74,7 +74,7 @@ int main(void) {
     zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
     assert(lv_obj_get_y(mode_above)==17);
     assert(!strcmp(lv_label_get_text(mode_above),"Waiting"));
-    assert(lv_obj_get_y(mode_below)==119);
+    assert(lv_obj_get_y(mode_below)==99);
     assert(!strcmp(lv_label_get_text(mode_below),"For Left"));
     zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
     assert(state != PET_LAYER_CHANGE); // Reconnection keeps the greeting path.

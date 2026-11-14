@@ -69,10 +69,6 @@ static void set_mode_label(lv_obj_t *label, const char *text) {
 }
 
 static void show_mode(const char *title) {
-    /* Keep Waiting above the squid; place For Left on the lower text row.
-     * Every other mode starts on the usual first row below the squid.
-     */
-    lv_obj_set_y(mode_below, strcmp(title, "Waiting\nFor Left") == 0 ? 119 : 99);
     if (strcmp(title, "PloverHID") == 0) {
         set_mode_label(mode_below, "Plover\nHID");
         lv_obj_add_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
