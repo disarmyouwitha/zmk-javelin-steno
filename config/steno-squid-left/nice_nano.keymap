@@ -83,7 +83,7 @@
         };
 
         plover_hid_layer {
-            display-name = "PLOVER HID";
+            display-name = "Plover";
             bindings = <
                 &plv PLV_NMC &plv PLV_NM  &plv PLV_NM2 &plv PLV_NM3 &plv PLV_NM4 &plv PLV_NM5
                 &plv PLV_TR  &plv PLV_NM  &plv PLV_TL  &plv PLV_PL  &plv PLV_HL  &plv PLV_ST

@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="540" viewBox="0 0 1120 540" role="img" aria-labelledby="title desc">
-<title id="title">ZMK + Javelin — PloverHID layer 3</title>
+<title id="title">ZMK + Javelin — Plover layer 3</title>
 <desc id="desc">42-key split layout. For dual-action keys, tap is above the divider and hold is below. Thumb keys appear at the bottom. Disabled keys have a dash.</desc>
 <style>
 .bg{fill:#f6f7fb}.key{fill:#fff;stroke:#d5d9e4;stroke-width:1.2}.line{stroke:#e5e7ef;stroke-width:1}
@@ -10,7 +10,7 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 @media(prefers-color-scheme:dark){.bg{fill:#151922}.key{fill:#222936;stroke:#414b5e}.line{stroke:#414b5e}text{fill:#ecf0f7}.subtitle,.side,.meta,.footer{fill:#b3bdcd}.compact{font-size:14px}.hold{fill:#c2aaff}.disabled .key{fill:#1b202b;stroke:#303746}.disabled text{fill:#77849a}.layer .key{fill:#35294e;stroke:#71578e}.steno .key{fill:#203448;stroke:#3f617c}}
 </style>
 <rect class="bg" width="1120" height="540" rx="16"/>
-<text x="32" y="37" class="title">PloverHID  /  3</text>
+<text x="32" y="37" class="title">Plover  /  3</text>
 <text x="32" y="69" class="subtitle">STENO SQUID / CORNE SPLIT     ·     DEFAULT KEYMAP</text>
 <text x="735" y="37" class="subtitle">Dual-action keys: tap above · hold below</text>
 <text x="735" y="64" class="subtitle">⌘ Command     ⌥ Option     ⇧ Shift</text>

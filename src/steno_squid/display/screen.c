@@ -74,11 +74,6 @@ static void set_mode_label(lv_obj_t *label, const char *text) {
 }
 
 static void show_mode(const char *title) {
-    if (strcmp(title, "PloverHID") == 0) {
-        set_mode_label(mode_below, "Plover\nHID");
-        lv_obj_add_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
-        return;
-    }
     const char *separator = strchr(title, '\n');
     if (!separator) {
         const size_t length = strlen(title);
@@ -314,7 +309,7 @@ void steno_squid_screen_update(unsigned mode, const char *layer_name, uint32_t p
         [STENO_SQUID_MODE_TYPING] = "Qwerty",
         [STENO_SQUID_MODE_SYMBOLS] = "Numpad",
         [STENO_SQUID_MODE_JAVELIN] = "Javelin",
-        [STENO_SQUID_MODE_PLOVER] = "PloverHID",
+        [STENO_SQUID_MODE_PLOVER] = "Plover",
         [STENO_SQUID_MODE_LOADING] = "Loading",
         [STENO_SQUID_MODE_NO_DICTIONARY] = "No Dict",
     };

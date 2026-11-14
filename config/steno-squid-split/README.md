@@ -108,7 +108,7 @@ by [nice!view Elemental](https://github.com/kevinpastor/nice-view-elemental)
 with the right half's battery percentage.
 
 Mode names use boldened, borderless dark text below the squid, choosing 20 or
-16 pixels to fit. PloverHID appears as **Plover** and **HID** on two lines.
+16 pixels to fit. The host Plover HID mode is labeled **Plover** on one line.
 The disconnected message shows **Waiting** above the squid and **For Left** below. The completion screen gives the score and best
 streak separate lines beneath the celebration.
 
@@ -125,7 +125,7 @@ west build -s zmk/app -d "$repo/build/right-nice-view" -b nice_nano//zmk -- \
 
 Flash the right build to the Ultralight and the matching left build to the handwired half. The display shows the active layer reported by the left half over the existing Bluetooth split connection and the right half's local battery percentage. It shows **Waiting for left** when the split is disconnected.
 
-Check **Qwerty** after connection, **Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **PloverHID** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
+Check **Qwerty** after connection, **Numpad** while holding the middle left thumb, **Javelin** after tapping the middle right thumb from Qwerty, and **Plover** after tapping the outer right thumb from Qwerty. Press the outer left thumb to return to Qwerty from either steno mode. Reboot the right half with the left in Javelin and check that the display restores **Javelin** after reconnecting.
 
 ## Offline practice
 
@@ -141,7 +141,7 @@ translations without regard to letter case.
 
 Practice runs on the steno layer. From Qwerty, hold the middle left thumb for
 Numpad and tap the outer right thumb, then release both. The outer right thumb
-also starts Practice directly from Javelin or PloverHID. During Practice it
+also starts Practice directly from Javelin or Plover. During Practice it
 returns to ordinary Javelin. The former left-hand Practice key is unbound. Tap either left star by itself to go to the previous
 drill, or either right star to go to the next. The order wraps through
 **WORDS → LEFT → RIGHT**. You can switch before, during, or after a run.
@@ -166,7 +166,7 @@ and keep the current prompt. After all prompts are answered correctly, the scree
 to the Practice menu, or a star to select another drill.
 
 The outer left thumb returns to Qwerty. The outer right thumb exits to
-normal Javelin. To select PloverHID, return to Qwerty first and tap the outer
+normal Javelin. To select Plover, return to Qwerty first and tap the outer
 right thumb there. Leaving the steno
 layer ends practice. Turn practice off and on to restart. A right-half reboot or
 reconnect reloads the current screen from the left. Rebooting the left resets
