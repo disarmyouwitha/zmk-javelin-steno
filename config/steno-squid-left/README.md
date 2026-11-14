@@ -25,8 +25,6 @@ Both steno layers use the same left-bank positions as the combined Corne configu
 
 ![Steno Squid left-half matrix, nice!nano v2 edge pins, and W25Q128 wiring](steno_squid_left_wiring_diagram.png)
 
-The diagram was drawn before bring-up. The assembled left half has since passed [standalone matrix testing](../../tools/steno-squid-matrix/README.md) and the firmware tests below.
-
 ## Build and provision
 
 The pinned [Lapwing base dictionary](https://github.com/aerickt/plover-lapwing-aio/blob/4ac5d53cf039a2b1f4c484456663c85e7df4e859/plover_lapwing/dictionaries/lapwing-base.json) has 114,885 outlines. It compiles to a 1,700,488-byte image with the pinned Javelin ABI. The host Plover plugins and optional dictionaries belong to the host mode.
