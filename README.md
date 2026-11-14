@@ -13,9 +13,9 @@ ZMK handles the keyboard, Bluetooth, power management, and keymap editing. Javel
 | **Qwerty** | Ordinary keyboard input through ZMK. |
 | **Numpad** | Arrow keys, a number pad, and Bluetooth controls. Hold the middle left thumb to use it. |
 | **Javelin** | Onboard dictionary translation, including spelling rules, repeat, and undo. Works with Plover closed. |
-| **PloverHID** | Raw steno strokes sent to Plover on the computer, using Plover's dictionaries. |
+| **Plover** | Raw steno strokes sent over Plover HID to Plover on the computer, using Plover's dictionaries. |
 
-In Qwerty, the right thumbs are **Space**, **Javelin**, and **PloverHID**, from left to right. The outer left thumb returns to Qwerty from either steno mode. The outer right thumb starts Practice from Numpad, Javelin, or PloverHID and toggles it off again to ordinary Javelin. To switch steno modes, return to Qwerty and select the desired mode.
+In Qwerty, the right thumbs are **Space**, **Javelin**, and **Plover**, from left to right. The outer left thumb returns to Qwerty from either steno mode. The outer right thumb starts Practice from Numpad, Javelin, or Plover and toggles it off again to ordinary Javelin. To switch steno modes, return to Qwerty and select the desired mode.
 
 In onboard Javelin, the upper left S position is the Lapwing **#** key; the lower position stays **S**. Pressing **#** by itself repeats the preceding translation, and star undoes it.
 
@@ -206,7 +206,7 @@ keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
 
 ### Qwerty
 
-![Qwerty layer with tap and hold actions](docs/keymap/qwerty-77e6b9193543.svg)
+![Qwerty layer with tap and hold actions](docs/keymap/qwerty-3084f385c4c6.svg)
 
 ### Numpad
 
@@ -216,9 +216,9 @@ keys contribute the same **#** stroke. Keymaps saved in Studio may differ.
 
 ![Onboard Javelin layer with Lapwing number key and Practice toggle](docs/keymap/javelin-68ed47c7832b.svg)
 
-### PloverHID
+### Plover
 
-![Plover HID layer with raw steno keys](docs/keymap/plover-hid-bb106271c2df.svg)
+![Plover HID layer with raw steno keys](docs/keymap/plover-hid-fe80dff10661.svg)
 
 Regenerate the diagrams after editing the shared or split keymap:
 

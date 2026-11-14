@@ -19,7 +19,7 @@ LAYERS = [
         "qwerty",
         "Qwerty",
         "0",
-        "Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, PloverHID",
+        "Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, Plover",
     ),
     (
         "sym_num_layer",
@@ -38,7 +38,7 @@ LAYERS = [
     (
         "plover_hid_layer",
         "plover-hid",
-        "PloverHID",
+        "Plover",
         "3",
         "Raw strokes to host Plover · Outer left thumb: Qwerty · Outer right thumb: Practice",
     ),
@@ -85,7 +85,7 @@ NAMES = {
     "KP_PLUS": "KP +",
     "MAIN": "Qwerty",
     "STENO": "Javelin",
-    "PLOVER_HID": "PloverHID",
+    "PLOVER_HID": "Plover",
 }
 PLOVER = {
     "SL": "S1−",

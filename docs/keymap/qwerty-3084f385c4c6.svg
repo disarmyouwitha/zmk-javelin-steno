@@ -204,9 +204,9 @@ text{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
 <text x="728" y="437" class="compact">Javelin</text>
 <text x="728" y="469" class="meta">tap to switch</text>
 </g>
-<g class="layer" data-key-index="41"><title>PloverHID / tap to switch</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
-<text x="809" y="437" class="compact">PloverHID</text>
+<g class="layer" data-key-index="41"><title>Plover / tap to switch</title><rect class="key" x="773" y="412" width="72" height="76" rx="8"/>
+<text x="809" y="437" class="">Plover</text>
 <text x="809" y="469" class="meta">tap to switch</text>
 </g>
-<text x="32" y="516" class="footer">Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, PloverHID</text>
+<text x="32" y="516" class="footer">Hold middle left thumb for Numpad · Right thumbs: Space, Javelin, Plover</text>
 </svg>
