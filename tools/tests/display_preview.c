@@ -20,7 +20,29 @@ static void save(const char *name) {
     for(unsigned i=0;i<sizeof(saved);i++) saved[i]=saved[i]>=128?255:0;
     fwrite(saved,1,sizeof(saved),out);fclose(out);
 }
+/* Pupils may float inside the mask. Every lower tentacle must join the mantle. */
+static void check_tentacles_connected(void) {
+    bool seen[48*48] = {0};
+    unsigned queue[48*48], read = 0, count = 0;
+    for (unsigned i = 0; i < 48*48; i++) {
+        if (idle_pixels[i]) { queue[count++] = i; seen[i] = true; break; }
+    }
+    while (read < count) {
+        const unsigned i = queue[read++], x = i % 48, y = i / 48;
+        const int neighbors[] = {x ? (int)i-1 : -1, x < 47 ? (int)i+1 : -1,
+                                 y ? (int)i-48 : -1, y < 47 ? (int)i+48 : -1};
+        for (unsigned n = 0; n < 4; n++) {
+            const int j = neighbors[n];
+            if (j >= 0 && idle_pixels[j] && !seen[j]) {
+                queue[count++] = j; seen[j] = true;
+            }
+        }
+    }
+    for (unsigned i = 34*48; i < 48*48; i++) assert(!idle_pixels[i] || seen[i]);
+}
+
 int main(void) {
+    check_tentacles_connected();
     lv_init();lv_display_t *d=lv_display_create(68,160);
     lv_display_set_color_format(d,LV_COLOR_FORMAT_L8);
     lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);
