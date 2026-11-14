@@ -43,6 +43,14 @@ static void check_tentacles_connected(void) {
 
 int main(void) {
     check_tentacles_connected();
+    // Closing the eyes must also fill the old upper eye-mask patches.
+    for (unsigned y=14; y<16; y++) {
+        unsigned left=48, right=0;
+        for(unsigned x=0;x<48;x++) if(idle_pixels[y*48+x]) {
+            if(left==48) left=x; right=x;
+        }
+        for(unsigned x=left;x<=right && x<48;x++) assert(sleep_pixels[y*48+x]);
+    }
     lv_init();lv_display_t *d=lv_display_create(68,160);
     lv_display_set_color_format(d,LV_COLOR_FORMAT_L8);
     lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);

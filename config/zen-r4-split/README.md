@@ -66,6 +66,7 @@ and thresholds it into one-bit pixels for the panel.
 | Portrait widgets with USB squid animation | 443,248 B | 64,072 B |
 | Squid with typing, sleep, reconnect and completion effects | 466,720 B | 64,072 B |
 | Practice menu with 32 KiB display heap | 480,892 B | 88,672 B |
+| Traced Pop and layer-change reaction | 485,576 B | 88,688 B |
 
 The right-only LVGL runtime heap is 32 KiB. It covers widgets and temporary
 font/image decoding allocations, separately from the fixed draw buffers.

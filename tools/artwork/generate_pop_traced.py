@@ -18,7 +18,7 @@ idle=[[int(image.getpixel((x,y))==0) for x in range(48)] for y in range(48)]
 # Keep the left highlight enclosed when its subpixel black rim is quantized.
 for y,x in [(17,21),(17,22),(18,22),(18,23)]:idle[y][x]=1
 blink=[r[:] for r in idle]
-for y in range(16,29):
+for y in range(14,29):
     black=[x for x in range(48) if blink[y][x]]
     if black:
         for x in range(min(black),max(black)+1):blink[y][x]=1

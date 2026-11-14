@@ -60,7 +60,7 @@ Saved Studio keymaps take precedence over the source keymap. To load updated def
 
 The right half renders a **68 × 160** portrait interface with bold text, mode names, a rounded battery indicator, and its own battery percentage.
 
-The squid reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. Layer changes play a separate 320 ms card-flip above the squid. Typing and battery updates do not restart it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
+Pop, the 48 × 48 squid traced from the original concept, reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. Layer changes play a separate 320 ms card-flip above the squid. Typing and battery updates do not restart it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
 
 Sprites live in the right controller's internal flash, and animations run locally. The USB effect indicates external power, including when the battery is full. [Display implementation and memory use](config/zen-r4-split/README.md#right-half-niceview)
 
