@@ -1,6 +1,9 @@
 if(CONFIG_ZMK_STENO_SQUID_SPLIT_STATUS)
   if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     target_sources(app PRIVATE src/steno_squid/split_status_central.c)
+    if(CONFIG_SETTINGS AND CONFIG_BT_DEVICE_NAME_DYNAMIC)
+      target_sources(app PRIVATE src/steno_squid/bluetooth_name.c)
+    endif()
   else()
     target_sources(app PRIVATE
       src/steno_squid/split_status_display.c
