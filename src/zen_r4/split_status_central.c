@@ -1,6 +1,7 @@
 #include <string.h>
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/kernel.h>
+#include <zephyr/spinlock.h>
 #include <zephyr/sys/atomic.h>
 #include <zmk/events/layer_state_changed.h>
 #include <zmk/keymap.h>
@@ -9,6 +10,7 @@
 #include <dt-bindings/zmk/javelin_steno_layers.h>
 
 #include "split_status.h"
+#include "stroke_feed.h"
 #if IS_ENABLED(CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING)
 #include "lapwing_flash.h"
 #endif
@@ -143,6 +145,57 @@ K_WORK_DEFINE(send_status_work, send_status);
 void zen_r4_split_status_refresh(void) {
     k_work_submit(&send_status_work);
 }
+
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
+/* The latest stroke waits here for the work queue. A stroke typed before the
+ * last one was sent replaces it, so the display always gets the newest.
+ */
+static struct zen_r4_tape pending_tape;
+static struct k_spinlock pending_tape_lock;
+
+static void invoke_tape(uint32_t param1, uint32_t param2) {
+    struct zmk_behavior_binding binding = {
+        .behavior_dev = ZEN_R4_STATUS_BEHAVIOR,
+        .param1 = param1,
+        .param2 = param2,
+    };
+    struct zmk_behavior_binding_event event = {.timestamp = k_uptime_get()};
+    zmk_split_central_invoke_behavior(0, &binding, event, true);
+}
+
+static void send_tape(struct k_work *work) {
+    if (!atomic_get(&connected)) {
+        return;
+    }
+    struct zen_r4_tape tape;
+    k_spinlock_key_t key = k_spin_lock(&pending_tape_lock);
+    tape = pending_tape;
+    k_spin_unlock(&pending_tape_lock, key);
+    if (!tape.valid) {
+        return;
+    }
+    uint32_t param1, param2;
+    zen_r4_tape_encode_stroke(&tape, &param1, &param2);
+    invoke_tape(param1, param2);
+    if (zen_r4_tape_needs_more(&tape)) {
+        zen_r4_tape_encode_more(&tape, &param1, &param2);
+        invoke_tape(param1, param2);
+    }
+    if (tape.hint_count) {
+        zen_r4_tape_encode_hint(&tape, &param1, &param2);
+        invoke_tape(param1, param2);
+    }
+}
+
+K_WORK_DEFINE(send_tape_work, send_tape);
+
+void zen_r4_tape_publish(const struct zen_r4_tape *tape) {
+    k_spinlock_key_t key = k_spin_lock(&pending_tape_lock);
+    pending_tape = *tape;
+    k_spin_unlock(&pending_tape_lock, key);
+    k_work_submit(&send_tape_work);
+}
+#endif
 
 static void sync_after_connect(struct k_work *work) {
     send_status(work);

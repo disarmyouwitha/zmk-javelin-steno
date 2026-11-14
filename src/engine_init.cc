@@ -25,8 +25,10 @@
 #include "steno_key_state.h"
 #include "static_allocate.h"
 #include "stroke.h"
-#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
+#if defined(CONFIG_ZMK_ZEN_R4_PRACTICE) || defined(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
 #include "zen_r4/split_status.h"
+#endif
+#ifdef CONFIG_ZMK_ZEN_R4_PRACTICE
 #include <zephyr/random/random.h>
 #include <new>
 #include <strings.h>
@@ -675,7 +677,14 @@ void zmk_javelin_steno_process_key(int steno_key_index, bool is_press) {
   }
 #endif
   LOG_DBG("[JAV] key %d %s", steno_key_index, is_press ? "down" : "up");
+#ifdef CONFIG_ZMK_ZEN_R4_STROKE_TAPE
+  // Catch the engine's stroke events for the right display's stroke tape.
+  zen_r4_stroke_feed_begin();
+#endif
   processor->Process(static_cast<StenoKey>(steno_key_index), is_press);
+#ifdef CONFIG_ZMK_ZEN_R4_STROKE_TAPE
+  zen_r4_stroke_feed_end();
+#endif
 }
 
 } // extern "C"

@@ -13,6 +13,11 @@ static lv_obj_t *mode_below;
 static lv_obj_t *mode_above;
 static lv_obj_t *battery_label;
 static lv_obj_t *battery_bar;
+static lv_obj_t *tape_wpm;
+static lv_obj_t *tape_hint;
+static lv_obj_t *tape_text;
+static lv_obj_t *tape_stroke;
+static struct zen_r4_tape tape_state;
 static bool was_done;
 
 static void draw_bold_text(lv_event_t *event) {
@@ -112,6 +117,83 @@ static void show_mode(const char *title) {
     lv_obj_remove_flag(mode_above, LV_OBJ_FLAG_HIDDEN);
 }
 
+#define TAPE_WIDTH 66
+
+static const lv_font_t *const tape_text_fonts[] = {&lv_font_montserrat_10};
+static const lv_font_t *const tape_stroke_fonts[] = {&lv_font_unscii_8, &lv_font_montserrat_8};
+#define FONT_COUNT(fonts) (sizeof(fonts) / sizeof((fonts)[0]))
+
+/* Shows `text` in the first font it fits the tape width in. If it fits in
+ * none, the last font with the end cut off and ".." in its place.
+ */
+static void set_fitted_text(lv_obj_t *label, const char *text, const lv_font_t *const *fonts,
+                            size_t font_count) {
+    char buffer[ZEN_R4_TAPE_STROKE_TEXT_MAX + 8];
+    snprintf(buffer, sizeof(buffer), "%s", text);
+    size_t length = strlen(buffer);
+    const lv_font_t *font = fonts[font_count - 1];
+    for (size_t i = 0; i < font_count; i++) {
+        if (lv_text_get_width(buffer, length, fonts[i], 0) <= TAPE_WIDTH) {
+            font = fonts[i];
+            break;
+        }
+    }
+    if (lv_text_get_width(buffer, length, font, 0) > TAPE_WIDTH) {
+        const int dots = lv_text_get_width("..", 2, font, 0);
+        while (length > 1 && lv_text_get_width(buffer, length, font, 0) + dots > TAPE_WIDTH) {
+            length--;
+        }
+        snprintf(buffer + length, sizeof(buffer) - length, "..");
+    }
+    if (strcmp(buffer, lv_label_get_text(label)) != 0) {
+        lv_obj_set_style_text_font(label, font, 0);
+        lv_label_set_text(label, buffer);
+    }
+}
+
+static void show_tape(bool show) {
+    const struct zen_r4_tape *tape = &tape_state;
+    if (!show || !tape->valid) {
+        lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+    char stroke[ZEN_R4_TAPE_STROKE_TEXT_MAX + 1];
+    zen_r4_stroke_to_text(tape->mask, stroke);
+    set_fitted_text(tape_stroke, stroke, tape_stroke_fonts, FONT_COUNT(tape_stroke_fonts));
+    set_fitted_text(tape_text, tape->text, tape_text_fonts, FONT_COUNT(tape_text_fonts));
+    lv_obj_remove_flag(tape_stroke, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(tape_text, LV_OBJ_FLAG_HIDDEN);
+
+    /* The top row shows a shorter outline when there is one, else the speed. */
+    if (tape->hint_count) {
+        char hint[ZEN_R4_TAPE_STROKE_TEXT_MAX + 8];
+        char first[ZEN_R4_TAPE_STROKE_TEXT_MAX + 1];
+        zen_r4_stroke_to_text(tape->hint_mask, first);
+        snprintf(hint, sizeof(hint), "TIP %s%s", first, tape->hint_count > 1 ? "+" : "");
+        set_fitted_text(tape_hint, hint, tape_stroke_fonts, FONT_COUNT(tape_stroke_fonts));
+        lv_obj_remove_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
+    } else if (tape->wpm) {
+        char speed[12];
+        snprintf(speed, sizeof(speed), "%u WPM", tape->wpm);
+        if (strcmp(speed, lv_label_get_text(tape_wpm)) != 0) {
+            lv_label_set_text(tape_wpm, speed);
+        }
+        lv_obj_remove_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(tape_wpm, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(tape_hint, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void zen_r4_screen_set_tape(const struct zen_r4_tape *tape) {
+    tape_state = *tape;
+}
+
 lv_obj_t *zen_r4_display_bar(lv_obj_t *parent, int x, int y, int width, int height) {
     lv_obj_t *bar = lv_bar_create(parent);
     lv_obj_remove_style_all(bar);
@@ -166,6 +248,20 @@ lv_obj_t *zen_r4_screen_create(void) {
     lv_obj_set_size(status_page, 68, 140);
     mode_above = zen_r4_display_label(status_page, 17, &lv_font_montserrat_16);
     mode_below = zen_r4_display_label(status_page, 99, &lv_font_montserrat_16);
+    /* The stroke tape: speed or a hint on top, the translation and the stroke
+     * under the mode name. Hidden until a stroke arrives.
+     */
+    tape_wpm = zen_r4_display_label(status_page, 0, &lv_font_montserrat_10);
+    tape_hint = zen_r4_display_label(status_page, 0, &lv_font_unscii_8);
+    lv_obj_set_x(tape_hint, 1);
+    lv_obj_set_width(tape_hint, 66);
+    lv_obj_set_style_pad_ver(tape_hint, 1, 0);
+    lv_obj_set_style_text_color(tape_hint, lv_color_white(), 0);
+    lv_obj_set_style_bg_color(tape_hint, lv_color_black(), 0);
+    lv_obj_set_style_bg_opa(tape_hint, LV_OPA_COVER, 0);
+    tape_text = zen_r4_display_label(status_page, 119, &lv_font_montserrat_10);
+    tape_stroke = zen_r4_display_label(status_page, 131, &lv_font_unscii_8);
+    show_tape(false);
     practice_page = zen_r4_practice_widget_create(screen);
 
     /* Rounded case and side terminal inspired by nice!view Elemental. */
@@ -220,6 +316,7 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
         const char *title = mode < ZEN_R4_MODE_COUNT ? mode_names[mode] : layer_name;
         show_mode(title);
     }
+    show_tape(!practicing && mode == ZEN_R4_MODE_JAVELIN);
     if (done != was_done) {
         zen_r4_pet_set_state(done ? PET_LEVEL_UP : PET_IDLE);
     }

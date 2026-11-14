@@ -17,6 +17,19 @@ jobs:
       - name: Run the upload.py tests against a fake keyboard
         run: python3 tools/zen-r4-lapwing/test_upload.py
 
+  stroke-feed-tests:
+    name: stroke tape tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+      - name: Build and run the stroke tape tests as C and as C++
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -O2 -o stroke-feed-c tools/tests/test_stroke_feed.c
+          ./stroke-feed-c
+          g++ -std=c++17 -x c++ -Wall -Wextra -Werror -O2 -o stroke-feed-cpp tools/tests/test_stroke_feed.c
+          ./stroke-feed-cpp
+
   build:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest

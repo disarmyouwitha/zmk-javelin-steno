@@ -309,6 +309,9 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     set(ZMK_INIT_SRC
       src/engine_init.cc
     )
+    if(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
+      list(APPEND ZMK_INIT_SRC src/zen_r4/stroke_feed.cc)
+    endif()
 
     # Pure Javelin sources (no ZMK deps) → separate library for C++23
     set(JAVELIN_LIB_SRC

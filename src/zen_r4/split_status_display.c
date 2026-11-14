@@ -3,6 +3,7 @@
 #include <drivers/behavior.h>
 #include <lvgl.h>
 #include <zephyr/kernel.h>
+#include <zephyr/spinlock.h>
 #include <zephyr/sys/atomic.h>
 #include <zmk/battery.h>
 #include <zmk/display.h>
@@ -16,9 +17,12 @@
 #include <zmk/usb.h>
 #endif
 
+#include <string.h>
+
 #include "display/screen.h"
 #include "display/pet_widget.h"
 #include "split_status.h"
+#include "stroke_feed.h"
 
 BUILD_ASSERT(DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT));
 BUILD_ASSERT(__builtin_strcmp(DEVICE_DT_NAME(DT_DRV_INST(0)), ZEN_R4_STATUS_BEHAVIOR) == 0);
@@ -33,6 +37,22 @@ static atomic_t practice_screen;
 static atomic_t pet_wake;
 static atomic_t pet_typing;
 static atomic_t pet_greeting;
+
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
+/* The last stroke the left half sent. Messages arrive on the Bluetooth thread
+ * and the display work queue reads it.
+ */
+static struct zen_r4_tape tape;
+static struct k_spinlock tape_lock;
+
+static void clear_tape(void) {
+    k_spinlock_key_t key = k_spin_lock(&tape_lock);
+    memset(&tape, 0, sizeof(tape));
+    k_spin_unlock(&tape_lock, key);
+}
+#else
+static void clear_tape(void) {}
+#endif
 
 static void refresh_status(struct k_work *work) {
     const unsigned shown = atomic_get(&mode);
@@ -54,6 +74,13 @@ static void refresh_status(struct k_work *work) {
     if (wake && !practicing) {
         zen_r4_pet_set_state(PET_IDLE);
     }
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
+    struct zen_r4_tape shown_tape;
+    k_spinlock_key_t key = k_spin_lock(&tape_lock);
+    shown_tape = tape;
+    k_spin_unlock(&tape_lock, key);
+    zen_r4_screen_set_tape(&shown_tape);
+#endif
     zen_r4_screen_update(shown, name, practice, zmk_battery_state_of_charge());
     if (!practicing) {
         if (zmk_activity_get_state() != ZMK_ACTIVITY_ACTIVE) {
@@ -121,15 +148,48 @@ static int status_received(struct zmk_behavior_binding *binding,
             return -EINVAL;
         }
         atomic_set(&practice_screen, value);
+#if IS_ENABLED(CONFIG_ZMK_ZEN_R4_STROKE_TAPE)
+    } else if ((binding->param2 & ZEN_R4_TAPE_TAG) &&
+               !(binding->param2 & ZEN_R4_LAYER_NAME_PROTOCOL)) {
+        k_spinlock_key_t key = k_spin_lock(&tape_lock);
+        struct zen_r4_tape next = tape;
+        const int kind = zen_r4_tape_decode(binding->param1, binding->param2, &next);
+        if (kind >= 0) {
+            tape = next;
+        }
+        k_spin_unlock(&tape_lock, key);
+        if (kind == ZEN_R4_TAPE_INVALID) {
+            return -EINVAL;
+        }
+        if (kind == ZEN_R4_TAPE_STALE) {
+            return ZMK_BEHAVIOR_OPAQUE;
+        }
+#endif
     } else if (binding->param2 & ZEN_R4_LAYER_NAME_PROTOCOL) {
-        atomic_clear(&practice_screen);
-        atomic_set(&layer_name_low, binding->param1);
-        atomic_set(&layer_name_high, binding->param2 & ~ZEN_R4_LAYER_NAME_PROTOCOL);
+        /* The left half repeats its status every minute. A repeat must not
+         * wipe the stroke tape, only a change of mode, layer name or practice.
+         */
+        const uint32_t low = binding->param1;
+        const uint32_t high = binding->param2 & ~ZEN_R4_LAYER_NAME_PROTOCOL;
+        const bool same = atomic_get(&mode) == MODE_LAYER_NAME &&
+                          (uint32_t)atomic_get(&layer_name_low) == low &&
+                          (uint32_t)atomic_get(&layer_name_high) == high;
+        const bool was_practicing =
+            ((uint32_t)atomic_clear(&practice_screen) & ZEN_R4_PRACTICE_ACTIVE) != 0;
+        atomic_set(&layer_name_low, low);
+        atomic_set(&layer_name_high, high);
         atomic_set(&mode, MODE_LAYER_NAME);
+        if (!same || was_practicing) {
+            clear_tape();
+        }
     } else if (binding->param2 == ZEN_R4_STATUS_PROTOCOL &&
                binding->param1 < ZEN_R4_MODE_COUNT) {
-        atomic_clear(&practice_screen);
-        atomic_set(&mode, binding->param1);
+        const bool was_practicing =
+            ((uint32_t)atomic_clear(&practice_screen) & ZEN_R4_PRACTICE_ACTIVE) != 0;
+        const atomic_val_t old_mode = atomic_set(&mode, binding->param1);
+        if (was_practicing || old_mode != (atomic_val_t)binding->param1) {
+            clear_tape();
+        }
     } else {
         return -EINVAL;
     }
@@ -164,6 +224,7 @@ static int display_event(const zmk_event_t *event) {
         if (!split->connected) {
             atomic_clear(&mode);
             atomic_clear(&practice_screen);
+            clear_tape();
         }
     }
     queue_refresh();

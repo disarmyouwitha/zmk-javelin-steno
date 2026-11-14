@@ -95,6 +95,17 @@ void zen_r4_practice_set_active(bool active);
  */
 void zen_r4_practice_toggle(void);
 uint32_t zen_r4_practice_snapshot(void);
+
+struct zen_r4_tape;
+/* Left half: send the last stroke, its translation and the typing speed to the
+ * right display. See stroke_feed.h for the messages.
+ */
+void zen_r4_tape_publish(const struct zen_r4_tape *tape);
+/* Wrap one key event given to the engine: the engine's stroke events are
+ * caught between the two calls and published.
+ */
+void zen_r4_stroke_feed_begin(void);
+void zen_r4_stroke_feed_end(void);
 #ifdef __cplusplus
 }
 #endif

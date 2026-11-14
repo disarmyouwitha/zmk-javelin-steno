@@ -114,6 +114,25 @@ config ZMK_ZEN_R4_SPLIT_STATUS
     depends on ZMK_SPLIT && ZMK_SPLIT_BLE
     depends on ZMK_SPLIT_ROLE_CENTRAL || (ZMK_DISPLAY && SHIELD_NICE_VIEW && ZMK_DISPLAY_STATUS_SCREEN_CUSTOM)
 
+config ZMK_ZEN_R4_STROKE_TAPE
+    bool "Show the last stroke, its translation and WPM on the right nice!view"
+    depends on ZMK_ZEN_R4_SPLIT_STATUS
+    default y
+    help
+      On the Javelin layer the left half sends each stroke's keys, its
+      translation and the typing speed to the right display. This costs one
+      small write on the split link per stroke, plus one for a translation
+      longer than four characters.
+
+config ZMK_ZEN_R4_STROKE_HINT
+    bool "Also show a shorter outline when one exists"
+    depends on ZMK_ZEN_R4_STROKE_TAPE && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL
+    help
+      The engine searches its dictionaries backwards for a shorter way to
+      write what was just typed. That search runs on the thread that handles
+      keys, so enable this only after the logging build shows it takes a few
+      milliseconds at most.
+
 config ZMK_ZEN_R4_PRACTICE
     bool "Offline single-stroke practice on the right nice!view"
     depends on ZMK_ZEN_R4_SPLIT_STATUS && ZMK_JAVELIN_STENO && ZMK_SPLIT_ROLE_CENTRAL

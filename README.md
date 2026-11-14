@@ -62,6 +62,10 @@ The right half renders a **68 × 160** portrait interface with bold text, mode n
 
 The squid reacts to right-hand typing with a short puff that finishes before another keypress can trigger it. It greets the left half with **Hi** after reconnection, shows a static sleep bubble while idle on battery, and celebrates completed Practice runs with confetti. USB power adds a repeating bob, blink, and rising sparkles. Upper effects hide when the mode label needs that space.
 
+On the Javelin layer the display also shows a **stroke tape** under the pet: the translation of the last stroke, the keys of that stroke below it, and your typing speed in WPM at the top. It appears with the first stroke and goes away when you change layer or start Practice. Strokes made on the left half show up too, because the left half reports them. Each stroke costs one small write on the split link, and a translation longer than four characters costs a second one. A translation is cut at twelve characters, and anything that does not fit the display ends in "..". The speed counts characters the strokes typed (five to a word, a space after each word), over the last ten seconds, and it updates with each stroke, so it holds its last value when you stop. [How the messages are packed](src/zen_r4/stroke_feed.h)
+
+Shorter-outline hints are built but off by default. With `CONFIG_ZMK_ZEN_R4_STROKE_HINT=y` the left half asks the engine for a shorter way to write what you just typed, and the top row shows `TIP` and the first stroke of that outline, with a `+` if it takes more than one stroke. The engine searches its dictionaries backwards for this on every stroke, on the thread that handles keys. A left-logging build with the option on prints `[tape] stroke handled in N us` for each stroke, so you can see what it costs before deciding to keep it.
+
 Sprites live in the right controller's internal flash, and animations run locally. The USB effect indicates external power, including when the battery is full. [Display implementation and memory use](config/zen-r4-split/README.md#right-half-niceview)
 
 ## Offline Practice
@@ -124,10 +128,10 @@ The `upload.py` tests run against a fake keyboard, with no hardware or pyserial:
 
 ## Planned work
 
-### Daily-use features (to do)
+### Daily-use features
 
-- Live last stroke and translation on the nice!view, with a hint when a shorter outline exists, plus a WPM counter. I still need to check whether the engine exposes the data these need. That check is the first step.
-- The typing animation listens for local right-half keypresses, not every stroke made on both halves. That is reasonable for the first version, but eventually the central could report completed steno strokes so the pet reacts to actual translations in Javelin mode.
+- **Built, not run on hardware:** the stroke tape (last stroke, translation, WPM) and the hint behind `CONFIG_ZMK_ZEN_R4_STROKE_HINT`. The engine reports strokes as console events, which the left half catches around each key event. Still to check on a board: how long a stroke takes with hints on, and the extra battery cost of the per-stroke writes.
+- The typing animation listens for local right-half keypresses, not every stroke made on both halves. That is reasonable for the first version. The stroke tape now gives the central a way to report completed strokes, so the pet could react to actual translations in Javelin mode.
 
 Keep the typing reaction exactly as it is for now. It is a major part of the charm.
 

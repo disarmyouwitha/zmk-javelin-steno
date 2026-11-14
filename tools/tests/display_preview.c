@@ -41,6 +41,46 @@ int main(void) {
     }
     zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
     save("cat");
+    /* The stroke tape: shown on the Javelin layer only, and always on one line each. */
+    {
+        struct zen_r4_tape tape;
+        memset(&tape,0,sizeof(tape));
+        tape.valid=true; tape.wpm=87; tape.mask=0x8u|0x100u|0x80000u;
+        snprintf(tape.text,sizeof(tape.text),"%s","cat");
+        zen_r4_screen_set_tape(&tape);
+        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        assert(!lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
+        assert(!lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
+        assert(!lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
+        assert(lv_obj_has_flag(tape_hint,LV_OBJ_FLAG_HIDDEN));
+        assert(!strcmp(lv_label_get_text(tape_stroke),"KAT"));
+        assert(!strcmp(lv_label_get_text(tape_wpm),"87 WPM"));
+        save("tape-word");
+        /* The widest text each row can be given. */
+        snprintf(tape.text,sizeof(tape.text),"%s","WWWWWWWWWWWW");
+        tape.mask=ZEN_R4_TAPE_KEYS_MASK;
+        tape.hint_count=2; tape.hint_mask=tape.mask;
+        zen_r4_screen_set_tape(&tape);
+        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        assert(!lv_obj_has_flag(tape_hint,LV_OBJ_FLAG_HIDDEN));
+        assert(lv_obj_has_flag(tape_wpm,LV_OBJ_FLAG_HIDDEN));
+        lv_refr_now(NULL);
+        assert(lv_obj_get_height(tape_text)<=14);
+        assert(lv_obj_get_height(tape_stroke)<=10);
+        assert(lv_obj_get_height(tape_hint)<=12);
+        assert(lv_text_get_width(lv_label_get_text(tape_text),strlen(lv_label_get_text(tape_text)),
+                                 &lv_font_montserrat_10,0)<=TAPE_WIDTH);
+        save("tape-widest");
+        /* Other layers and Practice hide the tape. */
+        zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
+        assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
+        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,ZEN_R4_PRACTICE_ACTIVE,85);
+        assert(lv_obj_has_flag(tape_stroke,LV_OBJ_FLAG_HIDDEN));
+        memset(&tape,0,sizeof(tape));
+        zen_r4_screen_set_tape(&tape);
+        zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,0,85);
+        assert(lv_obj_has_flag(tape_text,LV_OBJ_FLAG_HIDDEN));
+    }
     for (unsigned pass=0; pass<30; pass++) {
         for (unsigned mode=0; mode<ZEN_R4_MODE_COUNT; mode++) {
             zen_r4_screen_update(mode,NULL,0,pass+65);
