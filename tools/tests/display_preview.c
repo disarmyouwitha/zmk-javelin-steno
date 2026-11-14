@@ -31,7 +31,26 @@ int main(void) {
     save("numpad");
     assert(lv_obj_get_height(mode_below)<=20);
     zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85); save("qwerty");
+    assert(state == PET_LAYER_CHANGE);
+    advance_frame(frame_timer);
+    assert(frame_index == 1);
+    zen_r4_pet_set_state(PET_TYPING);
+    assert(state == PET_LAYER_CHANGE && frame_index == 1);
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,100);
+    assert(frame_index == 1); // A battery update must not restart the reaction.
+    advance_frame(frame_timer);advance_frame(frame_timer);
+    assert(state == PET_IDLE && lv_timer_get_paused(frame_timer));
+    save("pop-idle");
     zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
+    zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
+    assert(state != PET_LAYER_CHANGE); // Reconnection keeps the greeting path.
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85);
+    assert(state == PET_LAYER_CHANGE);
+    advance_frame(frame_timer);
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85);
+    assert(frame_index == 1);
+    zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Other",0,85);
+    assert(frame_index == 0); // Custom layer names can also select different layers.
     zen_r4_screen_update(ZEN_R4_MODE_PLOVER,NULL,0,85); save("plover");
     for(unsigned i=0;i<3;i++) {
         zen_r4_screen_update(ZEN_R4_MODE_JAVELIN,NULL,

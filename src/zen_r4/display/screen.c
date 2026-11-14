@@ -14,6 +14,9 @@ static lv_obj_t *mode_above;
 static lv_obj_t *battery_label;
 static lv_obj_t *battery_bar;
 static bool was_done;
+static bool had_layer;
+static unsigned previous_layer_mode;
+static char previous_layer_title[ZEN_R4_LAYER_NAME_CHARS + 1];
 
 static void draw_bold_text(lv_event_t *event) {
     lv_obj_t *label = lv_event_get_target_obj(event);
@@ -207,10 +210,12 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
         lv_bar_set_value(battery_bar, charge, LV_ANIM_OFF);
     }
 
+    bool layer_changed = false;
     const bool practicing = (practice & ZEN_R4_PRACTICE_ACTIVE) != 0;
     const bool done = practicing && zen_r4_practice_feedback_value(practice) == ZEN_R4_PRACTICE_DONE;
     zen_r4_pet_set_visible(!practicing || done);
     if (practicing) {
+        had_layer = false;
         lv_obj_add_flag(status_page, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(practice_page, LV_OBJ_FLAG_HIDDEN);
         zen_r4_practice_widget_update(practice);
@@ -219,11 +224,25 @@ void zen_r4_screen_update(unsigned mode, const char *layer_name, uint32_t practi
         lv_obj_remove_flag(status_page, LV_OBJ_FLAG_HIDDEN);
         const char *title = mode < ZEN_R4_MODE_COUNT ? mode_names[mode] : layer_name;
         show_mode(title);
+        const bool valid_layer = (mode >= ZEN_R4_MODE_TYPING && mode <= ZEN_R4_MODE_PLOVER) ||
+                                 mode >= ZEN_R4_MODE_COUNT;
+        if (valid_layer) {
+            layer_changed = had_layer && (mode != previous_layer_mode ||
+                                         strcmp(title, previous_layer_title) != 0);
+            previous_layer_mode = mode;
+            snprintf(previous_layer_title, sizeof(previous_layer_title), "%s", title);
+            had_layer = true;
+        } else if (mode == ZEN_R4_MODE_UNKNOWN) {
+            had_layer = false;
+        }
     }
     if (done != was_done) {
         zen_r4_pet_set_state(done ? PET_LEVEL_UP : PET_IDLE);
     }
     zen_r4_pet_set_headroom(done || (!practicing &&
                             lv_obj_has_flag(mode_above, LV_OBJ_FLAG_HIDDEN)));
+    if (layer_changed) {
+        zen_r4_pet_set_state(PET_LAYER_CHANGE);
+    }
     was_done = done;
 }
