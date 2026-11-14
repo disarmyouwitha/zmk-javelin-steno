@@ -86,11 +86,11 @@ The portrait renderer uses 12,240 B for its grayscale draw buffer and packed
 panel buffer. A right-half test pattern verified the rotation and polarity
 on the physical panel.
 
-The 48 × 48 Pop squid sits above the mode label and reacts to right-half
+The 48 × 48 traced Pop squid sits above the mode label and reacts to right-half
 keypresses. Changing layers plays a separate 320 ms, three-frame card-flip above
 the pet. It also follows custom layer names. Typing and battery updates do not
 restart that reaction; reconnecting keeps the existing **Hi** greeting. In Practice it appears at completion and celebrates once.
-The right half draws its frames from internal flash. On battery, the animation
+The base pose is traced from the original concept crop in `tools/artwork/pop-source.png`; regenerate it with `python3 tools/artwork/generate_pop_traced.py` (requires Pillow). The right half draws its frames from internal flash. On battery, the animation
 timer pauses between reactions. While the right half has USB power, the squid
 bobs and blinks through eight frames with sparkles rising above it. The sparkles
 hide when the upper mode label needs that space. This indicates USB
