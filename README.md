@@ -128,8 +128,6 @@ Typing, onboard Javelin, Plover HID, and dictionary editing have been verified o
 
 Both halves enable deep sleep after 15 idle minutes on battery. Wake each half with one of its own keys. The left half switches off the external flash rail during deep sleep and also after 30 seconds outside Javelin/Practice without dictionary use. Entering Javelin or accessing the editor wakes the flash. Boot checks verify the installed images before translation starts.
 
-When upgrading from **Zen R4 Split**, the left firmware migrates that exact saved Bluetooth name to its configured name, **Steno Squid**, after settings load. Custom names, host bonds, split pairing, Studio keymaps, and dictionaries are preserved. A computer may still display its cached old label: on macOS, open the device's Bluetooth details, change **Name** to **Steno Squid**, and click **Done**. Clearing a keyboard Bluetooth profile clears its pairing rather than its saved device name.
-
 Battery logging is available as an optional build feature. [Battery logger](tools/steno-squid-battery/README.md) · [Power settings](config/steno-squid-split/corne_left.conf)
 
 ## Build and install
