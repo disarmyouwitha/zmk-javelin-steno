@@ -43,6 +43,8 @@ static void check_tentacles_connected(void) {
 
 int main(void) {
     check_tentacles_connected();
+    assert(idle_pixels[40*48+23] == 255); // One solid middle tentacle, not two legs.
+    assert(idle_pixels[40*48+17] == 0 && idle_pixels[40*48+30] == 0);
     lv_init();lv_display_t *d=lv_display_create(68,160);
     lv_display_set_color_format(d,LV_COLOR_FORMAT_L8);
     lv_display_set_buffers(d,pixels,NULL,sizeof(pixels),LV_DISPLAY_RENDER_MODE_FULL);
