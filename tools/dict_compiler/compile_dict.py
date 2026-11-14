@@ -163,7 +163,9 @@ class DictionaryCollectionBuilder:
       [Hash map blocks]
       [Data blocks]
       [Text block]
-      [Timestamp (4 bytes)]
+      [Timestamp (4 bytes), padding to a word boundary]
+      [Sorted one-stroke hint indexes]
+      [Hint directory and SHI1 footer]
     """
 
     def __init__(self, base_addr: int = 0):
@@ -435,8 +437,29 @@ class DictionaryCollectionBuilder:
         # Timestamp at end of text block
         write_u32(timestamp_end_offset, timestamp)
 
-        # QSPI DMA and mapped CRC readers require a whole number of words.
-        return bytes(buf) + bytes((-len(buf)) % 4)
+        # Optional firmware hint index: one best one-stroke outline per text.
+        # A sorted index gives bounded logarithmic reads without a RAM copy or
+        # changing Javelin's native forward-lookup tables. Multi-stroke shortcut
+        # suggestions are deliberately outside this first index's scope.
+        buf.extend(bytes((-len(buf)) % 4))
+        hint_directories = []
+        for _, by_length, _ in parsed_dicts:
+            best = {}
+            for strokes, text_offset in by_length.get(1, {}).items():
+                mask = strokes[0]
+                if not mask:
+                    continue
+                old = best.get(text_offset)
+                if old is None or (mask.bit_count(), mask) < (old.bit_count(), old):
+                    best[text_offset] = mask
+            hint_directories.append((len(buf), len(best)))
+            for text_offset, mask in sorted(best.items()):
+                buf.extend(struct.pack('<II', text_offset, mask))
+        directory_offset = len(buf)
+        for offset, count in hint_directories:
+            buf.extend(struct.pack('<II', offset, count))
+        buf.extend(struct.pack('<III', 0x31494853, directory_offset, len(parsed_dicts)))
+        return bytes(buf)
 
 
 def main():

@@ -6,13 +6,13 @@
 #include <drivers/behavior.h>
 #include <zmk/behavior.h>
 
-#include "../zen_r4/split_status.h"
+#include "../steno_squid/split_status.h"
 
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 static int practice_key_pressed(struct zmk_behavior_binding *binding,
                                 struct zmk_behavior_binding_event event) {
-    zen_r4_practice_toggle();
+    steno_squid_practice_toggle();
     return ZMK_BEHAVIOR_OPAQUE;
 }
 

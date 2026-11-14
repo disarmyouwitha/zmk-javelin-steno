@@ -1,18 +1,18 @@
-if(CONFIG_ZMK_ZEN_R4_SPLIT_STATUS)
+if(CONFIG_ZMK_STENO_SQUID_SPLIT_STATUS)
   if(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-    target_sources(app PRIVATE src/zen_r4/split_status_central.c)
+    target_sources(app PRIVATE src/steno_squid/split_status_central.c)
   else()
     target_sources(app PRIVATE
-      src/zen_r4/split_status_display.c
-      src/zen_r4/display/portrait.c
-      src/zen_r4/display/pet_widget.c
-      src/zen_r4/display/screen.c
-      src/zen_r4/display/practice_widget.c
+      src/steno_squid/split_status_display.c
+      src/steno_squid/display/portrait.c
+      src/steno_squid/display/pet_widget.c
+      src/steno_squid/display/screen.c
+      src/steno_squid/display/practice_widget.c
     )
   endif()
 endif()
 
-if(CONFIG_ZMK_ZEN_R4_PRACTICE)
+if(CONFIG_ZMK_STENO_SQUID_PRACTICE)
   target_sources(app PRIVATE src/behaviors/behavior_javelin_practice.c)
 endif()
 
@@ -76,8 +76,8 @@ if(CONFIG_ZMK_JAVELIN_STENO)
       if(NOT EXISTS "${ZMK_JAVELIN_LAPWING_IMAGE}")
         message(FATAL_ERROR "Set ZMK_JAVELIN_LAPWING_IMAGE to the mapped Lapwing JSC4 image")
       endif()
-      set(QSPI_SRC "${CMAKE_CURRENT_LIST_DIR}/tools/zen-r4-qspi/src")
-      set(LAPWING_SRC "${CMAKE_CURRENT_LIST_DIR}/src/zen_r4")
+      set(QSPI_SRC "${CMAKE_CURRENT_LIST_DIR}/tools/steno-squid-qspi/src")
+      set(LAPWING_SRC "${CMAKE_CURRENT_LIST_DIR}/src/steno_squid")
       file(SIZE "${ZMK_JAVELIN_LAPWING_IMAGE}" LAPWING_BYTES)
       execute_process(
         COMMAND ${PYTHON_EXECUTABLE} -c
@@ -309,6 +309,9 @@ if(CONFIG_ZMK_JAVELIN_STENO)
     set(ZMK_INIT_SRC
       src/engine_init.cc
     )
+    if(CONFIG_ZMK_STENO_SQUID_STROKE_TAPE)
+      list(APPEND ZMK_INIT_SRC src/steno_squid/stroke_feed.cc)
+    endif()
 
     # Pure Javelin sources (no ZMK deps) → separate library for C++23
     set(JAVELIN_LIB_SRC

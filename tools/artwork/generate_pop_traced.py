@@ -48,4 +48,4 @@ for name,grid in sprites.items():
         header+='    ROW('+','.join(f'0x{v:02x}' for v in values)+'), /* '+''.join('#' if v else '.' for v in row)+' */\n'
     header+='};\nPET_IMAGE('+name+');\n'
 header+='\n#undef ROW\n#undef BYTE\n#undef PIXEL\n'
-(ROOT/'src/zen_r4/display/pet_sprites.h').write_text(header)
+(ROOT/'src/steno_squid/display/pet_sprites.h').write_text(header)

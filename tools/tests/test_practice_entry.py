@@ -27,7 +27,7 @@ using zmk_keymap_layers_state_t = uint32_t;
 #define LOG_DBG(...)
 #define LOG_WRN(...)
 #define ARG_UNUSED(x) (void)(x)
-#define CONFIG_ZMK_ZEN_R4_PRACTICE 1
+#define CONFIG_ZMK_STENO_SQUID_PRACTICE 1
 #define CONFIG_ZMK_JAVELIN_STENO_EXTERNAL_LAPWING 0
 #define IS_ENABLED(x) x
 static zmk_keymap_layers_state_t _zmk_keymap_layer_state = 1, _zmk_keymap_layer_locks;
@@ -39,8 +39,8 @@ static int raise_layer_state_changed(uint8_t, bool, bool) { apply_layer(); retur
 static void atomic_set(uint32_t *p, uint32_t v) { *p=v; }
 static uint32_t atomic_get(uint32_t *p) { return *p; }
 static void atomic_clear(uint32_t *p) { *p=0; }
-static void zen_r4_practice_set_active(bool v) { practicing=v; }
-static void zen_r4_split_status_refresh() {}
+static void steno_squid_practice_set_active(bool v) { practicing=v; }
+static void steno_squid_split_status_refresh() {}
 '''
 CASES=r'''
 int main() {
@@ -48,16 +48,16 @@ int main() {
     for (auto initial : {0,1,2,3,5}) {
         zmk_keymap_layer_to(initial,true);
         practice_wanted=0; practicing=false;
-        zen_r4_practice_toggle();
+        steno_squid_practice_toggle();
         assert(active_layer()==JAVELIN_LAYER_STENO);
         assert(practice_wanted && practicing);
         assert(!(_zmk_keymap_layer_state & BIT(3)));
-        zen_r4_practice_toggle();
+        steno_squid_practice_toggle();
         assert(active_layer()==JAVELIN_LAYER_STENO && !practicing);
     }
     zmk_keymap_layer_to(0,true);
     zmk_keymap_layer_activate(1,false); // Held Numpad entry.
-    zen_r4_practice_toggle();
+    steno_squid_practice_toggle();
     zmk_keymap_layer_deactivate(1,false); // Release the held thumb afterward.
     assert(active_layer()==2 && practicing);
     zmk_keymap_layer_to(0,true);
@@ -71,7 +71,7 @@ def main():
     parser.add_argument('zmk_app',type=Path)
     args=parser.parse_args()
     keymap=(args.zmk_app/'src/keymap.c').read_text()
-    central=(ROOT/'src/zen_r4/split_status_central.c').read_text()
+    central=(ROOT/'src/steno_squid/split_status_central.c').read_text()
     code=PREFIX
     for signature in ['zmk_keymap_layer_id_t zmk_keymap_layer_index_to_id(',
                       'zmk_keymap_layer_id_t zmk_keymap_layer_default(',
@@ -83,7 +83,7 @@ def main():
                       'int zmk_keymap_layer_to(']:
         code+=function(keymap,signature)+'\n'
     for signature in ['static zmk_keymap_layer_id_t active_layer(',
-                      'static void apply_layer(', 'void zen_r4_practice_toggle(']:
+                      'static void apply_layer(', 'void steno_squid_practice_toggle(']:
         code+=function(central,signature)+'\n'
     with tempfile.TemporaryDirectory() as tmp:
         path=Path(tmp)

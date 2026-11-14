@@ -1,3 +1,0 @@
-description: Receive the active Zen R4 layer from the split central
-compatible: "zmk,behavior-zen-r4-status"
-include: two_param.yaml
