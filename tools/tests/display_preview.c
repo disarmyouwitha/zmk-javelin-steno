@@ -72,8 +72,14 @@ int main(void) {
     assert(state == PET_IDLE && lv_timer_get_paused(frame_timer));
     save("pop-idle");
     zen_r4_screen_update(ZEN_R4_MODE_UNKNOWN,NULL,0,85); save("waiting");
+    assert(lv_obj_get_y(mode_above)==17);
+    assert(!strcmp(lv_label_get_text(mode_above),"Waiting"));
+    assert(lv_obj_get_y(mode_below)==119);
+    assert(!strcmp(lv_label_get_text(mode_below),"For Left"));
     zen_r4_screen_update(ZEN_R4_MODE_TYPING,NULL,0,85);
     assert(state != PET_LAYER_CHANGE); // Reconnection keeps the greeting path.
+    lv_obj_update_layout(mode_below);
+    assert(lv_obj_get_y(mode_below)==99);
     zen_r4_screen_update(ZEN_R4_MODE_COUNT,"Test",0,85);
     assert(state == PET_LAYER_CHANGE);
     advance_frame(frame_timer);

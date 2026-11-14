@@ -224,7 +224,10 @@ void zen_r4_practice_toggle(void) {
         atomic_set(&practice_wanted, !atomic_get(&practice_wanted));
     } else {
         /* The layer change clears the flag on its way, so set it afterwards. */
-        zmk_keymap_layer_to(JAVELIN_LAYER_STENO, false);
+        /* Match &to: clear locked layers as well. A locked Plover layer
+         * otherwise stays above Javelin and prevents Practice from starting.
+         */
+        zmk_keymap_layer_to(JAVELIN_LAYER_STENO, true);
         atomic_set(&practice_wanted, 1);
     }
     apply_layer();
