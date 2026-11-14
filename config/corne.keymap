@@ -104,7 +104,7 @@ CORNE_LEFT_SYMBOL_ROW_1                                                        &
 
         steno_layer {
             display-name = "Javelin";
-            // Onboard Javelin; physical steno positions preserved from the Zen keymap.
+            // Onboard Javelin.
             bindings = <
 &javsteno STENO_NUM12 &javsteno STENO_NUM1  &javsteno STENO_NUM2 &javsteno STENO_NUM3 &javsteno STENO_NUM4 &javsteno STENO_NUM5    &javsteno STENO_NUM6 &javsteno STENO_NUM7 &javsteno STENO_NUM8 &javsteno STENO_NUM9 &javsteno STENO_NUM10 &javsteno STENO_NUM11
 CORNE_STENO_SPARE_KEY &javsteno STENO_NUM1 &javsteno STENO_TL  &javsteno STENO_PL  &javsteno STENO_HL  &javsteno STENO_STAR1     &javsteno STENO_STAR3 &javsteno STENO_FR  &javsteno STENO_PR  &javsteno STENO_LR  &javsteno STENO_TR  &javsteno STENO_DR

@@ -1,4 +1,4 @@
-# ZMK + Javelin Steno
+# Steno Squid
 
 ZMK keyboard firmware with onboard Javelin translation, Plover HID, wireless dictionary editing, and offline steno practice.
 
@@ -162,7 +162,6 @@ The uploader installs missing configured images from `build/`. Use `--status` to
 - [Split build, provisioning, and pairing guide](config/steno-squid-split/README.md)
 - [Standalone left-half build and pinout](config/steno-squid-left/README.md)
 - [Handwired left-half wiring diagram](config/steno-squid-left/steno_squid_left_wiring_diagram.png)
-- [QSPI diagnostics](tools/steno-squid-qspi/README.md)
 
 Local builds must use this checkout's west manifest. If the workspace keeps a separate manifest copy, synchronize it before running `west update`. The compiled dictionary format depends on the pinned Javelin engine. [Dependency manifest](config/west.yml)
 
