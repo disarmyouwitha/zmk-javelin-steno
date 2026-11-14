@@ -68,9 +68,35 @@ On the Javelin layer the display shows the last **translation and stroke above P
 
 The trial config enables **shorter-outline hints**. Our dictionary compiler adds a compact, sorted flash index of one-stroke shortcuts, searched without copying the dictionary into RAM. For example, Lapwing's `HE/HROE` translates to **hello**, and can suggest `H-L`. This first index suggests one-stroke shortcuts; it does not index alternative multi-stroke briefs. Personal dictionaries retain their engine-native reverse lookup. Only enabled dictionaries participate, and a shortcut overridden by a higher-priority dictionary is excluded.
 
-- **Right half:** `CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION=y` shows the stroke and translation. Set it to `n` to hide them.
-- **Left half:** `CONFIG_ZMK_STENO_SQUID_STROKE_HINT=y` enables shortcut lookup. Set it to `n` to disable hints.
-- `CONFIG_ZMK_STENO_SQUID_STROKE_TAPE` enables the underlying reporting feature. When neither translation nor a hint is showing, Pop's upper animations use the free space again.
+These are **build-time settings**, not browser settings. Replace the existing values in the indicated config files:
+
+| Setting | Config file | Purpose |
+| --- | --- | --- |
+| `CONFIG_ZMK_STENO_SQUID_STROKE_HINT` | [corne_left.conf](config/steno-squid-split/corne_left.conf) | Enable or disable shortcut lookup on the left half. |
+| `CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION` | [right-nice-view.conf](config/steno-squid-split/right-nice-view.conf) | Show or hide the stroke, translation, and WPM on the right display. This does not disable onboard Javelin translation. |
+
+| Desired display | Left: `STROKE_HINT` | Right: `STROKE_TRANSLATION` |
+| --- | --- | --- |
+| Stroke/translation and hints (current defaults) | `y` | `y` |
+| Stroke/translation, no hints | `n` | `y` |
+| Hints only | `y` | `n` |
+| Neither; upper space available for Pop's animations | `n` | `n` |
+
+For example, to disable both:
+
+```ini
+# config/steno-squid-split/corne_left.conf
+CONFIG_ZMK_STENO_SQUID_STROKE_HINT=n
+```
+
+```ini
+# config/steno-squid-split/right-nice-view.conf
+CONFIG_ZMK_STENO_SQUID_STROKE_TRANSLATION=n
+```
+
+Rebuild and flash the half whose config changed; changing both settings requires flashing both halves. With hints only, a hint uses the upper space when one exists, and animations resume when it clears. Connection notices and long layer labels can still use that space.
+
+Leave `CONFIG_ZMK_STENO_SQUID_STROKE_TAPE=y` on both halves for the combinations above. To remove stroke reporting entirely, set it to `n` on both halves as well as disabling both options above. Layer status, Practice, and onboard translation remain separate features. Switching these display options does not require reinstalling dictionary images.
 
 The new index changes dictionary image sizes and checksums. When upgrading from images without it, rebuild and reinstall **all three images** through **left-logging** using `upload.py PORT --repair --base lapwing` (then `--base plover` and `--base extras`), then return to **left-studio**. The personal dictionary and saved dictionary selections live separately. Old images remain forward-compatible with the dictionary format, but have no base-dictionary shortcut hints. Logging builds with hints enabled report `[tape] stroke handled in N us`; this includes engine translation and hint work on the key-handling thread.
 
