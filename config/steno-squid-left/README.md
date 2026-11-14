@@ -49,7 +49,7 @@ west build -s zmk/app -d "$repo/build/steno-squid-left" -b nice_nano//zmk -S zmk
   "-DZephyr_DIR=$ZEPHYR_BASE/share/zephyr-package/cmake"
 ```
 
-Copy `build/steno-squid-left/zephyr/zmk.uf2` onto the left nice!nano's `NICENANO` drive. After it enumerates as Steno Squid Left, run the uploader with Python and pyserial. Replace the serial device path with the current one.
+Copy `build/steno-squid-left/zephyr/zmk.uf2` onto the left nice!nano's `NICENANO` drive. After it enumerates as StenoSquid Left, run the uploader with Python and pyserial. Replace the serial device path with the current one.
 
 ```sh
 python3 "$repo/tools/steno-squid-lapwing/upload.py" /dev/cu.usbmodem14501 \
@@ -64,6 +64,6 @@ In a text editor with Plover closed, enter Javelin with the outer thumb. Chord `
 
 ## Hardware results
 
-The left half booted as Steno Squid Left with keyboard and Plover HID USB interfaces. The full image passed per-chunk flash readback and a CRC check over all 1,700,488 memory-mapped bytes. Native Javelin lookups returned `if`, `cat`, and `hello` from `TP`, `KAT`, and `HE/HROE`.
+The left half booted as StenoSquid Left with keyboard and Plover HID USB interfaces. The full image passed per-chunk flash readback and a CRC check over all 1,700,488 memory-mapped bytes. Native Javelin lookups returned `if`, `cat`, and `hello` from `TP`, `KAT`, and `HE/HROE`.
 
 The builder confirmed ordinary typing, host Plover HID steno, and onboard Javelin steno on the assembled left half.

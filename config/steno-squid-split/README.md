@@ -275,7 +275,7 @@ The builder confirmed normal typing over the split, onboard Javelin output of �
 
 ## Edit the onboard personal dictionary
 
-The left firmware exposes a dedicated HID console over USB and Bluetooth for [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools). For wireless editing, pair **Steno Squid Split** in macOS Bluetooth settings and unplug USB. In Chrome, choose **Connect via HID** for either connection. Select **Steno Squid Split**, then open **Dictionary Management → View**. This console uses Javelin's vendor HID collection alongside the ordinary keyboard and Plover HID interfaces. The USB serial port handles diagnostics and base dictionary provisioning.
+The left firmware exposes a dedicated HID console over USB and Bluetooth for [Javelin Steno Tools](https://lim.au/#/software/javelin-steno-tools). For wireless editing, pair **StenoSquid Split** in macOS Bluetooth settings and unplug USB. In Chrome, choose **Connect via HID** for either connection. Select **StenoSquid Split**, then open **Dictionary Management → View**. This console uses Javelin's vendor HID collection alongside the ordinary keyboard and Plover HID interfaces. The USB serial port handles diagnostics and base dictionary provisioning.
 
 Use **Add Translation** to enter an outline and translation, then press Return in the translation field to save. Add, replace, remove, or export personal outlines from the browser. A saved entry takes precedence over the same Lapwing outline in onboard Javelin. Removing the personal entry restores the Lapwing translation. Host Plover HID continues to send raw strokes to the host.
 
